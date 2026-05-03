@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- My Perks Ledger v2.1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1157,12 +1158,6 @@ function renderSummBase(getPsFn,isCurFn,bannerHTML,label){
       const ps=getPsFn(s.cadence);
       if(isBNotAvailable(b,selectedYear)) return;
       if(isBExpired(b,{calY:selectedYear,calM:11,m:11})) return;
-      let bc=0,bm=0,bl=0;
-      ps.forEach(p=>{
-        if(isBExpired(b,p)) return;
-        const fut=isPFuture(p),cur=isCurFn(s.cadence,p),used=isUsed(activeCard,b.id,p.pk),amt=getBAmount(b,p);
-        if(used) bc+=amt; else if(!fut&&!cur) bm+=amt; else bl+=amt;
-      });
       let bc=0,bm=0,bl=0;
       ps.forEach(p=>{
         if(isBExpired(b,p)) return;
