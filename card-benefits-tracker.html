@@ -249,8 +249,38 @@
     line-height: 1.2;
   }
   .nav-primary-btn:hover { border-color: var(--border); color: var(--text); }
-  .nav-primary-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .nav-primary-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
   .nav-primary-btn .nav-icon { display: block; font-size: 16px; margin-bottom: 3px; }
+
+  .nav-secondary {
+    display: flex;
+    background: var(--border-light);
+    border-radius: var(--radius);
+    padding: 3px;
+    margin-bottom: 20px;
+    gap: 2px;
+    transition: opacity 0.2s;
+  }
+  .nav-secondary.hidden { display: none; }
+  .stab {
+    flex: 1;
+    padding: 7px 6px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-family: var(--font);
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .stab:hover { color: var(--text); }
+  .stab.active { background: var(--gold); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+
+  .year-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
 
   .nav-secondary {
     display: flex;
@@ -526,7 +556,6 @@
     transition: all 0.15s;
   }
   .year-btn:hover { border-color: var(--text-secondary); color: var(--text); }
-  .year-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
   .all-cards-header {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 8px; margin-top: 20px;
@@ -1299,15 +1328,17 @@ document.getElementById('navPrimary').querySelectorAll('.nav-primary-btn').forEa
   btn.addEventListener('click', () => setActiveView(btn.dataset.primary));
 });
 
-// Secondary nav clicks
-document.getElementById('navSecondary').querySelectorAll('.stab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    activeSecondary[activePrimary] = btn.dataset.view;
-    document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeView = btn.dataset.view;
-    render();
-  });
+// Secondary nav clicks — use delegation so dynamic data-view attrs work
+document.getElementById('navSecondary').addEventListener('click', e => {
+  const btn = e.target.closest('.stab');
+  if(!btn) return;
+  const view = btn.dataset.view;
+  if(!view) return;
+  activeSecondary[activePrimary] = view;
+  document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeView = view;
+  render();
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────
