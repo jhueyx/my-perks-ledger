@@ -672,7 +672,94 @@
     75%{transform:translateX(6px)}
   }
 
-  @media (min-width: 768px) {
+  /* ── Batch 1 features ───────────────────────────────────────────── */
+
+  /* Fee countdown strip */
+  .countdown-strip {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .countdown-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-family: var(--mono);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+  }
+  .countdown-pill.urgent { border-color: var(--red); color: var(--red); background: #1a0808; }
+  .countdown-pill.soon { border-color: var(--gold); color: var(--gold); }
+  .countdown-pill strong { color: var(--text); }
+  [data-theme="light"] .countdown-pill.urgent { background: #fff5f5; }
+
+  /* Break-even banner */
+  .breakeven-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    font-size: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .breakeven-bar.in-profit {
+    background: rgba(42,155,106,0.12);
+    border: 1px solid rgba(42,155,106,0.3);
+    color: var(--green);
+  }
+  .breakeven-bar.needs-more {
+    background: rgba(200,146,42,0.1);
+    border: 1px solid rgba(200,146,42,0.3);
+    color: var(--gold);
+  }
+  .breakeven-amt { font-size: 18px; font-weight: 700; font-family: var(--mono); }
+
+  /* End-of-month warning */
+  .eom-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    font-size: 12px;
+    background: rgba(217,64,64,0.1);
+    border: 1px solid rgba(217,64,64,0.3);
+    color: var(--red);
+    line-height: 1.5;
+  }
+
+  /* Confetti canvas */
+  #confettiCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* Streak badge */
+  .streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 2px 8px;
+    border-radius: 100px;
+    background: rgba(200,146,42,0.15);
+    color: var(--gold);
+    margin-left: 6px;
+    vertical-align: middle;
+  }
     .metrics { grid-template-columns: repeat(4, 1fr); }
     .card-selector { gap: 16px; margin-bottom: 24px; }
     .nav-primary { gap: 10px; }
@@ -714,6 +801,9 @@
     <div class="splash-error" id="splashError"></div>
   </div>
 </div>
+
+<!-- Confetti canvas -->
+<canvas id="confettiCanvas"></canvas>
 
 <div class="app-header">
   <div class="app-title">My Perks Ledger</div>
@@ -1099,33 +1189,194 @@ function progressHTML(pct,left,right){
   return `<div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-labels"><span>${pct}% captured</span><span>${right}</span></div></div>`;
 }
 
+// ── Batch 1 Features ─────────────────────────────────────────────────────
+
+// Days until next fee
+function daysUntilFee(cardKey){
+  const fm=FEE_MONTHS[cardKey];
+  const now=new Date();
+  let feeDate=new Date(now.getFullYear(), fm, 1);
+  if(feeDate<=now) feeDate=new Date(now.getFullYear()+1, fm, 1);
+  return Math.ceil((feeDate-now)/(1000*60*60*24));
+}
+
+// Days until end of month
+function daysUntilEOM(){
+  const now=new Date();
+  const eom=new Date(now.getFullYear(), now.getMonth()+1, 0);
+  return Math.ceil((eom-now)/(1000*60*60*24));
+}
+
+// Get unclaimed monthly benefits for current card
+function getUnclaimedMonthly(cardKey){
+  const card=CARDS[cardKey];
+  const unclaimed=[];
+  card.sections.forEach(s=>{
+    if(s.cadence!=='monthly') return;
+    const pk=getCurrentPK(cardKey,s.cadence);
+    s.benefits.forEach(b=>{
+      if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)) return;
+      if(!isUsed(cardKey,b.id,pk)) unclaimed.push({name:b.name,amt:getBAmount(b,{m:CM})});
+    });
+  });
+  return unclaimed;
+}
+
+// Get streak for a benefit (consecutive months used)
+function getStreak(cardKey, benefitId){
+  let streak=0;
+  for(let m=CM;m>=0;m--){
+    const pk=getPK('monthly',m,CY);
+    if(isUsed(cardKey,benefitId,pk)) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// Build countdown strip HTML
+function buildCountdownStrip(cardKey){
+  const days=daysUntilFee(cardKey);
+  const fee=getFee(cardKey,CY);
+  const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
+  const needed=Math.max(0,fee-captured);
+  let cls=days<=30?'urgent':days<=90?'soon':'';
+  let html=`<div class="countdown-strip">`;
+  html+=`<div class="countdown-pill ${cls}">📅 Next fee in <strong>${days} days</strong></div>`;
+  if(needed>0){
+    html+=`<div class="countdown-pill">🎯 Claim <strong>$${needed.toFixed(0)}</strong> more to break even</div>`;
+  } else {
+    html+=`<div class="countdown-pill" style="border-color:var(--green);color:var(--green)">🎉 You're <strong>$${Math.abs(fee-captured).toFixed(0)}</strong> in profit!</div>`;
+  }
+  html+=`</div>`;
+  return html;
+}
+
+// Build break-even bar
+function buildBreakevenBar(cardKey){
+  const fee=getFee(cardKey,CY);
+  const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
+  const diff=captured-fee;
+  if(diff>=0){
+    return `<div class="breakeven-bar in-profit">
+      <div>🟢 You're in profit — you've extracted more than the annual fee</div>
+      <div class="breakeven-amt">+$${diff.toFixed(0)}</div>
+    </div>`;
+  } else {
+    return `<div class="breakeven-bar needs-more">
+      <div>⚡ Claim <strong>$${Math.abs(diff).toFixed(0)}</strong> more to fully offset your $${fee} annual fee</div>
+      <div class="breakeven-amt">$${captured.toFixed(0)}/$${fee}</div>
+    </div>`;
+  }
+}
+
+// Build end-of-month warning
+function buildEOMWarning(cardKey){
+  const days=daysUntilEOM();
+  if(days>5) return ''; // only warn in last 5 days
+  const unclaimed=getUnclaimedMonthly(cardKey);
+  if(!unclaimed.length) return '';
+  const total=unclaimed.reduce((s,b)=>s+b.amt,0);
+  const names=unclaimed.map(b=>b.name).join(', ');
+  return `<div class="eom-warning">
+    ⚠️ <div><strong>${days} day${days===1?'':'s'} left this month</strong> — you still have $${total.toFixed(0)} unclaimed: ${names}</div>
+  </div>`;
+}
+
+// ── Confetti ──────────────────────────────────────────────────────────────
+function launchConfetti(){
+  const canvas=document.getElementById('confettiCanvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  const colors=['#C8922A','#2A9B6A','#4A7FA5','#D94040','#F5C542','#ffffff'];
+  const pieces=Array.from({length:120},()=>({
+    x:Math.random()*canvas.width,
+    y:-10-Math.random()*100,
+    r:Math.random()*6+3,
+    d:Math.random()*3+1,
+    color:colors[Math.floor(Math.random()*colors.length)],
+    tilt:Math.random()*10-5,
+    tiltAngle:0,
+    tiltSpeed:Math.random()*0.1+0.05,
+  }));
+  let frame=0;
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      p.tiltAngle+=p.tiltSpeed;
+      p.y+=p.d;
+      p.tilt=Math.sin(p.tiltAngle)*12;
+      ctx.beginPath();
+      ctx.fillStyle=p.color;
+      ctx.ellipse(p.x+p.tilt,p.y,p.r,p.r/2,p.tiltAngle,0,2*Math.PI);
+      ctx.fill();
+    });
+    frame++;
+    if(frame<160) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+// Check if all monthly benefits just got claimed → trigger confetti
+function checkAllClaimed(cardKey){
+  const card=CARDS[cardKey];
+  let allDone=true;
+  card.sections.forEach(s=>{
+    const pk=getCurrentPK(cardKey,s.cadence);
+    s.benefits.forEach(b=>{
+      if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)) return;
+      if(!isUsed(cardKey,b.id,pk)) allDone=false;
+    });
+  });
+  if(allDone) launchConfetti();
+}
+
 function renderCurrent(){
   const card=CARDS[activeCard];
   const {year:fy,month:fm}=getCardYearStart(activeCard,CY);
   const cyEnd=(fm+11)%12,cyEndY=fy+Math.floor((fm+11)/12);
   let totalNow=0,usedNow=0;
-  card.sections.forEach(s=>{ const pk=getCurrentPK(activeCard,s.cadence); s.benefits.forEach(b=>{ totalNow+=b.amount; if(isUsed(activeCard,b.id,pk)) usedNow+=b.amount; }); });
+  card.sections.forEach(s=>{ const pk=getCurrentPK(activeCard,s.cadence); s.benefits.forEach(b=>{ if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)) return; totalNow+=getBAmount(b,{m:CM}); if(isUsed(activeCard,b.id,pk)) usedNow+=getBAmount(b,{m:CM}); }); });
   const pct=totalNow>0?Math.round(usedNow/totalNow*100):0;
   const {captured}=calcStats(activeCard,c=>getCardYearPeriods(activeCard,c),isPCurrent);
   const effectiveFee=getFee(activeCard,CY)-captured;
-  let html=`<div class="banner">💳 Card year: <strong>${MONTHS[fm]} ${fy} → ${MONTHS[cyEnd]} ${cyEndY}</strong> &nbsp;·&nbsp; Annual fee due <strong>${MONTHS[fm]}</strong></div>`;
+
+  let html=buildCountdownStrip(activeCard);
+  html+=buildEOMWarning(activeCard);
+  html+=buildBreakevenBar(activeCard);
   html+=metricsHTML('Available now',`$${totalNow.toFixed(0)}`,'Claimed',`$${usedNow.toFixed(0)}`,'Card-yr captured',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
-  html+=progressHTML(pct,`$${usedNow} / $${totalNow}`,`$${card.fee} fee − $${captured.toFixed(0)} captured = $${effectiveFee.toFixed(0)} effective`);
+  html+=progressHTML(pct,'',`$${getFee(activeCard,CY)} fee − $${captured.toFixed(0)} captured = $${effectiveFee.toFixed(0)} effective`);
   html+=`<div class="period-note">Active periods for <strong>${MONTHS_FULL[CM]} ${CY}</strong> — check off as you use each benefit.</div>`;
+
   card.sections.forEach(s=>{
     const pk=getCurrentPK(activeCard,s.cadence);
     const lbl=getCurrentLabel(activeCard,s.cadence);
-    // check if this whole section is expired for the current period
     const currentP={calY:CY,calM:CM,m:CM};
+    const visibleBenefits=s.benefits.filter(b=>!isBExpired(b,currentP)&&!isBNotAvailable(b,CY));
+    if(!visibleBenefits.length) return;
     html+=`<div class="section-header"><span class="section-title">${s.label}</span><span class="section-period">${lbl}</span></div>`;
-    s.benefits.forEach(b=>{
-      if(isBExpired(b,currentP)||isBNotAvailable(b,CY)) return; // skip expired or not-yet-available benefits
+    visibleBenefits.forEach(b=>{
       const used=isUsed(activeCard,b.id,pk);
-      html+=`<div class="benefit-row${used?' used':''}"><div><div class="benefit-name">${b.name}</div><div class="benefit-desc">${b.desc}</div></div><div class="benefit-amt">$${getBAmount(b,{m:CM})}</div><button class="check-btn${used?' checked':''}" data-id="${b.id}" data-pk="${pk}"></button></div>`;
+      const streak=s.cadence==='monthly'?getStreak(activeCard,b.id):0;
+      const streakBadge=streak>=2?`<span class="streak-badge">🔥 ${streak} mo streak</span>`:'';
+      html+=`<div class="benefit-row${used?' used':''}">
+        <div>
+          <div class="benefit-name">${b.name}${streakBadge}</div>
+          <div class="benefit-desc">${b.desc}</div>
+        </div>
+        <div class="benefit-amt">$${getBAmount(b,{m:CM})}</div>
+        <button class="check-btn${used?' checked':''}" data-id="${b.id}" data-pk="${pk}"></button>
+      </div>`;
     });
   });
+
   set(html);
-  document.querySelectorAll('.check-btn').forEach(btn=>btn.addEventListener('click',()=>{ toggle(activeCard,btn.dataset.id,btn.dataset.pk); renderCurrent(); }));
+  document.querySelectorAll('.check-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    toggle(activeCard,btn.dataset.id,btn.dataset.pk);
+    checkAllClaimed(activeCard);
+    renderCurrent();
+  }));
 }
 
 function renderHistBase(getPsFn,isCurFn,bannerHTML,reRender){
