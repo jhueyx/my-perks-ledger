@@ -877,7 +877,13 @@ function toggle(card,id,pk){ if(!DATA[card]) DATA[card]={}; const k=bKey(id,pk);
 //   'cal-annual'                    — calendar year (Jan–Dec)
 //   'feb-annual'                    — Feb–Jan cycle (Chase travel credit)
 
-function getCardYearStart(c){ const fm=FEE_MONTHS[c]; return CM>=fm?{year:CY,month:fm}:{year:CY-1,month:fm}; }
+function getCardYearStart(c, forYear){
+  const fm=FEE_MONTHS[c];
+  const yr=forYear||selectedYear;
+  // If viewing a past year, use that year's card year start
+  if(yr<CY) return {year:yr, month:fm};
+  return CM>=fm?{year:CY,month:fm}:{year:CY-1,month:fm};
+}
 function getCardYearMonths(c){ const {year,month:fm}=getCardYearStart(c); return Array.from({length:12},(_,i)=>({m:(fm+i)%12,y:year+Math.floor((fm+i)/12)})); }
 function isCalFuture(m,y){ return y>CY||(y===CY&&m>CM); }
 function isCalCurrent(m,y){ return m===CM&&y===CY; }
@@ -1095,7 +1101,7 @@ function progressHTML(pct,left,right){
 
 function renderCurrent(){
   const card=CARDS[activeCard];
-  const {year:fy,month:fm}=getCardYearStart(activeCard);
+  const {year:fy,month:fm}=getCardYearStart(activeCard,CY);
   const cyEnd=(fm+11)%12,cyEndY=fy+Math.floor((fm+11)/12);
   let totalNow=0,usedNow=0;
   card.sections.forEach(s=>{ const pk=getCurrentPK(activeCard,s.cadence); s.benefits.forEach(b=>{ totalNow+=b.amount; if(isUsed(activeCard,b.id,pk)) usedNow+=b.amount; }); });
@@ -1264,7 +1270,7 @@ function renderAllCards(){
 function render(){
   const card=CARDS[activeCard];
   const fee=getFee(activeCard,selectedYear);
-  const {year:fy,month:fm}=getCardYearStart(activeCard);
+  const {year:fy,month:fm}=getCardYearStart(activeCard,selectedYear);
   const cyEnd=(fm+11)%12,cyEndY=fy+Math.floor((fm+11)/12);
   const cyBanner=`<div class="banner">💳 Card year: <strong>${MONTHS[fm]} ${fy} → ${MONTHS[cyEnd]} ${cyEndY}</strong> &nbsp;·&nbsp; Annual fee: <strong>$${fee}</strong></div>`;
   const isCurrentYear=selectedYear===CY;
