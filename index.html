@@ -608,6 +608,84 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* Splash / login screen */
+  .splash {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 24px;
+  }
+  .splash.hidden { display: none; }
+  .splash-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+  }
+  .splash-icon { font-size: 48px; margin-bottom: 16px; display: block; }
+  .splash-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; letter-spacing: -0.02em; }
+  .splash-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 28px; }
+  .splash-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    font-family: var(--font);
+    margin-bottom: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    text-align: center;
+    letter-spacing: 0.1em;
+  }
+  .splash-input:focus { border-color: var(--gold); }
+  .splash-input.shake { animation: shake 0.3s ease; border-color: var(--red); }
+  .splash-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--gold);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .splash-btn:hover { opacity: 0.9; }
+  .splash-error { font-size: 12px; color: var(--red); margin-top: 10px; min-height: 16px; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-6px)}
+    75%{transform:translateX(6px)}
+  }
+</style>
+</head>
+<body>
+
+<!-- Splash screen -->
+<div class="splash" id="splash">
+  <div class="splash-card">
+    <span class="splash-icon">💳</span>
+    <div class="splash-title">My Perks Ledger</div>
+    <div class="splash-sub">Enter your password to continue</div>
+    <input class="splash-input" id="splashInput" type="password" placeholder="••••••••" autocomplete="current-password"/>
+    <button class="splash-btn" onclick="checkPassword()">Unlock</button>
+    <div class="splash-error" id="splashError"></div>
+  </div>
+</div>
+
   @media (max-width: 600px) {
     .container { padding: 12px 12px; }
     .card-selector { 
@@ -706,19 +784,18 @@
     <button class="year-btn active" data-year="2026">2026</button>
   </div>
 
-  <div id="main"><div class="loading"><div class="spinner"></div> Loading your saved data…</div></div>
+  <div id="main"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// ── Dark mode ─────────────────────────────────────────────────────────────
 const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth();
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const FEE_MONTHS={gold:4,platinum:8,csr:4};
 const STORAGE_KEY='card-benefits-tracker-v1';
-const ROW_ID=1; // single row in the table for this user's data
-
-// ── Supabase setup ────────────────────────────────────────────────────────
+const ROW_ID=1;
 const SUPABASE_URL='https://rsbvddlhismetljqoqre.supabase.co';
 const SUPABASE_KEY='sb_publishable_uLJlvYnd-7MiGHMK9SEaww_JwIBveov';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -726,9 +803,8 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let DATA={gold:{},platinum:{},csr:{}};
 let saveTimer=null;
 let activeCard='csr', activeView='all-cards';
-let selectedYear=CY; // which year is being viewed in history/YTD views
+let selectedYear=CY;
 
-// ── Dark mode ─────────────────────────────────────────────────────────────
 function toggleDark(){
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const newTheme = isDark ? 'light' : 'dark';
@@ -750,18 +826,8 @@ function toggleDark(){
   }
 })();
 
-// ── Storage (instant render + background Supabase sync) ───────────────────
-async function loadFromStorage(){
-  // Step 1: Render instantly from localStorage cache (no wait)
-  try{
-    const val=localStorage.getItem(STORAGE_KEY);
-    if(val) DATA=Object.assign({gold:{},platinum:{},csr:{}},JSON.parse(val));
-  }catch(e){}
-
-  // Step 2: Render immediately — don't wait for network
-  render();
-
-  // Step 3: Fetch from Supabase in background — re-render only if data differs
+// ── Storage ───────────────────────────────────────────────────────────────
+async function syncFromSupabase(){
   try{
     const {data,error}=await sb.from('tracker_data').select('data').eq('id',ROW_ID).single();
     if(!error&&data&&data.data){
@@ -770,17 +836,15 @@ async function loadFromStorage(){
       if(remote!==local){
         DATA=Object.assign({gold:{},platinum:{},csr:{}},data.data);
         localStorage.setItem(STORAGE_KEY,JSON.stringify(DATA));
-        render(); // only re-render if something actually changed
+        render();
       }
     }
-  }catch(e){} // offline — local cache is fine
+  }catch(e){}
 }
 
 async function saveToStorage(){
   setSave('saving','saving…');
-  // Write localStorage immediately so it's always up to date
   try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(DATA)); }catch(e){}
-  // Then sync to Supabase
   try{
     const {error}=await sb.from('tracker_data').upsert({id:ROW_ID,data:DATA,updated_at:new Date().toISOString()});
     if(error) throw error;
@@ -792,7 +856,8 @@ async function saveToStorage(){
   }
 }
 function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveToStorage,600); }
-function setSave(cls,msg){ const el=document.getElementById('saveStatus'); el.className='save-status'+(cls?' '+cls:''); el.textContent=msg; }
+function setSave(cls,msg){ const el=document.getElementById('saveStatus'); if(el){el.className='save-status'+(cls?' '+cls:''); el.textContent=msg;} }
+function onSupabaseLoaded(){ syncFromSupabase(); }
 
 // ── Data ──────────────────────────────────────────────────────────────────
 function bKey(id,pk){ return `${id}__${pk}`; }
@@ -1089,8 +1154,15 @@ function renderSummBase(getPsFn,isCurFn,bannerHTML,label){
   html+=`<div class="summary-table">`;
   card.sections.forEach(s=>{
     s.benefits.forEach(b=>{
-      const ps=getPsFn(s.cadence); if(!ps.length) return;
+      const ps=getPsFn(s.cadence);
       if(isBNotAvailable(b,selectedYear)) return;
+      if(isBExpired(b,{calY:selectedYear,calM:11,m:11})) return;
+      let bc=0,bm=0,bl=0;
+      ps.forEach(p=>{
+        if(isBExpired(b,p)) return;
+        const fut=isPFuture(p),cur=isCurFn(s.cadence,p),used=isUsed(activeCard,b.id,p.pk),amt=getBAmount(b,p);
+        if(used) bc+=amt; else if(!fut&&!cur) bm+=amt; else bl+=amt;
+      });
       let bc=0,bm=0,bl=0;
       ps.forEach(p=>{
         if(isBExpired(b,p)) return;
@@ -1353,10 +1425,53 @@ document.getElementById('navSecondary').addEventListener('click', e => {
   render();
 });
 
-// ── Init ──────────────────────────────────────────────────────────────────
-(async()=>{
-  await loadFromStorage(); // renders immediately from cache, syncs Supabase in background
-})();
+// ── Password / splash ─────────────────────────────────────────────────────
+const PASSWORD_KEY = 'perks-unlocked';
+const PASSWORD_HASH = '7fa8a6e9fde2f4e1dfe6fb029af47c9633d4b7a616a42c3b2889c5226a20238d';
+
+async function hashPassword(pwd){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pwd));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function checkPassword(){
+  const input = document.getElementById('splashInput');
+  const error = document.getElementById('splashError');
+  const hash = await hashPassword(input.value);
+  if(hash === PASSWORD_HASH){
+    localStorage.setItem(PASSWORD_KEY, '1');
+    unlockApp();
+  } else {
+    error.textContent = 'Incorrect password. Try again.';
+    input.classList.add('shake');
+    input.value = '';
+    setTimeout(()=>input.classList.remove('shake'), 400);
+  }
+}
+
+function unlockApp(){
+  document.getElementById('splash').classList.add('hidden');
+  // Load data and render now that user is authenticated
+  try{
+    const val=localStorage.getItem(STORAGE_KEY);
+    if(val) DATA=Object.assign({gold:{},platinum:{},csr:{}},JSON.parse(val));
+  }catch(e){}
+  render();
+  syncFromSupabase();
+}
+
+document.getElementById('splashInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter') checkPassword();
+});
+
+// Check if already unlocked on this device
+if(localStorage.getItem(PASSWORD_KEY)==='1'){
+  unlockApp();
+  document.getElementById('splash').classList.add('hidden');
+} else {
+  // Focus the password field
+  setTimeout(()=>document.getElementById('splashInput').focus(), 100);
+}
 
 // ── Service Worker registration ───────────────────────────────────────────
 if('serviceWorker' in navigator){
