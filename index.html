@@ -681,7 +681,7 @@
     <div class="splash-title">My Perks Ledger</div>
     <div class="splash-sub">Enter your password to continue</div>
     <input class="splash-input" id="splashInput" type="password" placeholder="••••••••" autocomplete="current-password"/>
-    <button class="splash-btn" onclick="checkPassword()">Unlock</button>
+    <button class="splash-btn" id="splashBtn">Unlock</button>
     <div class="splash-error" id="splashError"></div>
   </div>
 </div>
@@ -1460,6 +1460,7 @@ function unlockApp(){
   syncFromSupabase();
 }
 
+document.getElementById('splashBtn').addEventListener('click', checkPassword);
 document.getElementById('splashInput').addEventListener('keydown', e=>{
   if(e.key==='Enter') checkPassword();
 });
