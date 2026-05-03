@@ -928,7 +928,8 @@
     overflow: hidden;
   }
   .card-back-title { font-size: 9px; font-family: var(--mono); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; }
-  .card-back-benefit { font-size: 9px; color: var(--text-secondary); display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 0.5px solid var(--border-light); }
+  .card-back-benefit { font-size: 9px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: flex-start; padding: 2px 0; border-bottom: 0.5px solid var(--border-light); gap: 4px; }
+  .card-back-benefit span:first-child { flex: 1; line-height: 1.3; }
   .card-back-benefit:last-child { border-bottom: none; }
   .card-back-amt { font-family: var(--mono); font-weight: 600; color: var(--green); }
 
@@ -2119,15 +2120,26 @@ function renderHeatmap(){
 }
 
 // ── ROI Score ─────────────────────────────────────────────────────────────
-function getROIGrade(captured, fee){
-  // A = profit (captured > fee)
-  // B = captured >= 80% of fee (close to breaking even)
-  // C = captured >= 50% of fee
-  // D = captured < 50% of fee
-  const ratio = fee > 0 ? captured / fee : 0;
-  if(ratio >= 1.0) return 'A';
-  if(ratio >= 0.8) return 'B';
-  if(ratio >= 0.5) return 'C';
+function getCardYearMonthsElapsed(cardKey){
+  const {month:fm}=getCardYearStart(cardKey,CY);
+  return Math.max(1, CM>=fm ? CM-fm+1 : 12-(fm-CM));
+}
+
+function getProjectedCapture(cardKey){
+  const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
+  const elapsed=getCardYearMonthsElapsed(cardKey);
+  // Project based on monthly run rate
+  return (captured/elapsed)*12;
+}
+
+function getROIGrade(captured, fee, cardKey){
+  // Grade based on projected year-end capture vs fee (not current snapshot)
+  // This is fair even for cards that just renewed
+  const projected=getProjectedCapture(cardKey);
+  const ratio=fee>0?projected/fee:0;
+  if(ratio>=1.0) return 'A';
+  if(ratio>=0.8) return 'B';
+  if(ratio>=0.5) return 'C';
   return 'D';
 }
 
@@ -2142,26 +2154,28 @@ function renderROI(){
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
     const {captured,missed,total}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
-    const grade=getROIGrade(captured,fee);
+    const projected=getProjectedCapture(cardKey);
+    const elapsed=getCardYearMonthsElapsed(cardKey);
+    const grade=getROIGrade(captured,fee,cardKey);
     const effectiveFee=fee-captured;
-    const ratio=fee>0?captured/fee:0;
+    const projRatio=fee>0?projected/fee:0;
 
     const gradeDesc={
-      A:`In profit — you've captured $${(captured-fee).toFixed(0)} more than the fee`,
-      B:`Almost there — $${(fee-captured).toFixed(0)} away from breaking even`,
-      C:`Halfway — need $${(fee-captured).toFixed(0)} more to cover the fee`,
-      D:`Behind — only covering ${Math.round(ratio*100)}% of the $${fee} fee`
+      A:`On pace to capture $${projected.toFixed(0)} — covering the $${fee} fee`,
+      B:`Projecting $${projected.toFixed(0)} by year end — close to the $${fee} fee`,
+      C:`Projecting $${projected.toFixed(0)} — need to use more benefits`,
+      D:`Only ${Math.round(projRatio*100)}% of fee covered at current pace`
     }[grade];
 
     html+=`<div class="comparison-card ${CARD_CLS[cardKey]}">
       <div class="comp-card-name">${CARD_LABELS[cardKey]}</div>
       <div class="roi-grade ${grade}">${grade}</div>
-      <div class="roi-label">${effectiveFee<=0?'$'+Math.abs(effectiveFee).toFixed(0)+' profit':'$'+effectiveFee.toFixed(0)+' to break even'}</div>
+      <div class="roi-label">${effectiveFee<=0?'$'+Math.abs(effectiveFee).toFixed(0)+' profit so far':'$'+captured.toFixed(0)+' of $'+fee+' captured'}</div>
       <div class="roi-desc">${gradeDesc}</div>
       <div class="comp-divider"></div>
       <div style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">
-        $${captured.toFixed(0)} captured vs $${fee} fee<br>
-        ${Math.round(ratio*100)}% of fee covered
+        Month ${elapsed} of 12 · $${projected.toFixed(0)} projected<br>
+        ${Math.round(projRatio*100)}% of fee covered at this pace
       </div>
     </div>`;
   });
@@ -2205,8 +2219,9 @@ function renderInsights(){
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
     const {captured,total}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
-    const grade=getROIGrade(captured,fee);
-    const ratio=fee>0?Math.round(captured/fee*100):0;
+    const grade=getROIGrade(captured,fee,cardKey);
+    const projected=getProjectedCapture(cardKey);
+    const ratio=fee>0?Math.round(projected/fee*100):0;
     html+=`<div class="comparison-card ${CARD_CLS[cardKey]}" style="cursor:pointer" onclick="setActiveView('roi')">
       <div class="comp-card-name">${CARD_LABELS[cardKey]}</div>
       <div class="roi-grade ${grade}" style="font-size:36px">${grade}</div>
@@ -2421,14 +2436,7 @@ function renderKeepCard(){
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
     const {captured,total}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
-
-    // Project to full card year based on elapsed months
-    const {month:fm}=getCardYearStart(cardKey,CY);
-    const monthsElapsed=Math.max(1, CM>=fm ? CM-fm+1 : 12-(fm-CM));
-    const monthsTotal=12;
-    const monthsRemaining=monthsTotal-monthsElapsed;
-    const monthlyRate=captured/monthsElapsed;
-    const projected=captured+(monthlyRate*monthsRemaining);
+    const projected=getProjectedCapture(cardKey);
     const projectedROI=projected-fee;
     const currentRatio=fee>0?captured/fee:0;
 
@@ -2909,14 +2917,14 @@ function buildCardBack(cardKey){
       <div style="font-size:10px;font-family:var(--mono);color:var(--green);margin-top:1px">$${captured.toFixed(0)}/$${total.toFixed(0)} captured</div>
     </div>
     <div style="overflow:hidden;flex:1;margin:6px 0">
-      <div style="font-size:8px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px">Points multipliers</div>
+      <div style="font-size:8px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Points multipliers</div>
       ${multipliers.map(m=>`
-        <div class="card-back-benefit">
-          <span style="font-size:8px;opacity:0.8">${m.cat.substring(0,22)}${m.cat.length>22?'…':''}</span>
-          <span class="card-back-amt" style="font-size:10px;font-weight:700">${m.pts}</span>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:3px 0;border-bottom:0.5px solid rgba(255,255,255,0.08);gap:6px">
+          <span style="font-size:8px;opacity:0.75;line-height:1.3;flex:1">${m.cat}</span>
+          <span style="font-size:11px;font-weight:700;font-family:var(--mono);color:var(--green);flex-shrink:0">${m.pts}</span>
         </div>`).join('')}
     </div>
-    <div style="font-size:8px;font-family:var(--mono);color:var(--text-tertiary);text-align:center">double-tap to flip back</div>
+    <div style="font-size:8px;font-family:var(--mono);color:rgba(255,255,255,0.3);text-align:center">double-tap to flip back</div>
   </div>`;
 }
 
@@ -3285,32 +3293,35 @@ function renderComparison(){
     const fee=getFee(cardKey,CY);
     const maxVal=maxCardYearValue(cardKey);
     const {captured,missed}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
+    const projected=getProjectedCapture(cardKey);
+    const elapsed=getCardYearMonthsElapsed(cardKey);
     const remaining=maxVal-captured-missed;
     const effectiveFee=fee-captured;
+    const projectedFee=fee-projected;
     const pct=maxVal>0?Math.round(captured/maxVal*100):0;
     const days=daysUntilFee(cardKey);
 
     html+=`<div class="comparison-card ${CARD_CLS[cardKey]}">
       <div class="comp-card-name">${CARD_LABELS[cardKey]}</div>
       <div class="comp-metric">
-        <div class="comp-metric-val ${effectiveFee<=0?'green':''}">${effectiveFee<=0?'+$'+Math.abs(effectiveFee).toFixed(0):'$'+effectiveFee.toFixed(0)}</div>
-        <div class="comp-metric-label">${effectiveFee<=0?'profit':'effective fee'}</div>
+        <div class="comp-metric-val green">$${captured.toFixed(0)}</div>
+        <div class="comp-metric-label">captured (mo ${elapsed})</div>
+      </div>
+      <div class="comp-metric">
+        <div class="comp-metric-val ${projectedFee<=0?'green':''}">$${projected.toFixed(0)}</div>
+        <div class="comp-metric-label">projected year-end</div>
       </div>
       <div class="comp-divider"></div>
       <div class="comp-metric">
-        <div class="comp-metric-val green">$${captured.toFixed(0)}</div>
-        <div class="comp-metric-label">captured</div>
+        <div class="comp-metric-val ${projectedFee<=0?'green':''}">${projectedFee<=0?'+$'+Math.abs(projectedFee).toFixed(0):'$'+projectedFee.toFixed(0)}</div>
+        <div class="comp-metric-label">${projectedFee<=0?'projected profit':'projected vs $'+fee+' fee'}</div>
       </div>
       <div class="comp-metric">
         <div class="comp-metric-val red">$${missed.toFixed(0)}</div>
-        <div class="comp-metric-label">missed</div>
+        <div class="comp-metric-label">missed so far</div>
       </div>
-      <div class="comp-metric">
-        <div class="comp-metric-val" style="font-size:14px">$${remaining.toFixed(0)}</div>
-        <div class="comp-metric-label">still available</div>
-      </div>
-      <div class="comp-progress"><div class="comp-progress-fill" style="width:${pct}%"></div></div>
-      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--mono);margin-top:6px">${pct}% captured · fee ${MONTHS[FEE_DATES[cardKey].month]} ${FEE_DATES[cardKey].day} (${days}d)</div>
+      <div class="comp-progress"><div class="comp-progress-fill" style="width:${Math.min(100,projected/fee*100).toFixed(0)}%"></div></div>
+      <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--mono);margin-top:6px">${Math.round(projected/fee*100)}% of fee on pace · ${days}d to renewal</div>
     </div>`;
   });
 
