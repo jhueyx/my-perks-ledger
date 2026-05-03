@@ -47,6 +47,40 @@
     --radius-sm: 6px;
   }
 
+  [data-theme="dark"] {
+    --gold-bg: #2A2010;
+    --gold-text: #E8B84A;
+    --plat-bg: #101828;
+    --plat-text: #7AB4D4;
+    --csr-bg: #0E1F14;
+    --csr-text: #6ABF84;
+    --green: #3ABF84;
+    --red: #E05555;
+    --bg: #111210;
+    --surface: #1C1C1E;
+    --border: #2E2E30;
+    --border-light: #242426;
+    --text: #F0EEEA;
+    --text-secondary: #8A8886;
+    --text-tertiary: #5A5856;
+  }
+
+  .dark-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+  }
+  .dark-toggle:hover { border-color: var(--text-secondary); }
+  .dark-toggle-label { font-size: 11px; font-family: var(--mono); }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
@@ -465,7 +499,34 @@
     line-height: 1.5;
   }
 
-  /* All-cards summary */
+  .year-selector {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+  .year-selector::before {
+    content: 'Year:';
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-tertiary);
+    margin-right: 2px;
+  }
+  .year-selector.hidden { display: none; }
+  .year-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--mono);
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+  .year-btn:hover { border-color: var(--text-secondary); color: var(--text); }
+  .year-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
   .all-cards-header {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 8px; margin-top: 20px;
@@ -503,7 +564,7 @@
     margin-top: 16px;
     margin-bottom: 4px;
   }
-  .grand-total-label { font-size: 13px; font-weight: 600; color: white; }
+  .grand-total-label { font-size: 13px; font-weight: 600; color: var(--bg); }
   .grand-total-amt { font-size: 22px; font-weight: 600; font-family: var(--mono); color: #4AE09A; letter-spacing: -0.02em; }
     display: flex; align-items: center; justify-content: center;
     gap: 10px; padding: 48px;
@@ -545,7 +606,13 @@
 
 <div class="app-header">
   <div class="app-title">My Perks Ledger</div>
-  <div class="save-status" id="saveStatus"></div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="dark-toggle" id="darkToggle" onclick="toggleDark()">
+      <span id="darkIcon">🌙</span>
+      <span class="dark-toggle-label" id="darkLabel">Dark</span>
+    </button>
+    <div class="save-status" id="saveStatus"></div>
+  </div>
 </div>
 
 <div class="container">
@@ -604,6 +671,12 @@
     <button class="stab" data-view="annual">Summary</button>
   </div>
 
+  <!-- Year selector (shown for history/YTD views) -->
+  <div class="year-selector hidden" id="yearSelector">
+    <button class="year-btn" data-year="2025">2025</button>
+    <button class="year-btn active" data-year="2026">2026</button>
+  </div>
+
   <div id="main"><div class="loading"><div class="spinner"></div> Loading your saved data…</div></div>
 </div>
 
@@ -624,9 +697,29 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let DATA={gold:{},platinum:{},csr:{}};
 let saveTimer=null;
 let activeCard='csr', activeView='all-cards';
+let selectedYear=CY; // which year is being viewed in history/YTD views
 
-// Set tab labels dynamically
-document.getElementById('currentTab').textContent=`${MONTHS_FULL[CM]} ${CY}`;
+// ── Dark mode ─────────────────────────────────────────────────────────────
+function toggleDark(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const newTheme = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  document.getElementById('darkIcon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+  document.getElementById('darkLabel').textContent = newTheme === 'dark' ? 'Light' : 'Dark';
+  localStorage.setItem('perks-theme', newTheme);
+}
+
+// Load saved theme preference
+(function(){
+  const saved = localStorage.getItem('perks-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = saved || (prefersDark ? 'dark' : 'light');
+  if(theme === 'dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('darkIcon').textContent = '☀️';
+    document.getElementById('darkLabel').textContent = 'Light';
+  }
+})();
 
 // ── Storage (Supabase — syncs across devices) ─────────────────────────────
 async function loadFromStorage(){
@@ -739,16 +832,21 @@ function getCardYearPeriods(cardKey,cadence){
 }
 
 function getYTDPeriods(cadence){
+  const SY=selectedYear; // use selected year
+  const isCurrentYear=SY===CY;
+  const lastMonth=isCurrentYear?CM:11; // if past year, show all 12 months
   if(cadence==='feb-annual'){
-    // same as card year: show current feb-annual window
-    const curStart=CM>=1?CY:CY-1;
+    const curStart=SY>=CY&&CM>=1?CY:SY;
     return [{m:1,y:curStart,pk:`feb-${curStart}`,lbl:`Feb ${curStart}–Jan ${curStart+1}`,calM:1,calY:curStart,endM:0,endY:curStart+1}];
   }
-  if(cadence==='monthly') return Array.from({length:CM+1},(_,m)=>({m,y:CY,pk:getPK(cadence,m,CY),lbl:MONTHS[m],calM:m,calY:CY}));
-  if(cadence==='quarterly'){ const seen=new Set(),out=[]; for(let m=0;m<=CM;m++){ const pk=getPK(cadence,m,CY); if(!seen.has(pk)){seen.add(pk);out.push({m,y:CY,pk,lbl:`Q${Math.floor(m/3)+1}`,calM:m,calY:CY});} } return out; }
-  if(cadence==='semi-annual'||cadence==='cal-semi-annual'){ const out=[{m:0,y:CY,pk:getPK('cal-semi-annual',0,CY),lbl:'H1 (Jan–Jun)',calM:0,calY:CY,endM:5,endY:CY}]; if(CM>=6) out.push({m:6,y:CY,pk:getPK('cal-semi-annual',6,CY),lbl:'H2 (Jul–Dec)',calM:6,calY:CY,endM:11,endY:CY}); return out; }
-  // annual or cal-annual: just current calendar year
-  return [{m:0,y:CY,pk:`${CY}-annual`,lbl:`${CY}`,calM:0,calY:CY}];
+  if(cadence==='monthly') return Array.from({length:lastMonth+1},(_,m)=>({m,y:SY,pk:getPK(cadence,m,SY),lbl:MONTHS[m],calM:m,calY:SY}));
+  if(cadence==='quarterly'){ const seen=new Set(),out=[]; for(let m=0;m<=lastMonth;m++){ const pk=getPK(cadence,m,SY); if(!seen.has(pk)){seen.add(pk);out.push({m,y:SY,pk,lbl:`Q${Math.floor(m/3)+1}`,calM:m,calY:SY});} } return out; }
+  if(cadence==='semi-annual'||cadence==='cal-semi-annual'){
+    const out=[{m:0,y:SY,pk:getPK('cal-semi-annual',0,SY),lbl:`H1 (Jan–Jun ${SY})`,calM:0,calY:SY,endM:5,endY:SY}];
+    if(lastMonth>=6) out.push({m:6,y:SY,pk:getPK('cal-semi-annual',6,SY),lbl:`H2 (Jul–Dec ${SY})`,calM:6,calY:SY,endM:11,endY:SY});
+    return out;
+  }
+  return [{m:0,y:SY,pk:`${SY}-annual`,lbl:`${SY}`,calM:0,calY:SY}];
 }
 
 function isPFuture(p){ return isCalFuture(p.calM,p.calY); }
@@ -759,14 +857,16 @@ function isPCurrent(cadence,p){
   if(cadence==='cal-semi-annual'){ const s=p.calY*12+p.calM,e=p.calY*12+(p.endM!==undefined?p.endM:11),n=CY*12+CM; return n>=s&&n<=e; }
   if(cadence==='cal-annual') return p.calY===CY;
   if(cadence==='feb-annual'){ const s=p.calY*12+1,e=(p.endY||p.calY+1)*12+(p.endM!==undefined?p.endM:0),n=CY*12+CM; return n>=s&&n<=e; }
-  return !isPFuture(p); // card-year annual: current if not future
+  return !isPFuture(p);
 }
 function isYTDCurrent(cadence,p){
+  // If viewing a past year, nothing is "current" — all periods are past and editable
+  if(selectedYear<CY) return false;
   if(cadence==='monthly') return isCalCurrent(p.calM,p.calY);
   if(cadence==='quarterly') return Math.floor(p.calM/3)===Math.floor(CM/3)&&p.calY===CY;
   if(cadence==='semi-annual'||cadence==='cal-semi-annual'){ const s=p.calY*12+p.calM,e=p.calY*12+(p.endM!==undefined?p.endM:11),n=CY*12+CM; return n>=s&&n<=e; }
   if(cadence==='feb-annual'){ const s=p.calY*12+1,e=(p.endY||p.calY+1)*12+(p.endM!==undefined?p.endM:0),n=CY*12+CM; return n>=s&&n<=e; }
-  return true;
+  return false;
 }
 function getCurrentPK(cardKey,cadence){
   const ps=getCardYearPeriods(cardKey,cadence);
@@ -782,7 +882,7 @@ function getCurrentLabel(cardKey,cadence){
 }
 
 const CARDS={
-  gold:{name:'Amex Gold',fee:325,sections:[
+  gold:{name:'Amex Gold',fee:325,historicalFees:{2025:325},sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
       {id:'g_dining',name:'Dining credit',desc:'Grubhub, Cheesecake Factory, Five Guys, BWW, Wonder',amount:10},
       {id:'g_uber',name:'Uber Cash',desc:'Uber rides or Uber Eats in the US',amount:10},
@@ -795,15 +895,15 @@ const CARDS={
       {id:'g_hotel',name:'Hotel Collection credit',desc:'$100 on eligible charges, 2-night min via Amex Travel',amount:100},
     ]},
   ]},
-  platinum:{name:'Amex Platinum',fee:895,sections:[
+  platinum:{name:'Amex Platinum',fee:895,historicalFees:{2025:695},sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
       {id:'p_uber',name:'Uber Cash',desc:'$15/mo · $35 in December',amount:15,decAmount:35},
       {id:'p_digital',name:'Digital entertainment',desc:'Disney+, Hulu, ESPN+, Peacock, Paramount+, NYT, WSJ, YouTube',amount:25},
       {id:'p_walmart',name:'Walmart+ credit',desc:'Covers monthly Walmart+ membership',amount:12.95},
     ]},
     {label:'Quarterly',cadence:'quarterly',benefits:[
-      {id:'p_resy',name:'Resy dining credit',desc:'At eligible U.S. Resy restaurants',amount:100},
-      {id:'p_lulu',name:'Lululemon credit',desc:'U.S. stores or lululemon.com',amount:75},
+      {id:'p_resy',name:'Resy dining credit',desc:'At eligible U.S. Resy restaurants',amount:100,startsFrom:2026},
+      {id:'p_lulu',name:'Lululemon credit',desc:'U.S. stores or lululemon.com',amount:75,startsFrom:2026},
     ]},
     {label:'Semi-annual (card-year)',cadence:'semi-annual',benefits:[
       {id:'p_hotel',name:'Hotel credit',desc:'Fine Hotels + Resorts or Hotel Collection, 2-night min',amount:300},
@@ -812,51 +912,59 @@ const CARDS={
       {id:'p_saks',name:'Saks Fifth Avenue',desc:'At Saks stores or saks.com — resets Jan & Jul. Ends Jun 2026.',amount:50,expiresAfter:{y:2026,h:0}},
     ]},
     {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
-      {id:'p_uberone',name:'Uber One membership credit',desc:'One-time credit for annual Uber One membership',amount:96},
+      {id:'p_uberone',name:'Uber One membership credit',desc:'One-time credit for annual Uber One membership',amount:96,startsFrom:2026},
       {id:'p_airline',name:'Airline fee credit',desc:'Incidental fees with one selected airline',amount:200},
       {id:'p_equinox',name:'Equinox credit',desc:'Equinox club or app membership',amount:300},
-      {id:'p_oura',name:'Oura Ring credit',desc:'Hardware only via OURAring.com',amount:200},
+      {id:'p_oura',name:'Oura Ring credit',desc:'Hardware only via OURAring.com',amount:200,startsFrom:2026},
       {id:'p_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
       {id:'p_clear',name:'CLEAR Plus credit',desc:'Annual CLEAR Plus membership',amount:189},
     ]},
   ]},
-  csr:{name:'Chase Sapphire Reserve',fee:795,sections:[
+  csr:{name:'Chase Sapphire Reserve',fee:795,historicalFees:{2025:550},sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
       {id:'c_dd_restaurant',name:'DoorDash — restaurant promo',desc:'$5 promo for restaurant orders (DashPass required)',amount:5},
       {id:'c_dd_nonrest1',name:'DoorDash — non-restaurant 1',desc:'$10 promo for grocery, convenience, etc',amount:10},
       {id:'c_dd_nonrest2',name:'DoorDash — non-restaurant 2',desc:'$10 promo for grocery, convenience, etc',amount:10},
-      {id:'c_lyft',name:'Lyft credit',desc:'Monthly in-app credit for rides (through Sep 2027)',amount:10},
-      {id:'c_peloton',name:'Peloton credit',desc:'Toward eligible Peloton memberships',amount:10},
+      {id:'c_lyft',name:'Lyft credit',desc:'Monthly in-app credit for rides (through Sep 2027)',amount:10,startsFrom:2026},
+      {id:'c_peloton',name:'Peloton credit',desc:'Toward eligible Peloton memberships',amount:10,startsFrom:2026},
     ]},
     {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
-      {id:'c_dining',name:'Exclusive Tables dining credit',desc:'Via OpenTable Sapphire Reserve Exclusive Tables',amount:150},
-      {id:'c_stub',name:'StubHub / Viagogo credit',desc:'Concert and event tickets',amount:150},
+      {id:'c_dining',name:'Exclusive Tables dining credit',desc:'Via OpenTable Sapphire Reserve Exclusive Tables',amount:150,startsFrom:2026},
+      {id:'c_stub',name:'StubHub / Viagogo credit',desc:'Concert and event tickets',amount:150,startsFrom:2026},
     ]},
     {label:'Travel credit (Feb–Jan)',cadence:'feb-annual',benefits:[
       {id:'c_travel',name:'Travel credit',desc:'Any travel purchase — automatic. Resets each February.',amount:300},
     ]},
     {label:'Annual',cadence:'annual',benefits:[
-      {id:'c_edit1',name:'The Edit hotel credit (1 of 2)',desc:'Prepaid 2-night+ stay via Chase Travel The Edit',amount:250},
-      {id:'c_edit2',name:'The Edit hotel credit (2 of 2)',desc:'Prepaid 2-night+ stay via Chase Travel The Edit',amount:250},
-      {id:'c_selecthotel',name:'Select hotel credit (2026 only)',desc:'IHG, Montage, Pendry, Omni, Virgin, Minor, Pan Pacific',amount:250},
+      {id:'c_edit1',name:'The Edit hotel credit (1 of 2)',desc:'Prepaid 2-night+ stay via Chase Travel The Edit',amount:250,startsFrom:2026},
+      {id:'c_edit2',name:'The Edit hotel credit (2 of 2)',desc:'Prepaid 2-night+ stay via Chase Travel The Edit',amount:250,startsFrom:2026},
+      {id:'c_selecthotel',name:'Select hotel credit (2026 only)',desc:'IHG, Montage, Pendry, Omni, Virgin, Minor, Pan Pacific',amount:250,startsFrom:2026},
       {id:'c_ge',name:'Global Entry / TSA PreCheck / NEXUS',desc:'Statement credit every 4 years',amount:120},
     ]},
   ]},
 };
 
-function getBAmount(b,p){ return (b.decAmount && p.m===11) ? b.decAmount : b.amount; }
+function getFee(cardKey, year){
+  const card=CARDS[cardKey];
+  year=year||selectedYear;
+  return (card.historicalFees&&card.historicalFees[year]!==undefined) ? card.historicalFees[year] : card.fee;
+}
 function isBExpired(b,p){
   if(!b.expiresAfter) return false;
   const {y,h} = b.expiresAfter;
-  // h=0 means expires after H1 (Jun), h=1 means expires after H2 (Dec)
   const expAbs = y*12 + (h===0 ? 5 : 11);
   const pAbs = p.calY*12 + p.calM;
   return pAbs > expAbs;
 }
+function isBNotAvailable(b, viewYear){
+  // hide benefits that started after the year being viewed
+  if(b.startsFrom && viewYear < b.startsFrom) return true;
+  return false;
+}
 
 function calcStats(cardKey,getPsFn,isCurFn){
   const card=CARDS[cardKey]; let captured=0,missed=0,total=0;
-  card.sections.forEach(s=>{ const ps=getPsFn(s.cadence); ps.forEach(p=>{ const fut=isPFuture(p),cur=isCurFn(s.cadence,p); s.benefits.forEach(b=>{ if(isBExpired(b,p)) return; const amt=getBAmount(b,p); total+=amt; const used=isUsed(cardKey,b.id,p.pk); if(used) captured+=amt; else if(!fut&&!cur) missed+=amt; }); }); });
+  card.sections.forEach(s=>{ const ps=getPsFn(s.cadence); ps.forEach(p=>{ const fut=isPFuture(p),cur=isCurFn(s.cadence,p); s.benefits.forEach(b=>{ if(isBExpired(b,p)||isBNotAvailable(b,selectedYear)) return; const amt=getBAmount(b,p); total+=amt; const used=isUsed(cardKey,b.id,p.pk); if(used) captured+=amt; else if(!fut&&!cur) missed+=amt; }); }); });
   return {captured,missed,total};
 }
 
@@ -881,7 +989,7 @@ function renderCurrent(){
   card.sections.forEach(s=>{ const pk=getCurrentPK(activeCard,s.cadence); s.benefits.forEach(b=>{ totalNow+=b.amount; if(isUsed(activeCard,b.id,pk)) usedNow+=b.amount; }); });
   const pct=totalNow>0?Math.round(usedNow/totalNow*100):0;
   const {captured}=calcStats(activeCard,c=>getCardYearPeriods(activeCard,c),isPCurrent);
-  const effectiveFee=card.fee-captured;
+  const effectiveFee=getFee(activeCard,CY)-captured;
   let html=`<div class="banner">💳 Card year: <strong>${MONTHS[fm]} ${fy} → ${MONTHS[cyEnd]} ${cyEndY}</strong> &nbsp;·&nbsp; Annual fee due <strong>${MONTHS[fm]}</strong></div>`;
   html+=metricsHTML('Available now',`$${totalNow.toFixed(0)}`,'Claimed',`$${usedNow.toFixed(0)}`,'Card-yr captured',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'$0 (profit!)':'$'+effectiveFee.toFixed(0)}`);
   html+=progressHTML(pct,`$${usedNow} / $${totalNow}`,`$${card.fee} fee − $${captured.toFixed(0)} captured = $${effectiveFee.toFixed(0)} effective`);
@@ -893,7 +1001,7 @@ function renderCurrent(){
     const currentP={calY:CY,calM:CM,m:CM};
     html+=`<div class="section-header"><span class="section-title">${s.label}</span><span class="section-period">${lbl}</span></div>`;
     s.benefits.forEach(b=>{
-      if(isBExpired(b,currentP)) return; // skip expired benefits entirely
+      if(isBExpired(b,currentP)||isBNotAvailable(b,CY)) return; // skip expired or not-yet-available benefits
       const used=isUsed(activeCard,b.id,pk);
       html+=`<div class="benefit-row${used?' used':''}"><div><div class="benefit-name">${b.name}</div><div class="benefit-desc">${b.desc}</div></div><div class="benefit-amt">$${getBAmount(b,{m:CM})}</div><button class="check-btn${used?' checked':''}" data-id="${b.id}" data-pk="${pk}"></button></div>`;
     });
@@ -907,10 +1015,13 @@ function renderHistBase(getPsFn,isCurFn,bannerHTML,reRender){
   let html=bannerHTML+`<div class="legend"><span class="legend-item"><span class="dot dot-used" style="width:13px;height:13px"></span>Used</span><span class="legend-item"><span class="dot dot-missed" style="width:13px;height:13px"></span>Missed</span><span class="legend-item"><span class="dot dot-current" style="width:13px;height:13px"></span>Current</span><span class="legend-item"><span class="dot dot-future" style="width:13px;height:13px"></span>Future</span></div><div class="period-note">Click any past or current dot to toggle used / missed.</div>`;
   card.sections.forEach(s=>{
     const ps=getPsFn(s.cadence);
+    const visibleBenefits=s.benefits.filter(b=>!isBNotAvailable(b,selectedYear));
+    if(!visibleBenefits.length) return;
     html+=`<div class="section-header"><span class="section-title">${s.label} benefits</span></div>`;
-    s.benefits.forEach(b=>{
+    visibleBenefits.forEach(b=>{
       html+=`<div class="hist-row"><div><div class="hist-name">${b.name}</div><div class="hist-sub">${b.decAmount?`$${b.amount}/mo · $${b.decAmount} Dec`:`$${b.amount}/${s.cadence==='semi-annual'||s.cadence==='cal-semi-annual'?'half':s.cadence==='monthly'?'mo':s.cadence==='quarterly'?'qtr':'yr'}`}</div></div><div class="dots-row">`;
       ps.forEach(p=>{
+        if(isBExpired(b,p)) return;
         const fut=isPFuture(p),cur=isCurFn(s.cadence,p),used=isUsed(activeCard,b.id,p.pk);
         const cls=fut?'dot-future':used?'dot-used':cur?'dot-current':'dot-missed';
         const clickable=!fut;
@@ -927,16 +1038,18 @@ function renderHistBase(getPsFn,isCurFn,bannerHTML,reRender){
 function renderSummBase(getPsFn,isCurFn,bannerHTML,label){
   const card=CARDS[activeCard];
   const {captured,missed,total}=calcStats(activeCard,getPsFn,isCurFn);
+  const fee=getFee(activeCard,selectedYear);
   const remaining=total-captured-missed;
-  const effectiveFee=card.fee-captured; // can go negative (profit!)
+  const effectiveFee=fee-captured; // can go negative (profit!)
   const pct=total>0?Math.round(captured/total*100):0;
   let html=bannerHTML;
   html+=metricsHTML(`Max ${label} value`,`$${total.toFixed(0)}`,'Captured',`$${captured.toFixed(0)}`,'Missed',`$${missed.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
-  html+=progressHTML(pct,'','Annual fee $'+card.fee+' − $'+captured.toFixed(0)+' captured = effective $'+effectiveFee.toFixed(0));
+  html+=progressHTML(pct,'','Annual fee $'+fee+' − $'+captured.toFixed(0)+' captured = effective $'+effectiveFee.toFixed(0));
   html+=`<div class="summary-table">`;
   card.sections.forEach(s=>{
     s.benefits.forEach(b=>{
       const ps=getPsFn(s.cadence); if(!ps.length) return;
+      if(isBNotAvailable(b,selectedYear)) return;
       let bc=0,bm=0,bl=0;
       ps.forEach(p=>{
         if(isBExpired(b,p)) return;
@@ -983,7 +1096,7 @@ function renderAllCards(){
     card.sections.forEach(s=>{
       const pk=getCurrentPK(cardKey,s.cadence);
       s.benefits.forEach(b=>{
-        if(isBExpired(b,{calY:CY,calM:CM,m:CM})) return;
+        if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)) return;
         const used=isUsed(cardKey,b.id,pk);
         if(!used){
           const amt=getBAmount(b,{m:CM});
@@ -1037,16 +1150,19 @@ function renderAllCards(){
 
 function render(){
   const card=CARDS[activeCard];
+  const fee=getFee(activeCard,selectedYear);
   const {year:fy,month:fm}=getCardYearStart(activeCard);
   const cyEnd=(fm+11)%12,cyEndY=fy+Math.floor((fm+11)/12);
-  const cyBanner=`<div class="banner">💳 Card year: <strong>${MONTHS[fm]} ${fy} → ${MONTHS[cyEnd]} ${cyEndY}</strong> &nbsp;·&nbsp; Annual fee: <strong>$${card.fee}</strong></div>`;
-  const ytdBanner=`<div class="banner">📅 <strong>Jan ${CY} → ${MONTHS_FULL[CM]} ${CY}</strong> &nbsp;·&nbsp; Calendar YTD &nbsp;·&nbsp; Annual fee: <strong>$${card.fee}</strong></div>`;
+  const cyBanner=`<div class="banner">💳 Card year: <strong>${MONTHS[fm]} ${fy} → ${MONTHS[cyEnd]} ${cyEndY}</strong> &nbsp;·&nbsp; Annual fee: <strong>$${fee}</strong></div>`;
+  const isCurrentYear=selectedYear===CY;
+  const ytdEndLabel=isCurrentYear?`${MONTHS_FULL[CM]} ${CY}`:`Dec ${selectedYear}`;
+  const ytdBanner=`<div class="banner">📅 <strong>Jan ${selectedYear} → ${ytdEndLabel}</strong> &nbsp;·&nbsp; ${isCurrentYear?'Calendar YTD':selectedYear+' full year'} &nbsp;·&nbsp; Annual fee: <strong>$${fee}</strong></div>`;
   if(activeView==='all-cards') renderAllCards();
   else if(activeView==='current') renderCurrent();
   else if(activeView==='history') renderHistBase(c=>getCardYearPeriods(activeCard,c),isPCurrent,cyBanner,()=>render());
   else if(activeView==='annual') renderSummBase(c=>getCardYearPeriods(activeCard,c),isPCurrent,cyBanner,'card-year');
   else if(activeView==='ytd-history') renderHistBase(c=>getYTDPeriods(c),isYTDCurrent,ytdBanner,()=>render());
-  else if(activeView==='ytd') renderSummBase(c=>getYTDPeriods(c),isYTDCurrent,ytdBanner,'YTD');
+  else if(activeView==='ytd') renderSummBase(c=>getYTDPeriods(c),isYTDCurrent,ytdBanner,selectedYear===CY?'YTD':selectedYear+' full year');
 }
 
 // ── Event listeners ───────────────────────────────────────────────────────
@@ -1112,6 +1228,21 @@ initCardSelector();
 let activePrimary = 'all-cards';
 let activeSecondary = { 'card-year': 'history', 'ytd': 'ytd-history' };
 
+function updateYearSelector(show){
+  const ys=document.getElementById('yearSelector');
+  if(show) ys.classList.remove('hidden');
+  else ys.classList.add('hidden');
+  // update active state
+  document.querySelectorAll('.year-btn').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.year)===selectedYear);
+  });
+  // update 2026 History tab label
+  const ytdHistBtn=document.querySelector('.stab[data-view="ytd-history"]');
+  if(ytdHistBtn) ytdHistBtn.textContent=`${selectedYear} History`;
+  const ytdSumBtn=document.querySelector('.stab[data-view="ytd"]');
+  if(ytdSumBtn) ytdSumBtn.textContent=`${selectedYear} Summary`;
+}
+
 function updateSecondaryNav(primary) {
   const sec = document.getElementById('navSecondary');
   const stabs = sec.querySelectorAll('.stab');
@@ -1123,17 +1254,29 @@ function updateSecondaryNav(primary) {
     stabs[1].textContent = 'Summary';
     stabs[1].dataset.view = 'annual';
     stabs.forEach(t => t.classList.toggle('active', t.dataset.view === activeSecondary['card-year']));
+    updateYearSelector(true);
   } else if(primary === 'ytd') {
     sec.classList.remove('hidden');
-    stabs[0].textContent = `${CY} History`;
+    stabs[0].textContent = `${selectedYear} History`;
     stabs[0].dataset.view = 'ytd-history';
-    stabs[1].textContent = 'YTD Summary';
+    stabs[1].textContent = `${selectedYear} Summary`;
     stabs[1].dataset.view = 'ytd';
     stabs.forEach(t => t.classList.toggle('active', t.dataset.view === activeSecondary['ytd']));
+    updateYearSelector(true);
   } else {
     sec.classList.add('hidden');
+    updateYearSelector(false);
   }
 }
+
+// Year button clicks
+document.getElementById('yearSelector').querySelectorAll('.year-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    selectedYear=parseInt(btn.dataset.year);
+    updateYearSelector(true);
+    render();
+  });
+});
 
 function setActiveView(primary, secondary) {
   activePrimary = primary;
