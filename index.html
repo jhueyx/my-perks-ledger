@@ -1109,7 +1109,7 @@ function renderCurrent(){
   const {captured}=calcStats(activeCard,c=>getCardYearPeriods(activeCard,c),isPCurrent);
   const effectiveFee=getFee(activeCard,CY)-captured;
   let html=`<div class="banner">💳 Card year: <strong>${MONTHS[fm]} ${fy} → ${MONTHS[cyEnd]} ${cyEndY}</strong> &nbsp;·&nbsp; Annual fee due <strong>${MONTHS[fm]}</strong></div>`;
-  html+=metricsHTML('Available now',`$${totalNow.toFixed(0)}`,'Claimed',`$${usedNow.toFixed(0)}`,'Card-yr captured',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'$0 (profit!)':'$'+effectiveFee.toFixed(0)}`);
+  html+=metricsHTML('Available now',`$${totalNow.toFixed(0)}`,'Claimed',`$${usedNow.toFixed(0)}`,'Card-yr captured',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
   html+=progressHTML(pct,`$${usedNow} / $${totalNow}`,`$${card.fee} fee − $${captured.toFixed(0)} captured = $${effectiveFee.toFixed(0)} effective`);
   html+=`<div class="period-note">Active periods for <strong>${MONTHS_FULL[CM]} ${CY}</strong> — check off as you use each benefit.</div>`;
   card.sections.forEach(s=>{
@@ -1473,7 +1473,7 @@ if(localStorage.getItem(PASSWORD_KEY)==='1'){
 // ── Service Worker registration ───────────────────────────────────────────
 if('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com'){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').then(reg=>{
+    navigator.serviceWorker.register('sw.js', {scope: './'}).then(reg=>{
       console.log('SW registered:', reg.scope);
     }).catch(err=>{
       console.log('SW registration failed:', err);
