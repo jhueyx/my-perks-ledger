@@ -145,7 +145,7 @@
   .live-banner-amt { font-size: 18px; font-weight: 800; color: white; font-family: var(--mono); margin-left: auto; }
 
   /* Sticky section headers */
-  .section-header {
+  .section-header.sticky-header {
     position: sticky; top: 56px;
     background: var(--bg);
     z-index: 10;
@@ -3748,24 +3748,7 @@ function renderCurrent(){
   });
 
   set(html);
-  document.querySelectorAll('.section-header.collapsible-header').forEach(header=>{
-    header.addEventListener('click', e=>{
-      if(e.target.closest('.check-btn')) return;
-      const key=header.dataset.sectionKey;
-      if(_collapsedCurrentSections.has(key)) _collapsedCurrentSections.delete(key);
-      else _collapsedCurrentSections.add(key);
-      haptic('light');
-      renderCurrent();
-    });
-  });
-  document.querySelectorAll('.check-btn').forEach(btn=>btn.addEventListener('click',()=>{
-    toggle(activeCard,btn.dataset.id,btn.dataset.pk);
-    haptic('light');
-    btn.classList.add('pop');
-    setTimeout(()=>btn.classList.remove('pop'),300);
-    checkAllClaimed(activeCard);
-    renderCurrent();
-  }));
+  // note: check-btn clicks handled by event delegation below
   document.querySelectorAll('.benefit-note,.add-note').forEach(el=>el.addEventListener('click',()=>{
     openNoteModal(activeCard,el.dataset.id,el.dataset.pk,el.dataset.name);
   }));
@@ -3802,7 +3785,7 @@ function renderHistBase(getPsFn,isCurFn,bannerHTML,reRender){
     });
   });
   set(html);
-  document.querySelectorAll('.dot-btn').forEach(btn=>btn.addEventListener('click',()=>{ if(btn.dataset.c==='false') return; toggle(activeCard,btn.dataset.id,btn.dataset.pk); reRender(); }));
+  // dot clicks handled by event delegation
 }
 
 function renderSummBase(getPsFn,isCurFn,bannerHTML,label){
@@ -3811,11 +3794,31 @@ function renderSummBase(getPsFn,isCurFn,bannerHTML,label){
   const fee=getFee(activeCard,selectedYear);
   const remaining=total-captured-missed;
   const effectiveFee=fee-captured;
-  const pct=total>0?Math.round(captured/total*100):0;
+  const feePct=fee>0?Math.min(100,Math.round(captured/fee*100)):0;
+  const totalPct=total>0?Math.round(captured/total*100):0;
   let html=bannerHTML;
   html+=buildDonut(captured,missed,Math.max(0,remaining));
-  html+=metricsHTML(`Max ${label} value`,`$${total.toFixed(0)}`,'Captured',`$${captured.toFixed(0)}`,'Missed',`$${missed.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
-  html+=progressHTML(pct,'','Annual fee $'+fee+' − $'+captured.toFixed(0)+' captured = effective $'+effectiveFee.toFixed(0));
+  html+=metricsHTML(
+    `Total ${label} value`,`$${total.toFixed(0)}`,
+    'Captured',`$${captured.toFixed(0)}`,
+    'Missed',`$${missed.toFixed(0)}`,
+    'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`
+  );
+  // Show two progress bars: fee coverage + total capture rate
+  html+=`<div class="progress-wrap">
+    <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-bottom:4px">
+      <span>Fee coverage</span><span>${feePct}% of $${fee} fee</span>
+    </div>
+    <div class="progress-track" style="margin-bottom:8px">
+      <div class="progress-fill" style="width:${feePct}%;background:${effectiveFee<=0?'var(--green)':'var(--gold)'}"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-bottom:4px">
+      <span>Benefit capture rate</span><span>${totalPct}% of $${total.toFixed(0)} available</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width:${totalPct}%"></div>
+    </div>
+  </div>`;
   html+=`<div class="summary-table">`;
   card.sections.forEach(s=>{
     s.benefits.forEach(b=>{
@@ -3950,17 +3953,6 @@ function renderAllCards(){
   html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:12px">Active periods only · switch to a card tab to mark benefits used</div>`;
 
   set(html);
-
-  // Wire up collapse headers
-  document.querySelectorAll('.collapsible-header').forEach(header=>{
-    header.addEventListener('click',()=>{
-      const cadence=header.dataset.cadence;
-      if(_collapsedSections.has(cadence)) _collapsedSections.delete(cadence);
-      else _collapsedSections.add(cadence);
-      haptic('light');
-      renderAllCards();
-    });
-  });
 }
 
 function render(){
@@ -4067,6 +4059,51 @@ function initCardSelector() {
 }
 
 initCardSelector();
+
+// ── Event delegation for all interactive elements in #main ────────────────
+document.getElementById('main').addEventListener('click', e=>{
+  // Check buttons (benefit toggle)
+  const checkBtn=e.target.closest('.check-btn');
+  if(checkBtn){
+    e.stopPropagation();
+    toggle(activeCard,checkBtn.dataset.id,checkBtn.dataset.pk);
+    haptic('light');
+    checkBtn.classList.add('pop');
+    setTimeout(()=>checkBtn.classList.remove('pop'),300);
+    checkAllClaimed(activeCard);
+    renderCurrent();
+    return;
+  }
+  // Dot buttons (card year / YTD history)
+  const dotBtn=e.target.closest('.dot-btn');
+  if(dotBtn){
+    if(dotBtn.dataset.c==='false') return;
+    toggle(activeCard,dotBtn.dataset.id,dotBtn.dataset.pk);
+    render();
+    return;
+  }
+  // Current view section collapse
+  const secHeader=e.target.closest('.section-header.collapsible-header');
+  if(secHeader && secHeader.dataset.sectionKey){
+    if(e.target.closest('.check-btn,.benefit-note,.add-note,.partial-input')) return;
+    const key=secHeader.dataset.sectionKey;
+    if(_collapsedCurrentSections.has(key)) _collapsedCurrentSections.delete(key);
+    else _collapsedCurrentSections.add(key);
+    haptic('light');
+    renderCurrent();
+    return;
+  }
+  // All cards cadence collapse
+  const cadHeader=e.target.closest('.collapsible-header[data-cadence]');
+  if(cadHeader){
+    const cadence=cadHeader.dataset.cadence;
+    if(_collapsedSections.has(cadence)) _collapsedSections.delete(cadence);
+    else _collapsedSections.add(cadence);
+    haptic('light');
+    renderAllCards();
+    return;
+  }
+});
 
 // ── Two-level nav logic ───────────────────────────────────────────────────
 let activePrimary = 'all-cards';
