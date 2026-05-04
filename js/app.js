@@ -1754,21 +1754,24 @@ function haptic(style='light'){
 // Points multipliers per card
 const POINTS_MULTIPLIERS={
   gold:[
-    {cat:'Dining (US restaurants)',pts:'4x'},
-    {cat:'Groceries (US supermarkets, up to $25K/yr)',pts:'4x'},
-    {cat:'Flights (amextravel.com)',pts:'3x'},
+    {cat:'Dining (US & worldwide restaurants, up to $50K/yr)',pts:'4x'},
+    {cat:'US Supermarkets (up to $25K/yr)',pts:'4x'},
+    {cat:'Prepaid hotels (amextravel.com)',pts:'5x'},
+    {cat:'Flights (direct or amextravel.com)',pts:'3x'},
+    {cat:'Prepaid car rentals & cruises (amextravel.com)',pts:'2x'},
     {cat:'Everything else',pts:'1x'},
   ],
   platinum:[
-    {cat:'Flights (direct or amextravel.com)',pts:'5x'},
-    {cat:'Hotels (amextravel.com)',pts:'5x'},
+    {cat:'Flights (direct or amextravel.com, up to $500K/yr)',pts:'5x'},
+    {cat:'Prepaid hotels (amextravel.com)',pts:'5x'},
     {cat:'Everything else',pts:'1x'},
   ],
   csr:[
-    {cat:'Travel (after $300 credit)',pts:'3x'},
+    {cat:'Chase Travel℠ (incl. The Edit)',pts:'8x'},
+    {cat:'Lyft rides (through Sep 2027)',pts:'5x'},
+    {cat:'Flights & hotels (booked direct)',pts:'4x'},
     {cat:'Dining (worldwide)',pts:'3x'},
-    {cat:'Lyft rides',pts:'10x'},
-    {cat:'Chase Travel℠',pts:'5x'},
+    {cat:'Peloton hardware (up to 50K pts)',pts:'10x'},
     {cat:'Everything else',pts:'1x'},
   ],
 };
