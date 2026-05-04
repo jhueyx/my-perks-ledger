@@ -1,4 +1,4 @@
-  :root {
+:root {
     --gold: #C8922A;
     --gold-bg: #FDF6E9;
     --gold-text: #7A4F0A;
@@ -1478,7 +1478,3 @@
 
   /* Share card */
   #shareCanvas { display: none; }
-
-/* Single-card demo layout */
-.card-selector{grid-template-columns:minmax(220px,360px);justify-content:center;}
-@media (max-width:600px){.card-selector{grid-template-columns:minmax(160px,1fr);}}

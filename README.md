@@ -1,15 +1,13 @@
 # My Perks Ledger
 
-Full single-file version of the app, ready to upload to GitHub Pages.
+This is the full app split into separate files for GitHub Pages.
 
-## Deploy to GitHub Pages
+## Files
 
-1. Upload `index.html` to your repo root.
-2. In GitHub: Settings → Pages.
-3. Set source to your main branch/root folder.
+- `index.html` - app markup and external script/style references
+- `css/styles.css` - extracted styles from the original inline `<style>` block
+- `js/app.js` - extracted JavaScript from the original inline `<script>` block
 
-## Supabase safety
+## Supabase
 
-- The Supabase anon public key can be used in frontend code.
-- Never commit a Supabase service_role key.
-- Keep RLS policies enabled for user-specific tables like `user_cards`.
+The Supabase CDN script is still loaded from `index.html`. Make sure your public anon key only is used in frontend code. Do not commit a service role key.
