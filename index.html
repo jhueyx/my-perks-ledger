@@ -1528,7 +1528,10 @@
 
     <button class="splash-btn" id="authBtn" style="margin-top:18px">Sign In</button>
     <div class="splash-error" id="authError"></div>
-    <div style="font-size:11px;color:var(--text-tertiary);margin-top:14px;font-family:var(--mono)" id="authHelper"></div>
+    <div style="text-align:center;margin-top:12px">
+      <button onclick="handleForgotPassword()" id="forgotBtn" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-tertiary);font-family:var(--font);text-decoration:underline">Forgot password?</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-tertiary);margin-top:8px;font-family:var(--mono)" id="authHelper"></div>
   </div>
 </div>
 
@@ -1834,6 +1837,34 @@ function switchAuthTab(tab){
   document.getElementById('authBtn').textContent = tab==='login' ? 'Sign In' : 'Create Account';
   document.getElementById('authSub').textContent = tab==='login' ? 'Sign in to track your credit card perks' : 'Create a free account to get started';
   document.getElementById('authError').textContent = '';
+  document.getElementById('authHelper').textContent = '';
+  document.getElementById('forgotBtn').style.display = tab==='login' ? '' : 'none';
+}
+
+async function handleForgotPassword(){
+  const email = document.getElementById('authEmail').value.trim();
+  const errEl = document.getElementById('authError');
+  const helper = document.getElementById('authHelper');
+  errEl.textContent = '';
+  helper.textContent = '';
+  if(!email){
+    errEl.textContent = 'Enter your email address above first.';
+    document.getElementById('authEmail').focus();
+    return;
+  }
+  document.getElementById('forgotBtn').textContent = 'Sending…';
+  document.getElementById('forgotBtn').disabled = true;
+  const {error} = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href
+  });
+  document.getElementById('forgotBtn').textContent = 'Forgot password?';
+  document.getElementById('forgotBtn').disabled = false;
+  if(error){
+    errEl.textContent = error.message;
+  } else {
+    helper.textContent = `✓ Reset link sent to ${email} — check your inbox.`;
+    helper.style.color = 'var(--green)';
+  }
 }
 
 document.getElementById('authBtn').addEventListener('click', handleAuth);
@@ -1854,22 +1885,28 @@ async function handleAuth(){
     currentUser = { id: 'demo', email: 'test' };
     document.getElementById('drawerUserEmail').textContent = 'Demo mode';
     userCards = ['csr'];
-    activeCard = 'csr';
     DATA = {gold:{}, platinum:{}, csr:{}};
     document.getElementById('splash').classList.add('hidden');
     document.getElementById('cardPickerOverlay').classList.add('hidden');
+    applyUserCards();
     render();
     setTimeout(initCardFlip, 200);
     return;
   }
   // ────────────────────────────────────────────────────────────
 
-  document.getElementById('authBtn').textContent = '…';
-  document.getElementById('authBtn').disabled = true;
+  const btn = document.getElementById('authBtn');
+  btn.textContent = '…';
+  btn.disabled = true;
+  errEl.textContent = '';
 
   try {
     if(_authTab === 'login'){
+      errEl.style.color = 'var(--text-tertiary)';
+      errEl.textContent = 'Signing in…';
       const {data, error} = await sb.auth.signInWithPassword({email, password});
+      errEl.textContent = '';
+      errEl.style.color = 'var(--red)';
       if(error) throw error;
       _sessionHandled = true;
       await onSignedIn(data.user, false);
@@ -1877,7 +1914,11 @@ async function handleAuth(){
       const confirm = document.getElementById('authConfirm').value;
       if(password !== confirm){ throw new Error('Passwords do not match.'); }
       if(password.length < 6){ throw new Error('Password must be at least 6 characters.'); }
+      errEl.style.color = 'var(--text-tertiary)';
+      errEl.textContent = 'Creating account…';
       const {data, error} = await sb.auth.signUp({email, password});
+      errEl.textContent = '';
+      errEl.style.color = 'var(--red)';
       if(error) throw error;
       if(data.user && data.user.identities && data.user.identities.length === 0){
         throw new Error('An account with this email already exists. Please sign in.');
@@ -1887,10 +1928,39 @@ async function handleAuth(){
     }
   } catch(e) {
     _sessionHandled = false;
+    errEl.style.color = 'var(--red)';
     errEl.textContent = e.message || 'Authentication failed.';
-    document.getElementById('authBtn').textContent = _authTab==='login' ? 'Sign In' : 'Create Account';
-    document.getElementById('authBtn').disabled = false;
+    btn.textContent = _authTab==='login' ? 'Sign In' : 'Create Account';
+    btn.disabled = false;
   }
+}
+
+function applyUserCards(){
+  // Show only the cards the user has selected, hide the rest
+  document.querySelectorAll('.card-btn[data-card]').forEach(btn => {
+    const card = btn.dataset.card;
+    btn.style.display = (userCards && userCards.includes(card)) ? '' : 'none';
+  });
+  // Set activeCard to first supported visible card
+  const firstCard = (userCards || ['csr']).find(c => CARDS[c]) || 'csr';
+  activeCard = firstCard;
+  document.querySelectorAll('.card-btn').forEach(b => b.className = 'card-btn');
+  const activeBtn = document.querySelector(`.card-btn[data-card="${activeCard}"]`);
+  if(activeBtn) activeBtn.classList.add(`active-${activeCard}`);
+}
+
+function doUnlock(){
+  document.getElementById('splash').classList.add('hidden');
+  document.getElementById('cardPickerOverlay').classList.add('hidden');
+  try{
+    const key = STORAGE_KEY + (currentUser ? '-'+currentUser.id : '');
+    const val = localStorage.getItem(key);
+    if(val) DATA = Object.assign({gold:{},platinum:{},csr:{}}, JSON.parse(val));
+  }catch(e){}
+  applyUserCards();
+  render();
+  setTimeout(initCardFlip, 200);
+  syncFromSupabase();
 }
 
 async function onSignedIn(user, isNew){
@@ -1906,7 +1976,7 @@ async function onSignedIn(user, isNew){
     showCardPicker();
   } else {
     userCards = profile.cards;
-    unlockApp();
+    doUnlock();
   }
 }
 
@@ -1928,23 +1998,18 @@ async function signOut(){
 
 // Check session on load
 // ── Session persistence ───────────────────────────────────────────────────
-// onAuthStateChange fires on every page load if a session exists,
-// and also handles sign-in/sign-out events reliably.
+// Restore session on page refresh only — manual sign-in is handled by handleAuth
 let _sessionHandled = false;
 sb.auth.onAuthStateChange(async (event, session) => {
-  if(_sessionHandled) return; // already handled (e.g. manual sign-in)
-  if(session && session.user){
-    _sessionHandled = true;
-    await onSignedIn(session.user, false);
+  if(event === 'INITIAL_SESSION'){
+    if(session && session.user && !_sessionHandled){
+      _sessionHandled = true;
+      await onSignedIn(session.user, false);
+    } else if(!session){
+      setTimeout(()=>document.getElementById('authEmail').focus(), 100);
+    }
   }
 });
-
-// Fallback: if onAuthStateChange doesn't fire within 800ms, show login
-setTimeout(()=>{
-  if(!_sessionHandled){
-    document.getElementById('authEmail').focus();
-  }
-}, 800);
 
 // ── Card picker ───────────────────────────────────────────────────────────
 let _cpSelected = new Set();
@@ -2027,7 +2092,7 @@ async function confirmCardPick(){
   await sb.from('user_profiles').upsert({user_id: currentUser.id, cards, updated_at: new Date().toISOString()});
   userCards = cards;
   document.getElementById('cardPickerOverlay').classList.add('hidden');
-  unlockApp();
+  doUnlock();
 }
 
 // ── My Cards modal ────────────────────────────────────────────────────────
