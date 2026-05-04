@@ -2724,7 +2724,9 @@ function renderAllCards(){
       </span>
     </div>`;
 
-    if(!isCollapsed&&!allClaimed){
+    if(!allClaimed){
+      const bodyId=`section-body-${cadence}`;
+      html+=`<div id="${bodyId}" style="overflow:hidden;transition:max-height 0.25s ease,opacity 0.25s ease;max-height:${isCollapsed?'0':'2000px'};opacity:${isCollapsed?'0':'1'}">`;
       items.forEach(item=>{
         html+=`<div class="avail-row">
           <div>
@@ -2734,6 +2736,7 @@ function renderAllCards(){
           <div class="avail-amt">$${item.amt.toFixed(0)}</div>
         </div>`;
       });
+      html+=`</div>`;
     }
   });
 
@@ -2907,10 +2910,23 @@ document.getElementById('main').addEventListener('click', e=>{
   const cadHeader=e.target.closest('.collapsible-header[data-cadence]');
   if(cadHeader){
     const cadence=cadHeader.dataset.cadence;
-    if(_collapsedSections.has(cadence)) _collapsedSections.delete(cadence);
+    const nowCollapsed=_collapsedSections.has(cadence);
+    if(nowCollapsed) _collapsedSections.delete(cadence);
     else _collapsedSections.add(cadence);
     haptic('light');
-    renderAllCards();
+    // Animate in-place without full re-render
+    const body=document.getElementById(`section-body-${cadence}`);
+    const chevron=cadHeader.querySelector('[style*="rotate"]');
+    if(body){
+      if(nowCollapsed){
+        body.style.maxHeight='2000px';
+        body.style.opacity='1';
+      } else {
+        body.style.maxHeight='0';
+        body.style.opacity='0';
+      }
+    }
+    if(chevron) chevron.style.transform=`rotate(${nowCollapsed?'0deg':'-90deg'})`;
     return;
   }
 });
