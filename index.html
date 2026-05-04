@@ -1869,23 +1869,24 @@ async function handleAuth(){
 
   try {
     if(_authTab === 'login'){
-      _sessionHandled = true;
       const {data, error} = await sb.auth.signInWithPassword({email, password});
       if(error) throw error;
+      _sessionHandled = true;
       await onSignedIn(data.user, false);
     } else {
       const confirm = document.getElementById('authConfirm').value;
       if(password !== confirm){ throw new Error('Passwords do not match.'); }
       if(password.length < 6){ throw new Error('Password must be at least 6 characters.'); }
-      _sessionHandled = true;
       const {data, error} = await sb.auth.signUp({email, password});
       if(error) throw error;
       if(data.user && data.user.identities && data.user.identities.length === 0){
         throw new Error('An account with this email already exists. Please sign in.');
       }
+      _sessionHandled = true;
       await onSignedIn(data.user, true);
     }
   } catch(e) {
+    _sessionHandled = false;
     errEl.textContent = e.message || 'Authentication failed.';
     document.getElementById('authBtn').textContent = _authTab==='login' ? 'Sign In' : 'Create Account';
     document.getElementById('authBtn').disabled = false;
