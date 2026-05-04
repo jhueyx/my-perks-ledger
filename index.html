@@ -1823,6 +1823,10 @@ let userCards = null; // array of card IDs the user has chosen
 let DATA={gold:{},platinum:{},csr:{}};
 let saveTimer=null;
 let activeCard='csr', activeView='all-cards';
+function getVisibleCardKeys(){
+  const supported=['csr','gold','platinum'];
+  return (userCards && userCards.length ? userCards : supported).filter(c=>supported.includes(c) && CARDS[c]);
+}
 let selectedYear=CY;
 let _collapsedSections=new Set(['cal-semi-annual','semi-annual','feb-annual','cal-annual','annual']);
 let _collapsedCurrentSections=new Set(['semi-annual','cal-semi-annual','feb-annual','cal-annual','annual'].flatMap(c=>['csr','gold','platinum'].map(k=>`current-${k}-${c}`)));
@@ -1885,7 +1889,7 @@ async function handleAuth(){
     currentUser = { id: 'demo', email: 'test' };
     document.getElementById('drawerUserEmail').textContent = 'Demo mode';
     userCards = ['csr'];
-    DATA = {gold:{}, platinum:{}, csr:{}};
+    DATA = { csr:{}};
     document.getElementById('splash').classList.add('hidden');
     document.getElementById('cardPickerOverlay').classList.add('hidden');
     applyUserCards();
@@ -2112,6 +2116,9 @@ async function saveMyCards(){
   document.getElementById('mcSave').textContent = 'Saving…';
   await sb.from('user_profiles').upsert({user_id: currentUser.id, cards, updated_at: new Date().toISOString()});
   userCards = cards;
+  applyUserCards();
+  if(!userCards.includes(activeCard)) activeCard = getVisibleCardKeys()[0] || 'csr';
+  render();
   closeMyCards();
   // Show a toast
   setSave('saved', '✓ Cards updated');
@@ -2484,7 +2491,7 @@ function scheduleMonthlyReminder(){
     if(!localStorage.getItem(key)){
       // Count unclaimed across all cards
       let total=0;
-      ['csr','gold','platinum'].forEach(ck=>{
+      getVisibleCardKeys().forEach(ck=>{
         total+=getUnclaimedMonthly(ck).reduce((s,b)=>s+b.amt,0);
       });
       if(total>0){
@@ -2570,7 +2577,7 @@ function buildProjection(cardKey){
 
 // ── Heatmap ───────────────────────────────────────────────────────────────
 function renderHeatmap(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Rsv'};
   let html=`<div class="banner">🗓 <strong>Missed money heatmap</strong> — monthly benefits capture rate by card</div>`;
   html+=`<div style="overflow-x:auto"><div class="heatmap-grid" style="min-width:500px">`;
@@ -2642,7 +2649,7 @@ function getROIGrade(captured, fee, cardKey){
 }
 
 function renderROI(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
 
@@ -2706,11 +2713,11 @@ function renderInsights(){
 
   // Projections for each card
   html+=`<div class="section-header"><span class="section-title">Year-end projections</span></div>`;
-  ['csr','gold','platinum'].forEach(ck=>{ html+=buildProjection(ck)||''; });
+  getVisibleCardKeys().forEach(ck=>{ html+=buildProjection(ck)||''; });
 
   // Mini ROI grid
   html+=`<div class="section-header" style="margin-top:16px"><span class="section-title">ROI scores</span><span class="section-period">tap for details</span></div>`;
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
   html+=`<div class="comparison-grid" style="margin-bottom:16px">`;
@@ -2925,7 +2932,7 @@ function updateCardRec(){
 
 // ── Should I Keep This Card ───────────────────────────────────────────────
 function renderKeepCard(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
 
@@ -3057,7 +3064,7 @@ function renderBenefitCalendar(){
 
 // ── Multi-year Trend ──────────────────────────────────────────────────────
 function renderTrends(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const years=[2025,2026];
 
@@ -3167,7 +3174,7 @@ document.getElementById('undoBtn').addEventListener('click',()=>{
 
 // ── Tab Badge Count ───────────────────────────────────────────────────────
 function updateCardBadges(){
-  ['csr','gold','platinum'].forEach(cardKey=>{
+  getVisibleCardKeys().forEach(cardKey=>{
     const btn=document.querySelector(`.card-btn[data-card="${cardKey}"]`);
     if(!btn) return;
     // Count unclaimed current-period benefits
@@ -3624,7 +3631,7 @@ async function renderHistoryLog(){
 // ── Annual Recap ──────────────────────────────────────────────────────────
 function renderRecap(){
   const year=selectedYear;
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
 
   // Calc stats for each card for the selected year
@@ -3701,7 +3708,7 @@ function renderRecap(){
 // ── CSV Export ────────────────────────────────────────────────────────────
 function exportCSV(){
   const year=selectedYear;
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const rows=[['Card','Benefit','Period','Amount','Status']];
 
@@ -3734,7 +3741,7 @@ function exportCSV(){
 // ── Share Summary Image ───────────────────────────────────────────────────
 function shareRecap(){
   const year=selectedYear;
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   let totalCaptured=0,totalMissed=0,totalFees=0;
 
@@ -3846,7 +3853,7 @@ document.getElementById('noteModal').addEventListener('click', e=>{ if(e.target=
 
 // ── Card Comparison ───────────────────────────────────────────────────────
 function renderComparison(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Rsv'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
 
@@ -3904,7 +3911,7 @@ function maxCardYearValue(cardKey){
 }
 
 function renderStreaks(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const allStreaks=[];
 
@@ -4298,7 +4305,7 @@ function set(html){
 }
 
 function renderAllCards(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
 
@@ -4394,7 +4401,7 @@ function renderAllCards(){
   });
 
   if(!anyShown){
-    html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">🎉 All benefits claimed across all cards!</div>`;
+    html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">🎉 All visible card benefits claimed!</div>`;
   }
 
   html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:12px">Active periods only · switch to a card tab to mark benefits used</div>`;
