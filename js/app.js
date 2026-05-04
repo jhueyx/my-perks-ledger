@@ -2966,6 +2966,15 @@ document.getElementById('navSecondary').addEventListener('click', e => {
   render();
 });
 
+// ── Home button — clicking app title goes back to All Cards ──────────────
+(function(){
+  const title=document.querySelector('.app-title');
+  if(title){
+    title.style.cursor='pointer';
+    title.addEventListener('click',()=>setActiveView('all-cards'));
+  }
+})();
+
 // ── Service Worker registration ───────────────────────────────────────────
 if('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com'){
   window.addEventListener('load',()=>{
