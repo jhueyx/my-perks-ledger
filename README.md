@@ -1,18 +1,12 @@
-# My Perks Ledger — split CSR demo
+# My Perks Ledger — split fixed build
+
+This version keeps the app split into separate files while preserving all supported card benefit data.
 
 Files:
+- `index.html` — app shell and card buttons
+- `css/styles.css` — styles
+- `js/cards-data.js` — supported benefit data for CSR, AMEX Gold, and AMEX Platinum
+- `js/app.js` — app logic, Supabase login, filtering, rendering
+- `assets/` — card artwork
 
-- `index.html` — lightweight page markup only
-- `css/styles.css` — app styling
-- `js/cards-csr.js` — Chase Sapphire Reserve benefits only
-- `js/app.js` — app logic
-- `assets/csr-card.png` — card artwork moved out of the HTML
-
-What changed:
-
-- Removed AMEX Gold and AMEX Platinum benefit data from the demo.
-- Removed AMEX Gold and AMEX Platinum card buttons/images from the markup.
-- Moved the big inline card image into `assets/csr-card.png`.
-- Moved CSS and JS out of the main HTML file.
-
-To add cards later, put their benefit data in separate `js/cards-*.js` files and load them before `js/app.js`, or merge them into `CARDS`.
+Important: Supabase `user_profiles.cards` still controls which cards are visible. The master data file includes all supported cards so Gold/Platinum can render when a logged-in user has them.
