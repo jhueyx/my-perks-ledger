@@ -2410,36 +2410,121 @@ function buildEOMWarning(cardKey){
   </div>`;
 }
 
-// ── Money Rain easter egg ─────────────────────────────────────────────────
+// ── Money Rain easter egg (canvas-based for silky performance) ────────────
 function launchMoneyRain(){
   closeDrawer();
-  const emojis=['💵','💵','💳','💵','💰','💵','💳','🤑','💵','💵'];
-  const container=document.createElement('div');
-  container.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999;overflow:hidden';
-  document.body.appendChild(container);
-  for(let i=0;i<40;i++){
-    const el=document.createElement('div');
-    const emoji=emojis[Math.floor(Math.random()*emojis.length)];
-    const x=Math.random()*100;
-    const delay=Math.random()*1.5;
-    const duration=1.5+Math.random()*1.5;
-    const size=16+Math.floor(Math.random()*20);
-    const rotate=Math.random()*360;
-    const drift=(Math.random()-0.5)*120;
-    el.textContent=emoji;
-    el.style.cssText=`position:absolute;left:${x}%;top:-60px;font-size:${size}px;opacity:0;animation:moneyfall ${duration}s ease-in ${delay}s forwards`;
-    el.style.setProperty('--drift',`${drift}px`);
-    el.style.setProperty('--rotate',`${rotate}deg`);
-    container.appendChild(el);
+  const emojis=['💵','💵','💵','💳','💰','🤑','💸','💎','✨','💵','💳','🏦','💵','💵','💸','🤑'];
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999';
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  document.body.appendChild(canvas);
+  const ctx=canvas.getContext('2d');
+
+  const W=canvas.width, H=canvas.height;
+  const DURATION=10000; // ms
+  const SPAWN_RATE=8;   // particles per frame during spawn window
+  const MAX=1000;
+
+  let particles=[];
+  let spawned=0;
+  let startTime=null;
+  let raf=null;
+
+  function makeParticle(){
+    return {
+      x: Math.random()*W,
+      y: -40-Math.random()*60,
+      emoji: emojis[Math.floor(Math.random()*emojis.length)],
+      size: 16+Math.random()*28,
+      vy: 2+Math.random()*4,       // fall speed
+      vx: (Math.random()-0.5)*2,   // horizontal drift
+      sway: (Math.random()-0.5)*1.5, // oscillation speed
+      swayAmp: 20+Math.random()*40,  // oscillation width
+      angle: Math.random()*Math.PI*2,
+      spin: (Math.random()-0.5)*0.15,
+      opacity: 1,
+      age: 0,
+    };
   }
-  // Inject keyframes once
-  if(!document.getElementById('money-rain-style')){
-    const s=document.createElement('style');
-    s.id='money-rain-style';
-    s.textContent=`@keyframes moneyfall{0%{transform:translateY(0) translateX(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) translateX(var(--drift)) rotate(var(--rotate));opacity:0}}`;
-    document.head.appendChild(s);
+
+  function draw(ts){
+    if(!startTime) startTime=ts;
+    const elapsed=ts-startTime;
+
+    ctx.clearRect(0,0,W,H);
+
+    // Spawn new particles during the spawn window
+    if(elapsed<DURATION && spawned<MAX){
+      const toSpawn=Math.min(SPAWN_RATE, MAX-spawned);
+      for(let i=0;i<toSpawn;i++){ particles.push(makeParticle()); spawned++; }
+    }
+
+    // Update + draw each particle
+    particles=particles.filter(p=>{
+      p.age++;
+      p.y+=p.vy;
+      p.x+=p.vx+Math.sin(p.age*p.sway)*p.swayAmp*0.02;
+      p.angle+=p.spin;
+      // Fade out near bottom
+      if(p.y>H*0.75) p.opacity=Math.max(0,1-(p.y-H*0.75)/(H*0.25));
+      if(p.y>H+40||p.opacity<=0) return false;
+      ctx.save();
+      ctx.globalAlpha=p.opacity;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      ctx.font=`${p.size}px serif`;
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(p.emoji,0,0);
+      ctx.restore();
+      return true;
+    });
+
+    if(elapsed<DURATION+4000 && (particles.length>0||spawned<MAX)){
+      raf=requestAnimationFrame(draw);
+    } else {
+      canvas.remove();
+    }
   }
-  setTimeout(()=>container.remove(), 4000);
+
+  raf=requestAnimationFrame(draw);
+
+  // Shake to stop
+  let lastX=null, lastY=null, lastT=null;
+  function onShake(e){
+    const acc=e.accelerationIncludingGravity||e.acceleration;
+    if(!acc) return;
+    const now=Date.now();
+    if(lastX===null){ lastX=acc.x; lastY=acc.y; lastT=now; return; }
+    const dt=(now-lastT)/1000;
+    if(dt<0.05) return;
+    const dx=Math.abs((acc.x-lastX)/dt);
+    const dy=Math.abs((acc.y-lastY)/dt);
+    lastX=acc.x; lastY=acc.y; lastT=now;
+    if(dx>800||dy>800){
+      cancelAnimationFrame(raf);
+      ctx.clearRect(0,0,W,H);
+      canvas.remove();
+      window.removeEventListener('devicemotion',onShake);
+    }
+  }
+
+  function startShakeListener(){
+    window.addEventListener('devicemotion',onShake);
+    const origRemove=canvas.remove.bind(canvas);
+    canvas.remove=()=>{ window.removeEventListener('devicemotion',onShake); origRemove(); };
+  }
+
+  // iOS 13+ requires explicit permission for DeviceMotion
+  if(typeof DeviceMotionEvent!=='undefined' && typeof DeviceMotionEvent.requestPermission==='function'){
+    DeviceMotionEvent.requestPermission().then(state=>{
+      if(state==='granted') startShakeListener();
+    }).catch(()=>{});
+  } else {
+    // Android and older iOS — no permission needed
+    startShakeListener();
+  }
 }
 
 // ── Confetti ──────────────────────────────────────────────────────────────
@@ -3094,6 +3179,22 @@ document.getElementById('navSecondary').addEventListener('click', e => {
   render();
 });
 
+// ── Live calendar icon for the May/month nav button ─────────────────────
+(function(){
+  const btn=document.querySelector('.nav-primary-btn[data-primary="this-period"]');
+  if(!btn) return;
+  const navIcon=btn.querySelector('.nav-icon');
+  if(!navIcon) return;
+  const now=new Date();
+  const day=now.getDate();
+  const month=now.toLocaleString('default',{month:'short'}).toUpperCase();
+  navIcon.innerHTML=`<span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:var(--surface);border:1px solid var(--border);overflow:hidden;line-height:1;gap:0">
+    <span style="background:#e03030;color:#fff;font-size:6px;font-weight:700;font-family:var(--mono);width:100%;text-align:center;padding:1px 0;letter-spacing:0.05em">${month}</span>
+    <span style="font-size:13px;font-weight:700;font-family:var(--font);color:var(--text);line-height:1.3">${day}</span>
+  </span>`;
+  navIcon.style.fontSize='0';
+})();
+
 // ── Home button — clicking app title goes back to All Cards ──────────────
 (function(){
   const title=document.querySelector('.app-title');
@@ -3108,15 +3209,21 @@ document.getElementById('navSecondary').addEventListener('click', e => {
     drawerTitle.style.cursor='pointer';
     drawerTitle.addEventListener('click',()=>{ closeDrawer(); setActiveView('all-cards'); });
   }
-  // Add author credit below drawer header with easter egg
-  const drawerHeader=document.querySelector('.drawer-header');
-  if(drawerHeader){
+  // Restyle sign out button as a pill and add credit line below
+  const signOutBtn=document.getElementById('signOutBtn');
+  if(signOutBtn){
+    signOutBtn.style.cssText='display:inline-flex;align-items:center;gap:6px;background:rgba(220,60,60,0.12);color:var(--red);border:1px solid rgba(220,60,60,0.25);border-radius:100px;padding:7px 16px;font-size:12px;font-family:var(--mono);cursor:pointer;width:auto';
+    signOutBtn.innerHTML='<span style="font-size:13px">→</span> Sign Out';
+  }
+  // Move credit line to bottom of drawer, below sign out
+  const drawerBottom=document.querySelector('#navExtras > div:last-child');
+  if(drawerBottom){
     const credit=document.createElement('div');
     credit.textContent='jhuey · 2026 · v1.0';
-    credit.style.cssText='font-size:10px;font-family:var(--mono);color:var(--text-tertiary);padding:0 16px 10px;opacity:0.5;cursor:pointer;user-select:none';
+    credit.style.cssText='font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-top:10px;padding:0 12px;opacity:0.4;cursor:pointer;user-select:none';
     credit.title='🤫';
     credit.addEventListener('click', launchMoneyRain);
-    drawerHeader.after(credit);
+    drawerBottom.appendChild(credit);
   }
 })();
 
