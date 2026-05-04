@@ -1277,7 +1277,7 @@ function renderKeepCard(){
       verdict='✓ Keep it'; cls='keep';
       reason=`You've captured $${captured.toFixed(0)} so far. At this rate you'll hit $${projected.toFixed(0)} by card year end — covering the $${fee} fee.`;
       action='On track to break even. Renewal recommended.';
-    } else if(projected>=fee*0.8){
+    } else if(projected>=fee*0.9){
       verdict='⚠️ Reconsider'; cls='reconsider';
       reason=`Projecting $${projected.toFixed(0)} by year end vs $${fee} fee. You'll be $${(fee-projected).toFixed(0)} short of breaking even.`;
       action='Try to use more benefits before renewal.';
@@ -1688,13 +1688,7 @@ function buildAllCardsSummary(){
   const breakEvenPct=totalAvail>0?Math.min(100,totalFees/totalAvail*100):0;
   const isProfitable=totalClaimed>=totalFees;
   const feeCoveragePct=totalFees>0?Math.round(totalClaimed/totalFees*100):0;
-  // "Still missing" = total unclaimed across entire card year (missed past + unclaimed current/future)
-  let totalMissable=0;
-  getVisibleCardKeys().forEach(ck=>{
-    const {missed,total}=calcStats(ck,c=>getCardYearPeriods(ck,c),isPCurrent);
-    totalMissable+=missed;
-  });
-  const remaining=totalMissable;
+  const remaining=totalAvail-totalClaimed;
 
   return `<div class="allcards-summary">
     <div class="allcards-stats-row">
