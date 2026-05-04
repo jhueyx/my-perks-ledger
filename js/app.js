@@ -72,6 +72,11 @@ const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth();
   s.textContent=`
     .heatmap-cell-custom { background:none !important; color:inherit !important; }
     .drawer-item[data-primary="trends"] { display:none !important; }
+    .dark-toggle-label { display:none !important; }
+    .drawer-item[data-primary="best-card"] { display:none !important; }
+    .drawer-item[data-primary="calendar"] { display:none !important; }
+    .drawer-item[data-primary="my-cards"] { display:none !important; }
+    .drawer-item[data-primary="search"] { display:none !important; }
   `;
   document.head.appendChild(s);
 })();
@@ -816,11 +821,18 @@ function calcCapturedByType(cardKey){
   const card=CARDS[cardKey];
   const REPEATING=['monthly','quarterly'];
   let repeating=0, oneTime=0;
+  // Only count within the current card year window to avoid double-counting past years
+  const {year:cyStart,month:cyStartMonth}=getCardYearStart(cardKey,CY);
+  const cyStartAbs=cyStart*12+cyStartMonth;
+  const cyEndAbs=cyStartAbs+11;
   card.sections.forEach(s=>{
     const ps=getCardYearPeriods(cardKey,s.cadence);
     ps.forEach(p=>{
-      // Skip future periods entirely — only count what's actually been used
+      // Skip future periods
       if(isPFuture(p)) return;
+      // Skip periods outside the current card year window
+      const pAbs=p.calY*12+p.calM;
+      if(pAbs<cyStartAbs||pAbs>cyEndAbs) return;
       s.benefits.forEach(b=>{
         if(isBExpired(b,p)||isBNotAvailable(b,CY)) return;
         if(!isUsed(cardKey,b.id,p.pk)) return;
@@ -844,7 +856,8 @@ function buildProjection(cardKey){
   const projectedRepeating=monthsRemaining>0?(repeating/monthsElapsed)*monthsRemaining:0;
   const projected=oneTime+repeating+projectedRepeating;
   const fee=getFee(cardKey,CY);
-  const projectedEffective=Math.max(0,fee-projected);
+  const projectedEffective=fee-projected;
+  const isProfit=projected>fee;
   return `<div class="projection-bar">
     <div>
       <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:2px">${CARD_LABELS[cardKey]}</div>
@@ -852,8 +865,8 @@ function buildProjection(cardKey){
       <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">at current rate · ${monthsRemaining} months left</div>
     </div>
     <div style="text-align:right">
-      <div class="projection-val">$${projected.toFixed(0)}</div>
-      <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">~$${projectedEffective.toFixed(0)} effective fee</div>
+      <div class="projection-val" style="color:${isProfit?'var(--green)':''}">$${projected.toFixed(0)}${isProfit?' 🎉':''}</div>
+      <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">${isProfit?'+$'+Math.abs(projectedEffective).toFixed(0)+' profit':'~$'+Math.abs(projectedEffective).toFixed(0)+' effective fee'}</div>
     </div>
   </div>`;
 }
@@ -1284,12 +1297,7 @@ function renderKeepCard(){
 }
 
 // ── Category Tags ─────────────────────────────────────────────────────────
-function getCategoryTag(benefitId){
-  const cat=BENEFIT_CATEGORIES[benefitId]||'other';
-  const labels={dining:'dining',travel:'travel',shopping:'shopping',fitness:'fitness',entertainment:'entmt',other:'other'};
-  const icons={dining:'🍽',travel:'✈️',shopping:'🛍',fitness:'💪',entertainment:'🎬',other:'💳'};
-  return `<span class="benefit-category cat-${cat}">${icons[cat]} ${labels[cat]}</span>`;
-}
+function getCategoryTag(benefitId){ return ''; }
 
 // ── Benefit Reminder Calendar ─────────────────────────────────────────────
 function renderBenefitCalendar(){
@@ -2003,7 +2011,7 @@ function renderRecap(){
   });
 
   const effectiveFees=totalFees-totalCaptured;
-  const captureRate=totalCaptured+totalMissed>0?Math.round(totalCaptured/(totalCaptured+totalMissed)*100):0;
+  const feeCoverageRate=totalFees>0?Math.min(100,Math.round(totalCaptured/totalFees*100)):0;
 
   let html=`
     <div class="action-bar">
@@ -2016,8 +2024,7 @@ function renderRecap(){
       <div class="recap-total-label">total value captured across all cards</div>
     </div>
     <div class="recap-grid">
-      <div class="recap-stat"><div class="recap-stat-val red">$${totalMissed.toFixed(0)}</div><div class="recap-stat-label">Missed so far</div></div>
-      <div class="recap-stat"><div class="recap-stat-val">${captureRate}%</div><div class="recap-stat-label">Capture rate</div></div>
+      <div class="recap-stat"><div class="recap-stat-val ${feeCoverageRate>=100?'green':feeCoverageRate>=80?'gold':''}">${feeCoverageRate}%</div><div class="recap-stat-label">Fee coverage</div></div>
       <div class="recap-stat"><div class="recap-stat-val">$${totalFees}</div><div class="recap-stat-label">Total fees paid</div></div>
       <div class="recap-stat"><div class="recap-stat-val ${effectiveFees<=0?'green':''}">${effectiveFees<=0?'+$'+Math.abs(effectiveFees).toFixed(0):'$'+effectiveFees.toFixed(0)}</div><div class="recap-stat-label">${effectiveFees<=0?'Net profit':'Effective fees'}</div></div>
     </div>`;
