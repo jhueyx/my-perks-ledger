@@ -2410,6 +2410,38 @@ function buildEOMWarning(cardKey){
   </div>`;
 }
 
+// ── Money Rain easter egg ─────────────────────────────────────────────────
+function launchMoneyRain(){
+  closeDrawer();
+  const emojis=['💵','💵','💳','💵','💰','💵','💳','🤑','💵','💵'];
+  const container=document.createElement('div');
+  container.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999;overflow:hidden';
+  document.body.appendChild(container);
+  for(let i=0;i<40;i++){
+    const el=document.createElement('div');
+    const emoji=emojis[Math.floor(Math.random()*emojis.length)];
+    const x=Math.random()*100;
+    const delay=Math.random()*1.5;
+    const duration=1.5+Math.random()*1.5;
+    const size=16+Math.floor(Math.random()*20);
+    const rotate=Math.random()*360;
+    const drift=(Math.random()-0.5)*120;
+    el.textContent=emoji;
+    el.style.cssText=`position:absolute;left:${x}%;top:-60px;font-size:${size}px;opacity:0;animation:moneyfall ${duration}s ease-in ${delay}s forwards`;
+    el.style.setProperty('--drift',`${drift}px`);
+    el.style.setProperty('--rotate',`${rotate}deg`);
+    container.appendChild(el);
+  }
+  // Inject keyframes once
+  if(!document.getElementById('money-rain-style')){
+    const s=document.createElement('style');
+    s.id='money-rain-style';
+    s.textContent=`@keyframes moneyfall{0%{transform:translateY(0) translateX(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) translateX(var(--drift)) rotate(var(--rotate));opacity:0}}`;
+    document.head.appendChild(s);
+  }
+  setTimeout(()=>container.remove(), 4000);
+}
+
 // ── Confetti ──────────────────────────────────────────────────────────────
 function launchConfetti(){
   const canvas=document.getElementById('confettiCanvas');
@@ -3069,10 +3101,22 @@ document.getElementById('navSecondary').addEventListener('click', e => {
     title.style.cursor='pointer';
     title.addEventListener('click',()=>setActiveView('all-cards'));
   }
-  // Add app icon to drawer header
+  // Add app icon to drawer header + clicking goes home
   const drawerTitle=document.querySelector('.drawer-title');
   if(drawerTitle){
     drawerTitle.innerHTML=`<img src="icon-192.png" style="width:24px;height:24px;border-radius:6px;vertical-align:middle;margin-right:8px;"> My Perks Ledger`;
+    drawerTitle.style.cursor='pointer';
+    drawerTitle.addEventListener('click',()=>{ closeDrawer(); setActiveView('all-cards'); });
+  }
+  // Add author credit below drawer header with easter egg
+  const drawerHeader=document.querySelector('.drawer-header');
+  if(drawerHeader){
+    const credit=document.createElement('div');
+    credit.textContent='jhuey · 2026 · v1.0';
+    credit.style.cssText='font-size:10px;font-family:var(--mono);color:var(--text-tertiary);padding:0 16px 10px;opacity:0.5;cursor:pointer;user-select:none';
+    credit.title='🤫';
+    credit.addEventListener('click', launchMoneyRain);
+    drawerHeader.after(credit);
   }
 })();
 
