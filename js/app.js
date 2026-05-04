@@ -77,6 +77,7 @@ const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth();
     .drawer-item[data-primary="calendar"] { display:none !important; }
     .drawer-item[data-primary="my-cards"] { display:none !important; }
     .drawer-item[data-primary="search"] { display:none !important; }
+    .drawer-item[data-primary="export"] { display:none !important; }
   `;
   document.head.appendChild(s);
 })();
@@ -821,23 +822,29 @@ function calcCapturedByType(cardKey){
   const card=CARDS[cardKey];
   const REPEATING=['monthly','quarterly'];
   let repeating=0, oneTime=0;
-  // Only count within the current card year window to avoid double-counting past years
   const {year:cyStart,month:cyStartMonth}=getCardYearStart(cardKey,CY);
   const cyStartAbs=cyStart*12+cyStartMonth;
   const cyEndAbs=cyStartAbs+11;
   card.sections.forEach(s=>{
+    const isRepeating=REPEATING.includes(s.cadence);
     const ps=getCardYearPeriods(cardKey,s.cadence);
     ps.forEach(p=>{
-      // Skip future periods
       if(isPFuture(p)) return;
-      // Skip periods outside the current card year window
-      const pAbs=p.calY*12+p.calM;
-      if(pAbs<cyStartAbs||pAbs>cyEndAbs) return;
+      // For repeating cadences, only count periods within the card year window
+      // (avoids extrapolating monthly credits from before the card year started)
+      if(isRepeating){
+        const pAbs=p.calY*12+p.calM;
+        if(pAbs<cyStartAbs||pAbs>cyEndAbs) return;
+      }
+      // For one-time cadences (annual, semi-annual, feb-annual etc.), trust
+      // getCardYearPeriods which already returns the correct current-year periods.
+      // Applying a range check here incorrectly excludes periods that START before
+      // the card year but overlap it (e.g. CSR feb-annual starts Feb, card year Apr).
       s.benefits.forEach(b=>{
         if(isBExpired(b,p)||isBNotAvailable(b,CY)) return;
         if(!isUsed(cardKey,b.id,p.pk)) return;
         const amt=getBAmount(b,p);
-        if(REPEATING.includes(s.cadence)) repeating+=amt;
+        if(isRepeating) repeating+=amt;
         else oneTime+=amt;
       });
     });
@@ -1254,7 +1261,9 @@ function renderKeepCard(){
 
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
-    const {captured,total}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
+    // Use calcCapturedByType as the single source of truth so captured and projected are consistent
+    const {repeating,oneTime}=calcCapturedByType(cardKey);
+    const captured=repeating+oneTime;
     const projected=getProjectedCapture(cardKey);
     const projectedROI=projected-fee;
     const currentRatio=fee>0?captured/fee:0;
