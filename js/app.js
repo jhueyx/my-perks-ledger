@@ -1,5 +1,17 @@
 // ── Dark mode ─────────────────────────────────────────────────────────────
 const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth();
+
+// ── Inject style overrides ────────────────────────────────────────────────
+(function(){
+  const s=document.createElement('style');
+  s.textContent=`
+    .heatmap-cell-custom { background:none !important; color:inherit !important; }
+    .drawer-item[data-primary="trends"] { display:none !important; }
+  `;
+  document.head.appendChild(s);
+})();
+
+
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const FEE_MONTHS={gold:4,platinum:8,csr:4};
@@ -64,6 +76,10 @@ let userCards = null; // array of card IDs the user has chosen
 let DATA={gold:{},platinum:{},csr:{}};
 let saveTimer=null;
 let activeCard='csr', activeView='all-cards';
+function getVisibleCardKeys(){
+  const supported=['csr','gold','platinum'];
+  return (userCards && userCards.length ? userCards : supported).filter(c=>supported.includes(c) && CARDS[c]);
+}
 let selectedYear=CY;
 let _collapsedSections=new Set(['cal-semi-annual','semi-annual','feb-annual','cal-annual','annual']);
 let _collapsedCurrentSections=new Set(['semi-annual','cal-semi-annual','feb-annual','cal-annual','annual'].flatMap(c=>['csr','gold','platinum'].map(k=>`current-${k}-${c}`)));
@@ -353,6 +369,9 @@ async function saveMyCards(){
   document.getElementById('mcSave').textContent = 'Saving…';
   await sb.from('user_profiles').upsert({user_id: currentUser.id, cards, updated_at: new Date().toISOString()});
   userCards = cards;
+  applyUserCards();
+  if(!userCards.includes(activeCard)) activeCard = getVisibleCardKeys()[0] || 'csr';
+  render();
   closeMyCards();
   // Show a toast
   setSave('saved', '✓ Cards updated');
@@ -561,69 +580,8 @@ function getCurrentLabel(cardKey,cadence){
   return '';
 }
 
-const CARDS={
-  gold:{name:'AMEX Gold',fee:325,historicalFees:{2025:325},sections:[
-    {label:'Monthly',cadence:'monthly',benefits:[
-      {id:'g_dining',name:'Dining Credit',desc:'Grubhub, Cheesecake Factory, Five Guys, BWW, Wonder',amount:10},
-      {id:'g_uber',name:'Uber Cash',desc:'Uber rides or Uber Eats in the US',amount:10},
-      {id:'g_dunkin',name:"Dunkin' Credit",desc:"At U.S. Dunkin' locations",amount:7},
-    ]},
-    {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
-      {id:'g_resy',name:'Resy Dining Credit',desc:'Any U.S. Resy restaurant — no reservation required',amount:50},
-    ]},
-    {label:'Annual',cadence:'annual',benefits:[
-      {id:'g_hotel',name:'Hotel Collection Credit',desc:'$100 on eligible charges, 2-night min via AMEX Travel',amount:100,partial:true},
-    ]},
-  ]},
-  platinum:{name:'AMEX Platinum',fee:895,historicalFees:{2025:695},sections:[
-    {label:'Monthly',cadence:'monthly',benefits:[
-      {id:'p_uber',name:'Uber Cash',desc:'$15/mo · $35 in December',amount:15,decAmount:35},
-      {id:'p_digital',name:'Digital Entertainment',desc:'Disney+, Hulu, ESPN+, Peacock, Paramount+, NYT, WSJ, YouTube',amount:25},
-      {id:'p_walmart',name:'Walmart+ Credit',desc:'Covers monthly Walmart+ membership',amount:12.95},
-    ]},
-    {label:'Quarterly',cadence:'quarterly',benefits:[
-      {id:'p_resy',name:'Resy Dining Credit',desc:'At eligible U.S. Resy restaurants',amount:100,startsFrom:2026},
-      {id:'p_lulu',name:'Lululemon Credit',desc:'U.S. stores or lululemon.com',amount:75,startsFrom:2026},
-    ]},
-    {label:'Semi-annual (card-year)',cadence:'semi-annual',benefits:[
-      {id:'p_hotel',name:'Hotel Credit',desc:'Fine Hotels + Resorts or Hotel Collection, 2-night min',amount:300},
-    ]},
-    {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
-      {id:'p_saks',name:'Saks Fifth Avenue',desc:'At Saks stores or saks.com — resets Jan & Jul. Ends Jun 2026.',amount:50,expiresAfter:{y:2026,h:0}},
-    ]},
-    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
-      {id:'p_uberone',name:'Uber One Membership Credit',desc:'One-time credit for annual Uber One membership',amount:96,startsFrom:2026},
-      {id:'p_airline',name:'Airline Fee Credit',desc:'Incidental fees with one selected airline',amount:200,partial:true},
-      {id:'p_equinox',name:'Equinox Credit',desc:'Equinox club or app membership',amount:300,partial:true},
-      {id:'p_oura',name:'Oura Ring Credit',desc:'Hardware only via OURAring.com',amount:200,startsFrom:2026},
-      {id:'p_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
-      {id:'p_clear',name:'CLEAR Plus Credit',desc:'Annual CLEAR Plus membership',amount:189},
-    ]},
-  ]},
-  csr:{name:'Chase Sapphire Reserve',fee:795,historicalFees:{2025:550},sections:[
-    {label:'Monthly',cadence:'monthly',benefits:[
-      {id:'c_dd_restaurant',name:'DoorDash Restaurant Credit',desc:'$5 promo for restaurant orders (DashPass required)',amount:5},
-      {id:'c_dd_nonrest1',name:'DoorDash $10 Grocery Credit',desc:'$10 promo for grocery, convenience, etc',amount:10},
-      {id:'c_dd_nonrest2',name:'DoorDash $10 Grocery Credit',desc:'$10 promo for grocery, convenience, etc',amount:10},
-      {id:'c_lyft',name:'Lyft Credit',desc:'Monthly in-app credit for rides (through Sep 2027)',amount:10,startsFrom:2026},
-      {id:'c_peloton',name:'Peloton Credit',desc:'Toward eligible Peloton memberships',amount:10,startsFrom:2026},
-    ]},
-    {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
-      {id:'c_dining',name:'Exclusive Tables Dining Credit',desc:'Via OpenTable Sapphire Reserve Exclusive Tables',amount:150,startsFrom:2026},
-      {id:'c_stub',name:'StubHub / Viagogo Credit',desc:'Concert and event tickets',amount:150,startsFrom:2026},
-    ]},
-    {label:'Travel credit (Feb–Jan)',cadence:'feb-annual',benefits:[
-      {id:'c_travel',name:'Travel Credit',desc:'Any travel purchase — automatic. Resets each February.',amount:300,partial:true},
-    ]},
-    {label:'Annual',cadence:'annual',benefits:[
-      {id:'c_edit1',name:'The Edit Hotel Credit (1 of 2)',desc:'Prepaid 2-night+ stay via Chase Travel The Edit',amount:250,startsFrom:2026},
-      {id:'c_edit2',name:'The Edit Hotel Credit (2 of 2)',desc:'Prepaid 2-night+ stay via Chase Travel The Edit',amount:250,startsFrom:2026},
-      {id:'c_selecthotel',name:'Select Hotel Credit (2026 only)',desc:'IHG, Montage, Pendry, Omni, Virgin, Minor, Pan Pacific',amount:250,startsFrom:2026},
-      {id:'c_apple',name:'Apple TV+ & Apple Music',desc:'Complimentary annual subscriptions — activate once via Chase (through Jun 2027)',amount:240,startsFrom:2026},
-      {id:'c_ge',name:'Global Entry / TSA PreCheck / NEXUS',desc:'Statement credit every 4 years',amount:120},
-    ]},
-  ]},
-};
+// Card benefit data is loaded from js/cards-csr.js
+
 
 function getBAmount(b,p){ return (b.decAmount && p.m===11) ? b.decAmount : b.amount; }
 
@@ -725,7 +683,7 @@ function scheduleMonthlyReminder(){
     if(!localStorage.getItem(key)){
       // Count unclaimed across all cards
       let total=0;
-      ['csr','gold','platinum'].forEach(ck=>{
+      getVisibleCardKeys().forEach(ck=>{
         total+=getUnclaimedMonthly(ck).reduce((s,b)=>s+b.amt,0);
       });
       if(total>0){
@@ -786,19 +744,45 @@ function getBenefitExpiryLabel(b){
 }
 
 // ── Projection ────────────────────────────────────────────────────────────
+// Split captured value into repeating (monthly/quarterly) vs one-time (annual etc.)
+// One-time benefits are already fully captured — don't extrapolate them.
+// Only repeating benefits get projected forward by run rate.
+function calcCapturedByType(cardKey){
+  const card=CARDS[cardKey];
+  const REPEATING=['monthly','quarterly'];
+  let repeating=0, oneTime=0;
+  card.sections.forEach(s=>{
+    const ps=getCardYearPeriods(cardKey,s.cadence);
+    ps.forEach(p=>{
+      // Skip future periods entirely — only count what's actually been used
+      if(isPFuture(p)) return;
+      s.benefits.forEach(b=>{
+        if(isBExpired(b,p)||isBNotAvailable(b,CY)) return;
+        if(!isUsed(cardKey,b.id,p.pk)) return;
+        const amt=getBAmount(b,p);
+        if(REPEATING.includes(s.cadence)) repeating+=amt;
+        else oneTime+=amt;
+      });
+    });
+  });
+  return {repeating, oneTime};
+}
+
 function buildProjection(cardKey){
-  const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
-  const {year:fy,month:fm}=getCardYearStart(cardKey,CY);
-  const monthsElapsed=CM>=fm?CM-fm+1:12-(fm-CM);
-  const monthsTotal=12;
-  const monthsRemaining=monthsTotal-monthsElapsed;
-  if(monthsElapsed===0) return '';
-  const rate=captured/monthsElapsed;
-  const projected=captured+(rate*monthsRemaining);
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
+  const {month:fm}=getCardYearStart(cardKey,CY);
+  const monthsElapsed=Math.max(1, CM>=fm?CM-fm+1:12-(fm-CM));
+  const monthsRemaining=12-monthsElapsed;
+  const {repeating,oneTime}=calcCapturedByType(cardKey);
+  // Extrapolate only repeating benefits; one-time credits are already fully captured
+  const projectedRepeating=monthsRemaining>0?(repeating/monthsElapsed)*monthsRemaining:0;
+  const projected=oneTime+repeating+projectedRepeating;
   const fee=getFee(cardKey,CY);
   const projectedEffective=Math.max(0,fee-projected);
   return `<div class="projection-bar">
     <div>
+      <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:2px">${CARD_LABELS[cardKey]}</div>
       <div class="projection-label">📈 Projected year-end capture</div>
       <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">at current rate · ${monthsRemaining} months left</div>
     </div>
@@ -811,22 +795,27 @@ function buildProjection(cardKey){
 
 // ── Heatmap ───────────────────────────────────────────────────────────────
 function renderHeatmap(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Rsv'};
   let html=`<div class="banner">🗓 <strong>Missed money heatmap</strong> — monthly benefits capture rate by card</div>`;
-  html+=`<div style="overflow-x:auto"><div class="heatmap-grid" style="min-width:500px">`;
+  // Heatmap rendered as a plain CSS grid — no class-based colors so stylesheet can't interfere
+  const CELL_W=42,CELL_H=36,COLS=13;
+  html+=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
+  html+=`<div style="display:grid;grid-template-columns:80px repeat(12,${CELL_W}px);gap:3px;min-width:${80+COLS*CELL_W+COLS*3}px">`;
 
   // Header row
   html+=`<div></div>`;
-  for(let m=0;m<12;m++) html+=`<div class="heatmap-month">${MONTHS[m]}</div>`;
+  for(let m=0;m<12;m++) html+=`<div style="text-align:center;font-size:10px;font-family:var(--mono);color:var(--text-tertiary);padding:4px 0">${MONTHS[m]}</div>`;
 
   CARD_KEYS.forEach(cardKey=>{
     const card=CARDS[cardKey];
-    html+=`<div class="heatmap-label">${CARD_LABELS[cardKey]}</div>`;
+    html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);display:flex;align-items:center;padding-right:6px">${CARD_LABELS[cardKey]}</div>`;
     for(let m=0;m<12;m++){
       const isFut=m>CM;
-      if(isFut){ html+=`<div class="heatmap-cell future">-</div>`; continue; }
-      // Count monthly benefits for this month
+      if(isFut){
+        html+=`<div style="height:${CELL_H}px;border-radius:5px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">–</div>`;
+        continue;
+      }
       let total=0,claimed=0;
       card.sections.forEach(s=>{
         if(s.cadence!=='monthly') return;
@@ -838,9 +827,18 @@ function renderHeatmap(){
         });
       });
       const rate=total>0?claimed/total:0;
-      const cls=total===0?'h0':rate===0?'h0':rate<=0.33?'h1':rate<=0.66?'h2':rate<1?'h3':'h4';
-      const pct=total>0?Math.round(rate*100):'-';
-      html+=`<div class="heatmap-cell ${cls}" title="${MONTHS[m]}: ${claimed}/${total} claimed">${pct}${total>0?'%':''}</div>`;
+      const pct=total>0?Math.round(rate*100):null;
+      const bg=total===0||rate===0
+        ? 'var(--border-light)'
+        : rate<0.5
+          ? 'rgba(220,60,60,0.6)'
+          : rate<0.9
+            ? 'rgba(210,160,0,0.5)'
+            : rate<1
+              ? 'rgba(210,160,0,0.85)'
+              : '#2a9b6a';
+      const fg=rate>=1?'#fff':rate>0&&rate<0.5?'#fff':'var(--text)';
+      html+=`<div style="height:${CELL_H}px;border-radius:5px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:${fg}" title="${MONTHS[m]}: ${claimed}/${total} claimed">${pct!==null?pct+'%':'–'}</div>`;
     }
   });
 
@@ -849,9 +847,9 @@ function renderHeatmap(){
   // Legend
   html+=`<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">
     <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--border-light);vertical-align:middle;margin-right:4px"></span>0%</span>
-    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(42,155,106,0.15);vertical-align:middle;margin-right:4px"></span>1-33%</span>
-    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(42,155,106,0.35);vertical-align:middle;margin-right:4px"></span>34-66%</span>
-    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(42,155,106,0.6);vertical-align:middle;margin-right:4px"></span>67-99%</span>
+    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(220,60,60,0.55);vertical-align:middle;margin-right:4px"></span>1–49%</span>
+    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(210,160,0,0.45);vertical-align:middle;margin-right:4px"></span>50–89%</span>
+    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(210,160,0,0.75);vertical-align:middle;margin-right:4px"></span>90–99%</span>
     <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--green);vertical-align:middle;margin-right:4px"></span>100%</span>
   </div>`;
 
@@ -865,10 +863,14 @@ function getCardYearMonthsElapsed(cardKey){
 }
 
 function getProjectedCapture(cardKey){
-  const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
-  const elapsed=getCardYearMonthsElapsed(cardKey);
-  // Project based on monthly run rate
-  return (captured/elapsed)*12;
+  // Use cadence-aware projection: one-time benefits (annual, semi-annual etc.) are
+  // counted as-is since they won't repeat. Only monthly/quarterly benefits are extrapolated.
+  const {month:fm}=getCardYearStart(cardKey,CY);
+  const monthsElapsed=Math.max(1, CM>=fm ? CM-fm+1 : 12-(fm-CM));
+  const monthsRemaining=12-monthsElapsed;
+  const {repeating,oneTime}=calcCapturedByType(cardKey);
+  const projectedRepeating=monthsRemaining>0?(repeating/monthsElapsed)*monthsRemaining:0;
+  return oneTime+repeating+projectedRepeating;
 }
 
 function getROIGrade(captured, fee, cardKey){
@@ -883,7 +885,7 @@ function getROIGrade(captured, fee, cardKey){
 }
 
 function renderROI(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
 
@@ -947,11 +949,11 @@ function renderInsights(){
 
   // Projections for each card
   html+=`<div class="section-header"><span class="section-title">Year-end projections</span></div>`;
-  ['csr','gold','platinum'].forEach(ck=>{ html+=buildProjection(ck)||''; });
+  getVisibleCardKeys().forEach(ck=>{ html+=buildProjection(ck)||''; });
 
   // Mini ROI grid
   html+=`<div class="section-header" style="margin-top:16px"><span class="section-title">ROI scores</span><span class="section-period">tap for details</span></div>`;
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
   html+=`<div class="comparison-grid" style="margin-bottom:16px">`;
@@ -961,7 +963,7 @@ function renderInsights(){
     const grade=getROIGrade(captured,fee,cardKey);
     const projected=getProjectedCapture(cardKey);
     const ratio=fee>0?Math.round(projected/fee*100):0;
-    html+=`<div class="comparison-card ${CARD_CLS[cardKey]}" style="cursor:pointer" onclick="setActiveView('roi')">
+    html+=`<div class="comparison-card ${CARD_CLS[cardKey]}">
       <div class="comp-card-name">${CARD_LABELS[cardKey]}</div>
       <div class="roi-grade ${grade}" style="font-size:36px">${grade}</div>
       <div class="roi-label">${ratio}% of fee covered</div>
@@ -1166,7 +1168,7 @@ function updateCardRec(){
 
 // ── Should I Keep This Card ───────────────────────────────────────────────
 function renderKeepCard(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
 
@@ -1298,42 +1300,59 @@ function renderBenefitCalendar(){
 
 // ── Multi-year Trend ──────────────────────────────────────────────────────
 function renderTrends(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
-  const years=[2025,2026];
 
-  let html=`<div class="banner">📊 <strong>Multi-year trends</strong> — 2025 vs 2026 comparison</div>`;
+  // Dynamic year range: last 3 years up to current
+  const years=[CY-2,CY-1,CY].filter(y=>y>=2024);
 
-  // Safely compute captured value for a given card and year
+  const yearRange=years.length>1?`${years[0]}–${years[years.length-1]}`:`${years[0]}`;
+  let html=`<div class="banner">📊 <strong>Multi-year trends</strong> — ${yearRange} comparison</div>`;
+
+  // Compute total captured value for a card in a given calendar year,
+  // covering ALL cadences including card-year-aligned ones.
   function capturedForYear(cardKey,y){
     let total=0;
     const card=CARDS[cardKey];
+    const lastMonth=y<CY?11:CM; // past years: all 12 months; current: up to now
+
     card.sections.forEach(s=>{
-      // For each cadence, get all periods in that year
-      const lastMonth=y<CY?11:CM;
       const periods=[];
       if(s.cadence==='monthly'){
-        for(let m=0;m<=lastMonth;m++) periods.push({pk:getPK('monthly',m,y),calY:y,calM:m});
+        for(let m=0;m<=lastMonth;m++) periods.push({pk:getPK('monthly',m,y),m,calY:y,calM:m});
       } else if(s.cadence==='quarterly'){
         const seen=new Set();
         for(let m=0;m<=lastMonth;m++){
           const pk=getPK('quarterly',m,y);
-          if(!seen.has(pk)){seen.add(pk);periods.push({pk,calY:y,calM:m});}
+          if(!seen.has(pk)){seen.add(pk);periods.push({pk,m,calY:y,calM:m});}
         }
       } else if(s.cadence==='cal-semi-annual'){
-        periods.push({pk:getPK('cal-semi-annual',0,y),calY:y,calM:0});
-        if(lastMonth>=6) periods.push({pk:getPK('cal-semi-annual',6,y),calY:y,calM:6});
+        periods.push({pk:getPK('cal-semi-annual',0,y),m:0,calY:y,calM:0,endM:5,endY:y});
+        if(lastMonth>=6) periods.push({pk:getPK('cal-semi-annual',6,y),m:6,calY:y,calM:6,endM:11,endY:y});
       } else if(s.cadence==='cal-annual'){
-        periods.push({pk:`${y}-annual`,calY:y,calM:0});
-      } else {
-        // card-year cadences — skip for simplicity
-        return;
+        periods.push({pk:`${y}-annual`,m:0,calY:y,calM:0});
+      } else if(s.cadence==='semi-annual'){
+        // card-year halves — find the two h1/h2 PKs that overlap calendar year y
+        const allPs=getCardYearPeriods(cardKey,s.cadence);
+        allPs.forEach(p=>{ if(p.calY===y||(p.endY&&p.endY===y)) periods.push(p); });
+      } else if(s.cadence==='annual'){
+        // card-year annual — find the period whose window overlaps year y
+        const allPs=getCardYearPeriods(cardKey,s.cadence);
+        allPs.forEach(p=>{ if(p.calY===y) periods.push(p); });
+      } else if(s.cadence==='feb-annual'){
+        // Feb–Jan cycle: find the one that starts in year y
+        const allPs=getCardYearPeriods(cardKey,s.cadence);
+        allPs.forEach(p=>{ if(p.calY===y) periods.push(p); });
+        // also check previous feb window if it spans into y
+        const prev={m:1,calY:y-1,calM:1,pk:`feb-${y-1}`,endM:0,endY:y};
+        allPs.forEach(p=>{ if(p.calY===y-1&&!periods.find(x=>x.pk===p.pk)) periods.push(p); });
       }
+
       s.benefits.forEach(b=>{
         if(isBNotAvailable(b,y)) return;
         periods.forEach(p=>{
           if(isBExpired(b,p)) return;
-          if(isUsed(cardKey,b.id,p.pk)) total+=getBAmount(b,{m:p.calM});
+          if(isUsed(cardKey,b.id,p.pk)) total+=getBAmount(b,p);
         });
       });
     });
@@ -1349,11 +1368,11 @@ function renderTrends(){
 
     vals.forEach(({y,captured,fee})=>{
       const barPct=Math.round(captured/maxVal*100);
-      const feePct=Math.min(100,Math.round(fee/maxVal*100));
       const isCurrent=y===CY;
       const profit=captured-fee;
+      const label=isCurrent?`${y} YTD`:String(y);
       html+=`<div class="trend-row">
-        <div class="trend-year" style="color:${isCurrent?'var(--text)':'var(--text-tertiary)'}">${y}${isCurrent?' ●':''}</div>
+        <div class="trend-year" style="color:${isCurrent?'var(--text)':'var(--text-tertiary)'}">${label}</div>
         <div style="flex:1;position:relative">
           <div class="trend-bar-wrap"><div class="trend-bar-fill" style="width:${barPct}%;background:${captured>=fee?'var(--green)':'var(--gold)'}"></div></div>
         </div>
@@ -1408,7 +1427,7 @@ document.getElementById('undoBtn').addEventListener('click',()=>{
 
 // ── Tab Badge Count ───────────────────────────────────────────────────────
 function updateCardBadges(){
-  ['csr','gold','platinum'].forEach(cardKey=>{
+  getVisibleCardKeys().forEach(cardKey=>{
     const btn=document.querySelector(`.card-btn[data-card="${cardKey}"]`);
     if(!btn) return;
     // Count unclaimed current-period benefits
@@ -1569,7 +1588,7 @@ function renderSearch(){
 // ── All Cards Summary ─────────────────────────────────────────────────────
 function buildAllCardsSummary(){
   let totalAvail=0, totalClaimed=0, totalFees=0, totalMissed=0;
-  Object.keys(CARDS).forEach(cardKey=>{
+  getVisibleCardKeys().forEach(cardKey=>{
     totalFees+=getFee(cardKey,CY);
     CARDS[cardKey].sections.forEach(s=>{
       const pk=getCurrentPK(cardKey,s.cadence);
@@ -1584,7 +1603,10 @@ function buildAllCardsSummary(){
   });
   const effectiveFee=totalFees-totalClaimed;
   const claimedPct=totalAvail>0?Math.min(100,totalClaimed/totalAvail*100):0;
+  const breakEvenPct=totalAvail>0?Math.min(100,totalFees/totalAvail*100):0;
   const remaining=totalAvail-totalClaimed;
+  const isProfitable=totalClaimed>=totalFees;
+  const feeCoveragePct=totalFees>0?Math.min(100,Math.round(totalClaimed/totalFees*100)):0;
 
   return `<div class="allcards-summary">
     <div class="allcards-stats-row">
@@ -1593,22 +1615,23 @@ function buildAllCardsSummary(){
         <div class="allcards-stat-label">Claimed</div>
       </div>
       <div class="allcards-stat" style="text-align:center">
-        <div class="allcards-stat-val">${Math.round(claimedPct)}%</div>
-        <div class="allcards-stat-label">Capture rate</div>
+        <div class="allcards-stat-val ${isProfitable?'green':feeCoveragePct>=80?'gold':''}">${feeCoveragePct}%</div>
+        <div class="allcards-stat-label">Fee coverage</div>
       </div>
       <div class="allcards-stat" style="text-align:right">
         <div class="allcards-stat-val gold">$${remaining.toFixed(0)}</div>
         <div class="allcards-stat-label">Still available</div>
       </div>
     </div>
-    <div class="allcards-track">
+    <div class="allcards-track" style="position:relative">
       <div class="allcards-fill-claimed" style="width:${claimedPct}%"></div>
       <div class="allcards-fill-missed" style="width:0%"></div>
+      ${!isProfitable?`<div style="position:absolute;top:0;bottom:0;left:${breakEvenPct}%;width:2px;background:#fff;opacity:0.7;border-radius:1px;transform:translateX(-50%)"></div>`:''}
     </div>
     <div class="allcards-track-labels">
       <span>$0</span>
-      <span style="color:${effectiveFee<=0?'var(--green)':'var(--text-tertiary)'}">
-        ${effectiveFee<=0?'🎉 In profit! +$'+Math.abs(effectiveFee).toFixed(0):'Break-even at $'+totalFees}
+      <span style="color:${isProfitable?'var(--green)':'var(--text-tertiary)'}">
+        ${isProfitable?'🎉 In profit! +$'+Math.abs(effectiveFee).toFixed(0):'Break-even at $'+totalFees}
       </span>
       <span>$${totalAvail.toFixed(0)}</span>
     </div>
@@ -1865,7 +1888,7 @@ async function renderHistoryLog(){
 // ── Annual Recap ──────────────────────────────────────────────────────────
 function renderRecap(){
   const year=selectedYear;
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
 
   // Calc stats for each card for the selected year
@@ -1887,7 +1910,8 @@ function renderRecap(){
     if(captured>bestCard.captured) bestCard={key:cardKey,captured};
     if(missed>worstCard.missed) worstCard={key:cardKey,missed};
 
-    // Find biggest single miss
+    // Find biggest single miss — run inside selectedYear override so periods are correct
+    const savedYear2=selectedYear; selectedYear=year;
     CARDS[cardKey].sections.forEach(s=>{
       s.benefits.forEach(b=>{
         if(isBNotAvailable(b,year)) return;
@@ -1900,6 +1924,7 @@ function renderRecap(){
         if(bMissed>biggestMiss.amt) biggestMiss={name:b.name,amt:bMissed,card:CARD_LABELS[cardKey]};
       });
     });
+    selectedYear=savedYear2;
 
     // Streaks
     CARDS[cardKey].sections.forEach(s=>{
@@ -1926,7 +1951,7 @@ function renderRecap(){
       <div class="recap-total-label">total value captured across all cards</div>
     </div>
     <div class="recap-grid">
-      <div class="recap-stat"><div class="recap-stat-val red">$${totalMissed.toFixed(0)}</div><div class="recap-stat-label">Missed</div></div>
+      <div class="recap-stat"><div class="recap-stat-val red">$${totalMissed.toFixed(0)}</div><div class="recap-stat-label">Missed so far</div></div>
       <div class="recap-stat"><div class="recap-stat-val">${captureRate}%</div><div class="recap-stat-label">Capture rate</div></div>
       <div class="recap-stat"><div class="recap-stat-val">$${totalFees}</div><div class="recap-stat-label">Total fees paid</div></div>
       <div class="recap-stat"><div class="recap-stat-val ${effectiveFees<=0?'green':''}">${effectiveFees<=0?'+$'+Math.abs(effectiveFees).toFixed(0):'$'+effectiveFees.toFixed(0)}</div><div class="recap-stat-label">${effectiveFees<=0?'Net profit':'Effective fees'}</div></div>
@@ -1942,7 +1967,7 @@ function renderRecap(){
 // ── CSV Export ────────────────────────────────────────────────────────────
 function exportCSV(){
   const year=selectedYear;
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const rows=[['Card','Benefit','Period','Amount','Status']];
 
@@ -1975,7 +2000,7 @@ function exportCSV(){
 // ── Share Summary Image ───────────────────────────────────────────────────
 function shareRecap(){
   const year=selectedYear;
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   let totalCaptured=0,totalMissed=0,totalFees=0;
 
@@ -2087,7 +2112,7 @@ document.getElementById('noteModal').addEventListener('click', e=>{ if(e.target=
 
 // ── Card Comparison ───────────────────────────────────────────────────────
 function renderComparison(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Rsv'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
 
@@ -2145,7 +2170,7 @@ function maxCardYearValue(cardKey){
 }
 
 function renderStreaks(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const allStreaks=[];
 
@@ -2539,7 +2564,7 @@ function set(html){
 }
 
 function renderAllCards(){
-  const CARD_KEYS=['csr','gold','platinum'];
+  const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
 
@@ -2583,8 +2608,6 @@ function renderAllCards(){
   let html=``;
   html+=buildAllCardsSummary();
   html+=buildLiveBanner();
-  const catBreakdown=buildCategoryBreakdown();
-  if(catBreakdown) html+=catBreakdown;
   html+=`<div class="banner">📋 <strong>Still available to collect</strong> across all cards this period</div>`;
 
   // Grand total up top
@@ -2635,7 +2658,7 @@ function renderAllCards(){
   });
 
   if(!anyShown){
-    html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">🎉 All benefits claimed across all cards!</div>`;
+    html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">🎉 All visible card benefits claimed!</div>`;
   }
 
   html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:12px">Active periods only · switch to a card tab to mark benefits used</div>`;
@@ -2644,6 +2667,23 @@ function renderAllCards(){
 }
 
 function render(){
+  // Show/hide card selector and top nav based on view type
+  const _analyticsViews=['compare','streaks','history-log','recap','export','insights','heatmap','roi','priority','best-card','keep-card','calendar','search',];
+  const _isAnalytics=_analyticsViews.includes(activeView);
+  ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=_isAnalytics?'none':'';
+  });
+  document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
+
+  // In All Cards view: highlight all card buttons. Otherwise highlight only the active card.
+  const _btns=document.querySelectorAll('.card-btn[data-card]');
+  if(activeView==='all-cards'){
+    _btns.forEach(b=>{ b.className='card-btn'; b.classList.add(`active-${b.dataset.card}`); });
+  } else {
+    _btns.forEach(b=>{ b.className='card-btn'; if(b.dataset.card===activeCard) b.classList.add(`active-${activeCard}`); });
+  }
+
   const card=CARDS[activeCard];
   const fee=getFee(activeCard,selectedYear);
   const {year:fy,month:fm}=getCardYearStart(activeCard,selectedYear);
@@ -2701,11 +2741,13 @@ function initCardSelector() {
       }
       lastTap=now;
 
-      // Single tap = select card
+      // Single tap = select card, switch to May view
       btns().forEach(b => b.className = 'card-btn');
       const c = btn.dataset.card;
       btn.classList.add(`active-${c}`);
-      activeCard = c; render(); setTimeout(initCardFlip,50);
+      activeCard = c;
+      setActiveView('this-period');
+      setTimeout(initCardFlip,50);
     });
 
     // Drag start
@@ -2875,6 +2917,7 @@ function setActiveView(primary) {
       b.classList.toggle('active', b.dataset.primary === primary)
     );
   }
+
   updateSecondaryNav(primary);
   render();
 }
