@@ -3182,20 +3182,53 @@ document.getElementById('navSecondary').addEventListener('click', e => {
   render();
 });
 
-// ── Live calendar icon for the May/month nav button ─────────────────────
+// ── Uniform SVG nav icons ─────────────────────────────────────────────────
 (function(){
-  const btn=document.querySelector('.nav-primary-btn[data-primary="this-period"]');
-  if(!btn) return;
-  const navIcon=btn.querySelector('.nav-icon');
-  if(!navIcon) return;
-  const now=new Date();
-  const day=now.getDate();
-  const month=now.toLocaleString('default',{month:'short'}).toUpperCase();
-  navIcon.innerHTML=`<span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:var(--surface);border:1px solid var(--border);overflow:hidden;line-height:1;gap:0">
-    <span style="background:#e03030;color:#fff;font-size:6px;font-weight:700;font-family:var(--mono);width:100%;text-align:center;padding:1px 0;letter-spacing:0.05em">${month}</span>
-    <span style="font-size:13px;font-weight:700;font-family:var(--font);color:var(--text);line-height:1.3">${day}</span>
-  </span>`;
-  navIcon.style.fontSize='0';
+  const day=new Date().getDate();
+  const month=new Date().toLocaleString('default',{month:'short'}).toUpperCase();
+  const monthFull=new Date().toLocaleString('default',{month:'long'});
+  const currentTab=document.getElementById('currentTab');
+  if(currentTab) currentTab.textContent='Month';
+  const S='width:22px;height:22px;display:block';
+  const icons={
+    'all-cards':`<svg style="${S}" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="4" width="18" height="3" rx="1.5" fill="currentColor" opacity="0.9"/>
+      <rect x="2" y="9.5" width="18" height="3" rx="1.5" fill="currentColor" opacity="0.9"/>
+      <rect x="2" y="15" width="18" height="3" rx="1.5" fill="currentColor" opacity="0.9"/>
+    </svg>`,
+    'this-period':`<svg style="${S}" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="3" width="18" height="16" rx="2.5" fill="currentColor" opacity="0.08"/>
+      <rect x="2" y="3" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+      <rect x="2" y="3" width="18" height="6.5" rx="2.5" fill="#e03030"/>
+      <rect x="2" y="6.5" width="18" height="3" fill="#e03030"/>
+      <line x1="7" y1="3" x2="7" y2="9.5" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+      <line x1="15" y1="3" x2="15" y2="9.5" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+      <text x="11" y="8.8" text-anchor="middle" font-size="4.5" font-weight="700" font-family="system-ui,sans-serif" fill="white" letter-spacing="0.5">${month}</text>
+      <text x="11" y="17.5" text-anchor="middle" font-size="8.5" font-weight="700" font-family="system-ui,sans-serif" fill="currentColor">${day}</text>
+    </svg>`,
+    'card-year':`<svg style="${S}" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="5" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="2" y="9" width="18" height="2.5" fill="currentColor" opacity="0.35"/>
+      <rect x="4" y="13" width="5" height="1.5" rx="0.75" fill="currentColor" opacity="0.7"/>
+    </svg>`,
+    'ytd':`<svg style="${S}" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="2,17 7,11 11,13 16,7 20,5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="16,5 20,5 20,9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  };
+  Object.entries(icons).forEach(([primary,svg])=>{
+    const btn=document.querySelector(`.nav-primary-btn[data-primary="${primary}"]`);
+    if(!btn) return;
+    const icon=btn.querySelector('.nav-icon');
+    if(!icon) return;
+    icon.innerHTML=svg;
+    icon.style.fontSize='0';
+    icon.style.lineHeight='0';
+    icon.style.display='flex';
+    icon.style.alignItems='center';
+    icon.style.justifyContent='center';
+    icon.style.marginBottom='2px';
+  });
 })();
 
 // ── Home button — clicking app title goes back to All Cards ──────────────
