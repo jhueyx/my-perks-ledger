@@ -2643,6 +2643,14 @@ function renderAllCards(){
 }
 
 function render(){
+  // Show/hide card selector and top nav based on view type
+  const _analyticsViews=['compare','streaks','history-log','recap','export','insights','heatmap','roi','priority','best-card','keep-card','calendar','search','trends'];
+  const _isAnalytics=_analyticsViews.includes(activeView);
+  const _cardSelector=document.getElementById('cardSelector');
+  const _navPrimary=document.getElementById('navPrimary');
+  if(_cardSelector) _cardSelector.style.display=_isAnalytics?'none':'';
+  if(_navPrimary) _navPrimary.style.display=_isAnalytics?'none':'';
+
   const card=CARDS[activeCard];
   const fee=getFee(activeCard,selectedYear);
   const {year:fy,month:fm}=getCardYearStart(activeCard,selectedYear);
@@ -2861,6 +2869,7 @@ function setActiveView(primary) {
   else if(primary === 'keep-card') activeView = 'keep-card';
   else if(primary === 'calendar') activeView = 'calendar';
   else if(primary === 'search') activeView = 'search';
+  else if(primary === 'trends') activeView = 'trends';
 
   const topViews=['all-cards','this-period','card-year','ytd'];
   if(topViews.includes(primary)){
@@ -2874,6 +2883,7 @@ function setActiveView(primary) {
       b.classList.toggle('active', b.dataset.primary === primary)
     );
   }
+
   updateSecondaryNav(primary);
   render();
 }
