@@ -1850,10 +1850,16 @@ async function handleAuth(){
 
   // ── Demo bypass ──────────────────────────────────────────────
   if(email === 'test' && password === 'test'){
+    _sessionHandled = true;
     currentUser = { id: 'demo', email: 'test' };
     document.getElementById('drawerUserEmail').textContent = 'Demo mode';
-    userCards = ['platinum','gold','csr'];
-    unlockApp();
+    userCards = ['csr'];
+    activeCard = 'csr';
+    DATA = {gold:{}, platinum:{}, csr:{}};
+    document.getElementById('splash').classList.add('hidden');
+    document.getElementById('cardPickerOverlay').classList.add('hidden');
+    render();
+    setTimeout(initCardFlip, 200);
     return;
   }
   // ────────────────────────────────────────────────────────────
@@ -1863,6 +1869,7 @@ async function handleAuth(){
 
   try {
     if(_authTab === 'login'){
+      _sessionHandled = true;
       const {data, error} = await sb.auth.signInWithPassword({email, password});
       if(error) throw error;
       await onSignedIn(data.user, false);
@@ -1870,6 +1877,7 @@ async function handleAuth(){
       const confirm = document.getElementById('authConfirm').value;
       if(password !== confirm){ throw new Error('Passwords do not match.'); }
       if(password.length < 6){ throw new Error('Password must be at least 6 characters.'); }
+      _sessionHandled = true;
       const {data, error} = await sb.auth.signUp({email, password});
       if(error) throw error;
       if(data.user && data.user.identities && data.user.identities.length === 0){
@@ -1903,6 +1911,7 @@ async function onSignedIn(user, isNew){
 
 async function signOut(){
   await sb.auth.signOut();
+  _sessionHandled = false;
   currentUser = null;
   userCards = null;
   DATA = {gold:{},platinum:{},csr:{}};
@@ -1917,13 +1926,24 @@ async function signOut(){
 }
 
 // Check session on load
-sb.auth.getSession().then(async ({data:{session}})=>{
-  if(session){
+// ── Session persistence ───────────────────────────────────────────────────
+// onAuthStateChange fires on every page load if a session exists,
+// and also handles sign-in/sign-out events reliably.
+let _sessionHandled = false;
+sb.auth.onAuthStateChange(async (event, session) => {
+  if(_sessionHandled) return; // already handled (e.g. manual sign-in)
+  if(session && session.user){
+    _sessionHandled = true;
     await onSignedIn(session.user, false);
-  } else {
-    setTimeout(()=>document.getElementById('authEmail').focus(), 100);
   }
 });
+
+// Fallback: if onAuthStateChange doesn't fire within 800ms, show login
+setTimeout(()=>{
+  if(!_sessionHandled){
+    document.getElementById('authEmail').focus();
+  }
+}, 800);
 
 // ── Card picker ───────────────────────────────────────────────────────────
 let _cpSelected = new Set();
