@@ -732,19 +732,43 @@ function getBenefitExpiryLabel(b){
 }
 
 // ── Projection ────────────────────────────────────────────────────────────
+// Split captured value into repeating (monthly/quarterly) vs one-time (annual etc.)
+// One-time benefits are already fully captured — don't extrapolate them.
+// Only repeating benefits get projected forward by run rate.
+function calcCapturedByType(cardKey){
+  const card=CARDS[cardKey];
+  const REPEATING=['monthly','quarterly'];
+  let repeating=0, oneTime=0;
+  card.sections.forEach(s=>{
+    const ps=getCardYearPeriods(cardKey,s.cadence);
+    ps.forEach(p=>{
+      s.benefits.forEach(b=>{
+        if(isBExpired(b,p)||isBNotAvailable(b,selectedYear)) return;
+        if(!isUsed(cardKey,b.id,p.pk)) return;
+        const amt=getBAmount(b,p);
+        if(REPEATING.includes(s.cadence)) repeating+=amt;
+        else oneTime+=amt;
+      });
+    });
+  });
+  return {repeating, oneTime};
+}
+
 function buildProjection(cardKey){
-  const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
-  const {year:fy,month:fm}=getCardYearStart(cardKey,CY);
-  const monthsElapsed=CM>=fm?CM-fm+1:12-(fm-CM);
-  const monthsTotal=12;
-  const monthsRemaining=monthsTotal-monthsElapsed;
-  if(monthsElapsed===0) return '';
-  const rate=captured/monthsElapsed;
-  const projected=captured+(rate*monthsRemaining);
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
+  const {month:fm}=getCardYearStart(cardKey,CY);
+  const monthsElapsed=Math.max(1, CM>=fm?CM-fm+1:12-(fm-CM));
+  const monthsRemaining=12-monthsElapsed;
+  const {repeating,oneTime}=calcCapturedByType(cardKey);
+  // Extrapolate only repeating benefits; one-time credits are already fully captured
+  const projectedRepeating=monthsRemaining>0?(repeating/monthsElapsed)*monthsRemaining:0;
+  const projected=oneTime+repeating+projectedRepeating;
   const fee=getFee(cardKey,CY);
   const projectedEffective=Math.max(0,fee-projected);
   return `<div class="projection-bar">
     <div>
+      <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:2px">${CARD_LABELS[cardKey]}</div>
       <div class="projection-label">📈 Projected year-end capture</div>
       <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">at current rate · ${monthsRemaining} months left</div>
     </div>
@@ -784,9 +808,17 @@ function renderHeatmap(){
         });
       });
       const rate=total>0?claimed/total:0;
-      const cls=total===0?'h0':rate===0?'h0':rate<=0.33?'h1':rate<=0.66?'h2':rate<1?'h3':'h4';
+      const cellStyle=total===0||rate===0
+        ? 'background:var(--border-light);color:var(--text-tertiary)'
+        : rate<0.5
+          ? 'background:rgba(220,60,60,0.55);color:#fff'
+          : rate<0.9
+            ? 'background:rgba(210,160,0,0.45);color:var(--text)'
+            : rate<1
+              ? 'background:rgba(210,160,0,0.75);color:var(--text)'
+              : 'background:var(--green);color:#fff';
       const pct=total>0?Math.round(rate*100):'-';
-      html+=`<div class="heatmap-cell ${cls}" title="${MONTHS[m]}: ${claimed}/${total} claimed">${pct}${total>0?'%':''}</div>`;
+      html+=`<div class="heatmap-cell" style="${cellStyle}" title="${MONTHS[m]}: ${claimed}/${total} claimed">${pct}${total>0?'%':''}</div>`;
     }
   });
 
@@ -795,9 +827,9 @@ function renderHeatmap(){
   // Legend
   html+=`<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">
     <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--border-light);vertical-align:middle;margin-right:4px"></span>0%</span>
-    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(42,155,106,0.15);vertical-align:middle;margin-right:4px"></span>1-33%</span>
-    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(42,155,106,0.35);vertical-align:middle;margin-right:4px"></span>34-66%</span>
-    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(42,155,106,0.6);vertical-align:middle;margin-right:4px"></span>67-99%</span>
+    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(220,60,60,0.55);vertical-align:middle;margin-right:4px"></span>1–49%</span>
+    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(210,160,0,0.45);vertical-align:middle;margin-right:4px"></span>50–89%</span>
+    <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(210,160,0,0.75);vertical-align:middle;margin-right:4px"></span>90–99%</span>
     <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--green);vertical-align:middle;margin-right:4px"></span>100%</span>
   </div>`;
 
@@ -811,15 +843,14 @@ function getCardYearMonthsElapsed(cardKey){
 }
 
 function getProjectedCapture(cardKey){
-  // Additive projection: already-captured + (monthly run rate × remaining months)
-  // Matches buildProjection's formula. Avoids multiplying one-time annual credits
-  // (e.g. $300 travel credit) by 12, which caused massive overstatement.
-  const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
+  // Use cadence-aware projection: one-time benefits (annual, semi-annual etc.) are
+  // counted as-is since they won't repeat. Only monthly/quarterly benefits are extrapolated.
   const {month:fm}=getCardYearStart(cardKey,CY);
   const monthsElapsed=Math.max(1, CM>=fm ? CM-fm+1 : 12-(fm-CM));
   const monthsRemaining=12-monthsElapsed;
-  const rate=captured/monthsElapsed;
-  return captured+(rate*monthsRemaining);
+  const {repeating,oneTime}=calcCapturedByType(cardKey);
+  const projectedRepeating=monthsRemaining>0?(repeating/monthsElapsed)*monthsRemaining:0;
+  return oneTime+repeating+projectedRepeating;
 }
 
 function getROIGrade(captured, fee, cardKey){
@@ -1251,40 +1282,57 @@ function renderBenefitCalendar(){
 function renderTrends(){
   const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
-  const years=[2025,2026];
 
-  let html=`<div class="banner">📊 <strong>Multi-year trends</strong> — 2025 vs 2026 comparison</div>`;
+  // Dynamic year range: last 3 years up to current
+  const years=[CY-2,CY-1,CY].filter(y=>y>=2024);
 
-  // Safely compute captured value for a given card and year
+  const yearRange=years.length>1?`${years[0]}–${years[years.length-1]}`:`${years[0]}`;
+  let html=`<div class="banner">📊 <strong>Multi-year trends</strong> — ${yearRange} comparison</div>`;
+
+  // Compute total captured value for a card in a given calendar year,
+  // covering ALL cadences including card-year-aligned ones.
   function capturedForYear(cardKey,y){
     let total=0;
     const card=CARDS[cardKey];
+    const lastMonth=y<CY?11:CM; // past years: all 12 months; current: up to now
+
     card.sections.forEach(s=>{
-      // For each cadence, get all periods in that year
-      const lastMonth=y<CY?11:CM;
       const periods=[];
       if(s.cadence==='monthly'){
-        for(let m=0;m<=lastMonth;m++) periods.push({pk:getPK('monthly',m,y),calY:y,calM:m});
+        for(let m=0;m<=lastMonth;m++) periods.push({pk:getPK('monthly',m,y),m,calY:y,calM:m});
       } else if(s.cadence==='quarterly'){
         const seen=new Set();
         for(let m=0;m<=lastMonth;m++){
           const pk=getPK('quarterly',m,y);
-          if(!seen.has(pk)){seen.add(pk);periods.push({pk,calY:y,calM:m});}
+          if(!seen.has(pk)){seen.add(pk);periods.push({pk,m,calY:y,calM:m});}
         }
       } else if(s.cadence==='cal-semi-annual'){
-        periods.push({pk:getPK('cal-semi-annual',0,y),calY:y,calM:0});
-        if(lastMonth>=6) periods.push({pk:getPK('cal-semi-annual',6,y),calY:y,calM:6});
+        periods.push({pk:getPK('cal-semi-annual',0,y),m:0,calY:y,calM:0,endM:5,endY:y});
+        if(lastMonth>=6) periods.push({pk:getPK('cal-semi-annual',6,y),m:6,calY:y,calM:6,endM:11,endY:y});
       } else if(s.cadence==='cal-annual'){
-        periods.push({pk:`${y}-annual`,calY:y,calM:0});
-      } else {
-        // card-year cadences — skip for simplicity
-        return;
+        periods.push({pk:`${y}-annual`,m:0,calY:y,calM:0});
+      } else if(s.cadence==='semi-annual'){
+        // card-year halves — find the two h1/h2 PKs that overlap calendar year y
+        const allPs=getCardYearPeriods(cardKey,s.cadence);
+        allPs.forEach(p=>{ if(p.calY===y||(p.endY&&p.endY===y)) periods.push(p); });
+      } else if(s.cadence==='annual'){
+        // card-year annual — find the period whose window overlaps year y
+        const allPs=getCardYearPeriods(cardKey,s.cadence);
+        allPs.forEach(p=>{ if(p.calY===y) periods.push(p); });
+      } else if(s.cadence==='feb-annual'){
+        // Feb–Jan cycle: find the one that starts in year y
+        const allPs=getCardYearPeriods(cardKey,s.cadence);
+        allPs.forEach(p=>{ if(p.calY===y) periods.push(p); });
+        // also check previous feb window if it spans into y
+        const prev={m:1,calY:y-1,calM:1,pk:`feb-${y-1}`,endM:0,endY:y};
+        allPs.forEach(p=>{ if(p.calY===y-1&&!periods.find(x=>x.pk===p.pk)) periods.push(p); });
       }
+
       s.benefits.forEach(b=>{
         if(isBNotAvailable(b,y)) return;
         periods.forEach(p=>{
           if(isBExpired(b,p)) return;
-          if(isUsed(cardKey,b.id,p.pk)) total+=getBAmount(b,{m:p.calM});
+          if(isUsed(cardKey,b.id,p.pk)) total+=getBAmount(b,p);
         });
       });
     });
@@ -1300,11 +1348,11 @@ function renderTrends(){
 
     vals.forEach(({y,captured,fee})=>{
       const barPct=Math.round(captured/maxVal*100);
-      const feePct=Math.min(100,Math.round(fee/maxVal*100));
       const isCurrent=y===CY;
       const profit=captured-fee;
+      const label=isCurrent?`${y} YTD`:String(y);
       html+=`<div class="trend-row">
-        <div class="trend-year" style="color:${isCurrent?'var(--text)':'var(--text-tertiary)'}">${y}${isCurrent?' ●':''}</div>
+        <div class="trend-year" style="color:${isCurrent?'var(--text)':'var(--text-tertiary)'}">${label}</div>
         <div style="flex:1;position:relative">
           <div class="trend-bar-wrap"><div class="trend-bar-fill" style="width:${barPct}%;background:${captured>=fee?'var(--green)':'var(--gold)'}"></div></div>
         </div>
