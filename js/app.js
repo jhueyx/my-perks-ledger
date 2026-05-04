@@ -881,7 +881,7 @@ function buildProjection(cardKey){
 // ── Heatmap ───────────────────────────────────────────────────────────────
 function renderHeatmap(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Rsv'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   let html=`<div class="banner">🗓 <strong>Missed money heatmap</strong> — monthly benefits capture rate by card</div>`;
   // Heatmap rendered as a plain CSS grid — no class-based colors so stylesheet can't interfere
   const CELL_W=42,CELL_H=36,COLS=13;
@@ -1686,9 +1686,15 @@ function buildAllCardsSummary(){
   const effectiveFee=totalFees-totalClaimed;
   const claimedPct=totalAvail>0?Math.min(100,totalClaimed/totalAvail*100):0;
   const breakEvenPct=totalAvail>0?Math.min(100,totalFees/totalAvail*100):0;
-  const remaining=totalAvail-totalClaimed;
   const isProfitable=totalClaimed>=totalFees;
-  const feeCoveragePct=totalFees>0?Math.min(100,Math.round(totalClaimed/totalFees*100)):0;
+  const feeCoveragePct=totalFees>0?Math.round(totalClaimed/totalFees*100):0;
+  // "Still missing" = total unclaimed across entire card year (missed past + unclaimed current/future)
+  let totalMissable=0;
+  getVisibleCardKeys().forEach(ck=>{
+    const {missed,total}=calcStats(ck,c=>getCardYearPeriods(ck,c),isPCurrent);
+    totalMissable+=missed;
+  });
+  const remaining=totalMissable;
 
   return `<div class="allcards-summary">
     <div class="allcards-stats-row">
@@ -1701,21 +1707,20 @@ function buildAllCardsSummary(){
         <div class="allcards-stat-label">Fee coverage</div>
       </div>
       <div class="allcards-stat" style="text-align:right">
-        <div class="allcards-stat-val gold">$${remaining.toFixed(0)}</div>
+        <div class="allcards-stat-val" style="color:var(--text-tertiary)">$${remaining.toFixed(0)}</div>
         <div class="allcards-stat-label">Still available</div>
       </div>
     </div>
-    <div class="allcards-track" style="position:relative">
-      <div class="allcards-fill-claimed" style="width:${claimedPct}%"></div>
-      <div class="allcards-fill-missed" style="width:0%"></div>
-      ${!isProfitable?`<div style="position:absolute;top:0;bottom:0;left:${breakEvenPct}%;width:2px;background:#fff;opacity:0.7;border-radius:1px;transform:translateX(-50%)"></div>`:''}
+    <div class="allcards-track" style="position:relative;overflow:visible">
+      <div class="allcards-fill-claimed" style="width:${Math.min(feeCoveragePct,115)}%;background:${isProfitable?'var(--green)':'var(--gold)'};border-radius:inherit;transition:width 0.4s ease"></div>
+      ${!isProfitable?`<div style="position:absolute;top:-3px;bottom:-3px;right:0;width:2px;background:#fff;opacity:0.5;border-radius:1px"></div>`:''}
     </div>
     <div class="allcards-track-labels">
       <span>$0</span>
       <span style="color:${isProfitable?'var(--green)':'var(--text-tertiary)'}">
         ${isProfitable?'🎉 In profit! +$'+Math.abs(effectiveFee).toFixed(0):'Break-even at $'+totalFees}
       </span>
-      <span>$${totalAvail.toFixed(0)}</span>
+      <span>${isProfitable?'':'$'+totalFees}</span>
     </div>
   </div>`;
 }
@@ -2194,7 +2199,7 @@ document.getElementById('noteModal').addEventListener('click', e=>{ if(e.target=
 // ── Card Comparison ───────────────────────────────────────────────────────
 function renderComparison(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Rsv'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
 
   let html=`<div class="banner">📊 <strong>All cards compared</strong> — current card-year performance</div>`;
@@ -3053,6 +3058,11 @@ document.getElementById('navSecondary').addEventListener('click', e => {
   if(title){
     title.style.cursor='pointer';
     title.addEventListener('click',()=>setActiveView('all-cards'));
+  }
+  // Add app icon to drawer header
+  const drawerTitle=document.querySelector('.drawer-title');
+  if(drawerTitle){
+    drawerTitle.innerHTML=`<img src="icon-192.png" style="width:24px;height:24px;border-radius:6px;vertical-align:middle;margin-right:8px;"> My Perks Ledger`;
   }
 })();
 
