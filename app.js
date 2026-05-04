@@ -809,14 +809,14 @@ function renderHeatmap(){
       });
       const rate=total>0?claimed/total:0;
       const cellStyle=total===0||rate===0
-        ? 'background:var(--border-light);color:var(--text-tertiary)'
+        ? 'background:var(--border-light) !important;color:var(--text-tertiary) !important'
         : rate<0.5
-          ? 'background:rgba(220,60,60,0.55);color:#fff'
+          ? 'background:rgba(220,60,60,0.55) !important;color:#fff !important'
           : rate<0.9
-            ? 'background:rgba(210,160,0,0.45);color:var(--text)'
+            ? 'background:rgba(210,160,0,0.45) !important;color:var(--text) !important'
             : rate<1
-              ? 'background:rgba(210,160,0,0.75);color:var(--text)'
-              : 'background:var(--green);color:#fff';
+              ? 'background:rgba(210,160,0,0.75) !important;color:var(--text) !important'
+              : 'background:var(--green) !important;color:#fff !important';
       const pct=total>0?Math.round(rate*100):'-';
       html+=`<div class="heatmap-cell" style="${cellStyle}" title="${MONTHS[m]}: ${claimed}/${total} claimed">${pct}${total>0?'%':''}</div>`;
     }
@@ -2646,10 +2646,10 @@ function render(){
   // Show/hide card selector and top nav based on view type
   const _analyticsViews=['compare','streaks','history-log','recap','export','insights','heatmap','roi','priority','best-card','keep-card','calendar','search','trends'];
   const _isAnalytics=_analyticsViews.includes(activeView);
-  const _cardSelector=document.getElementById('cardSelector');
-  const _navPrimary=document.getElementById('navPrimary');
-  if(_cardSelector) _cardSelector.style.display=_isAnalytics?'none':'';
-  if(_navPrimary) _navPrimary.style.display=_isAnalytics?'none':'';
+  ['cardSelector','navPrimary','navSecondary','yearSelector'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=_isAnalytics?'none':'';
+  });
 
   const card=CARDS[activeCard];
   const fee=getFee(activeCard,selectedYear);
