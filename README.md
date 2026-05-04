@@ -1,12 +1,15 @@
-# My Perks Ledger — split fixed build
+# My Perks Ledger
 
-This version keeps the app split into separate files while preserving all supported card benefit data.
+Full single-file version of the app, ready to upload to GitHub Pages.
 
-Files:
-- `index.html` — app shell and card buttons
-- `css/styles.css` — styles
-- `js/cards-data.js` — supported benefit data for CSR, AMEX Gold, and AMEX Platinum
-- `js/app.js` — app logic, Supabase login, filtering, rendering
-- `assets/` — card artwork
+## Deploy to GitHub Pages
 
-Important: Supabase `user_profiles.cards` still controls which cards are visible. The master data file includes all supported cards so Gold/Platinum can render when a logged-in user has them.
+1. Upload `index.html` to your repo root.
+2. In GitHub: Settings → Pages.
+3. Set source to your main branch/root folder.
+
+## Supabase safety
+
+- The Supabase anon public key can be used in frontend code.
+- Never commit a Supabase service_role key.
+- Keep RLS policies enabled for user-specific tables like `user_cards`.
