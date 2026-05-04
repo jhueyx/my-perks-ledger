@@ -1,5 +1,17 @@
 // ── Dark mode ─────────────────────────────────────────────────────────────
 const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth();
+
+// ── Inject style overrides ────────────────────────────────────────────────
+(function(){
+  const s=document.createElement('style');
+  s.textContent=`
+    .heatmap-cell-custom { background:none !important; color:inherit !important; }
+    .drawer-item[data-primary="trends"] { display:none !important; }
+  `;
+  document.head.appendChild(s);
+})();
+
+
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const FEE_MONTHS={gold:4,platinum:8,csr:4};
@@ -742,8 +754,10 @@ function calcCapturedByType(cardKey){
   card.sections.forEach(s=>{
     const ps=getCardYearPeriods(cardKey,s.cadence);
     ps.forEach(p=>{
+      // Skip future periods entirely — only count what's actually been used
+      if(isPFuture(p)) return;
       s.benefits.forEach(b=>{
-        if(isBExpired(b,p)||isBNotAvailable(b,selectedYear)) return;
+        if(isBExpired(b,p)||isBNotAvailable(b,CY)) return;
         if(!isUsed(cardKey,b.id,p.pk)) return;
         const amt=getBAmount(b,p);
         if(REPEATING.includes(s.cadence)) repeating+=amt;
@@ -784,19 +798,24 @@ function renderHeatmap(){
   const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Rsv'};
   let html=`<div class="banner">🗓 <strong>Missed money heatmap</strong> — monthly benefits capture rate by card</div>`;
-  html+=`<div style="overflow-x:auto"><div class="heatmap-grid" style="min-width:500px">`;
+  // Heatmap rendered as a plain CSS grid — no class-based colors so stylesheet can't interfere
+  const CELL_W=42,CELL_H=36,COLS=13;
+  html+=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
+  html+=`<div style="display:grid;grid-template-columns:80px repeat(12,${CELL_W}px);gap:3px;min-width:${80+COLS*CELL_W+COLS*3}px">`;
 
   // Header row
   html+=`<div></div>`;
-  for(let m=0;m<12;m++) html+=`<div class="heatmap-month">${MONTHS[m]}</div>`;
+  for(let m=0;m<12;m++) html+=`<div style="text-align:center;font-size:10px;font-family:var(--mono);color:var(--text-tertiary);padding:4px 0">${MONTHS[m]}</div>`;
 
   CARD_KEYS.forEach(cardKey=>{
     const card=CARDS[cardKey];
-    html+=`<div class="heatmap-label">${CARD_LABELS[cardKey]}</div>`;
+    html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);display:flex;align-items:center;padding-right:6px">${CARD_LABELS[cardKey]}</div>`;
     for(let m=0;m<12;m++){
       const isFut=m>CM;
-      if(isFut){ html+=`<div class="heatmap-cell future">-</div>`; continue; }
-      // Count monthly benefits for this month
+      if(isFut){
+        html+=`<div style="height:${CELL_H}px;border-radius:5px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">–</div>`;
+        continue;
+      }
       let total=0,claimed=0;
       card.sections.forEach(s=>{
         if(s.cadence!=='monthly') return;
@@ -808,17 +827,18 @@ function renderHeatmap(){
         });
       });
       const rate=total>0?claimed/total:0;
-      const cellStyle=total===0||rate===0
-        ? 'background:var(--border-light) !important;color:var(--text-tertiary) !important'
+      const pct=total>0?Math.round(rate*100):null;
+      const bg=total===0||rate===0
+        ? 'var(--border-light)'
         : rate<0.5
-          ? 'background:rgba(220,60,60,0.55) !important;color:#fff !important'
+          ? 'rgba(220,60,60,0.6)'
           : rate<0.9
-            ? 'background:rgba(210,160,0,0.45) !important;color:var(--text) !important'
+            ? 'rgba(210,160,0,0.5)'
             : rate<1
-              ? 'background:rgba(210,160,0,0.75) !important;color:var(--text) !important'
-              : 'background:var(--green) !important;color:#fff !important';
-      const pct=total>0?Math.round(rate*100):'-';
-      html+=`<div class="heatmap-cell" style="${cellStyle}" title="${MONTHS[m]}: ${claimed}/${total} claimed">${pct}${total>0?'%':''}</div>`;
+              ? 'rgba(210,160,0,0.85)'
+              : '#2a9b6a';
+      const fg=rate>=1?'#fff':rate>0&&rate<0.5?'#fff':'var(--text)';
+      html+=`<div style="height:${CELL_H}px;border-radius:5px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:${fg}" title="${MONTHS[m]}: ${claimed}/${total} claimed">${pct!==null?pct+'%':'–'}</div>`;
     }
   });
 
@@ -1568,7 +1588,7 @@ function renderSearch(){
 // ── All Cards Summary ─────────────────────────────────────────────────────
 function buildAllCardsSummary(){
   let totalAvail=0, totalClaimed=0, totalFees=0, totalMissed=0;
-  Object.keys(CARDS).forEach(cardKey=>{
+  getVisibleCardKeys().forEach(cardKey=>{
     totalFees+=getFee(cardKey,CY);
     CARDS[cardKey].sections.forEach(s=>{
       const pk=getCurrentPK(cardKey,s.cadence);
@@ -1583,7 +1603,10 @@ function buildAllCardsSummary(){
   });
   const effectiveFee=totalFees-totalClaimed;
   const claimedPct=totalAvail>0?Math.min(100,totalClaimed/totalAvail*100):0;
+  const breakEvenPct=totalAvail>0?Math.min(100,totalFees/totalAvail*100):0;
   const remaining=totalAvail-totalClaimed;
+  const isProfitable=totalClaimed>=totalFees;
+  const feeCoveragePct=totalFees>0?Math.min(100,Math.round(totalClaimed/totalFees*100)):0;
 
   return `<div class="allcards-summary">
     <div class="allcards-stats-row">
@@ -1592,22 +1615,23 @@ function buildAllCardsSummary(){
         <div class="allcards-stat-label">Claimed</div>
       </div>
       <div class="allcards-stat" style="text-align:center">
-        <div class="allcards-stat-val">${Math.round(claimedPct)}%</div>
-        <div class="allcards-stat-label">Capture rate</div>
+        <div class="allcards-stat-val ${isProfitable?'green':feeCoveragePct>=80?'gold':''}">${feeCoveragePct}%</div>
+        <div class="allcards-stat-label">Fee coverage</div>
       </div>
       <div class="allcards-stat" style="text-align:right">
         <div class="allcards-stat-val gold">$${remaining.toFixed(0)}</div>
         <div class="allcards-stat-label">Still available</div>
       </div>
     </div>
-    <div class="allcards-track">
+    <div class="allcards-track" style="position:relative">
       <div class="allcards-fill-claimed" style="width:${claimedPct}%"></div>
       <div class="allcards-fill-missed" style="width:0%"></div>
+      ${!isProfitable?`<div style="position:absolute;top:0;bottom:0;left:${breakEvenPct}%;width:2px;background:#fff;opacity:0.7;border-radius:1px;transform:translateX(-50%)"></div>`:''}
     </div>
     <div class="allcards-track-labels">
       <span>$0</span>
-      <span style="color:${effectiveFee<=0?'var(--green)':'var(--text-tertiary)'}">
-        ${effectiveFee<=0?'🎉 In profit! +$'+Math.abs(effectiveFee).toFixed(0):'Break-even at $'+totalFees}
+      <span style="color:${isProfitable?'var(--green)':'var(--text-tertiary)'}">
+        ${isProfitable?'🎉 In profit! +$'+Math.abs(effectiveFee).toFixed(0):'Break-even at $'+totalFees}
       </span>
       <span>$${totalAvail.toFixed(0)}</span>
     </div>
@@ -1886,7 +1910,8 @@ function renderRecap(){
     if(captured>bestCard.captured) bestCard={key:cardKey,captured};
     if(missed>worstCard.missed) worstCard={key:cardKey,missed};
 
-    // Find biggest single miss
+    // Find biggest single miss — run inside selectedYear override so periods are correct
+    const savedYear2=selectedYear; selectedYear=year;
     CARDS[cardKey].sections.forEach(s=>{
       s.benefits.forEach(b=>{
         if(isBNotAvailable(b,year)) return;
@@ -1899,6 +1924,7 @@ function renderRecap(){
         if(bMissed>biggestMiss.amt) biggestMiss={name:b.name,amt:bMissed,card:CARD_LABELS[cardKey]};
       });
     });
+    selectedYear=savedYear2;
 
     // Streaks
     CARDS[cardKey].sections.forEach(s=>{
@@ -1925,7 +1951,7 @@ function renderRecap(){
       <div class="recap-total-label">total value captured across all cards</div>
     </div>
     <div class="recap-grid">
-      <div class="recap-stat"><div class="recap-stat-val red">$${totalMissed.toFixed(0)}</div><div class="recap-stat-label">Missed</div></div>
+      <div class="recap-stat"><div class="recap-stat-val red">$${totalMissed.toFixed(0)}</div><div class="recap-stat-label">Missed so far</div></div>
       <div class="recap-stat"><div class="recap-stat-val">${captureRate}%</div><div class="recap-stat-label">Capture rate</div></div>
       <div class="recap-stat"><div class="recap-stat-val">$${totalFees}</div><div class="recap-stat-label">Total fees paid</div></div>
       <div class="recap-stat"><div class="recap-stat-val ${effectiveFees<=0?'green':''}">${effectiveFees<=0?'+$'+Math.abs(effectiveFees).toFixed(0):'$'+effectiveFees.toFixed(0)}</div><div class="recap-stat-label">${effectiveFees<=0?'Net profit':'Effective fees'}</div></div>
@@ -2582,8 +2608,6 @@ function renderAllCards(){
   let html=``;
   html+=buildAllCardsSummary();
   html+=buildLiveBanner();
-  const catBreakdown=buildCategoryBreakdown();
-  if(catBreakdown) html+=catBreakdown;
   html+=`<div class="banner">📋 <strong>Still available to collect</strong> across all cards this period</div>`;
 
   // Grand total up top
@@ -2644,12 +2668,21 @@ function renderAllCards(){
 
 function render(){
   // Show/hide card selector and top nav based on view type
-  const _analyticsViews=['compare','streaks','history-log','recap','export','insights','heatmap','roi','priority','best-card','keep-card','calendar','search','trends'];
+  const _analyticsViews=['compare','streaks','history-log','recap','export','insights','heatmap','roi','priority','best-card','keep-card','calendar','search',];
   const _isAnalytics=_analyticsViews.includes(activeView);
-  ['cardSelector','navPrimary','navSecondary','yearSelector'].forEach(id=>{
+  ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.style.display=_isAnalytics?'none':'';
   });
+  document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
+
+  // In All Cards view: highlight all card buttons. Otherwise highlight only the active card.
+  const _btns=document.querySelectorAll('.card-btn[data-card]');
+  if(activeView==='all-cards'){
+    _btns.forEach(b=>{ b.className='card-btn'; b.classList.add(`active-${b.dataset.card}`); });
+  } else {
+    _btns.forEach(b=>{ b.className='card-btn'; if(b.dataset.card===activeCard) b.classList.add(`active-${activeCard}`); });
+  }
 
   const card=CARDS[activeCard];
   const fee=getFee(activeCard,selectedYear);
@@ -2708,11 +2741,13 @@ function initCardSelector() {
       }
       lastTap=now;
 
-      // Single tap = select card
+      // Single tap = select card, switch to May view
       btns().forEach(b => b.className = 'card-btn');
       const c = btn.dataset.card;
       btn.classList.add(`active-${c}`);
-      activeCard = c; render(); setTimeout(initCardFlip,50);
+      activeCard = c;
+      setActiveView('this-period');
+      setTimeout(initCardFlip,50);
     });
 
     // Drag start
@@ -2869,7 +2904,6 @@ function setActiveView(primary) {
   else if(primary === 'keep-card') activeView = 'keep-card';
   else if(primary === 'calendar') activeView = 'calendar';
   else if(primary === 'search') activeView = 'search';
-  else if(primary === 'trends') activeView = 'trends';
 
   const topViews=['all-cards','this-period','card-year','ytd'];
   if(topViews.includes(primary)){
