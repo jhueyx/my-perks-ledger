@@ -1,5 +1,5 @@
 // ── Dark mode ─────────────────────────────────────────────────────────────
-// ── Card benefit data (inlined from cards-data.js) ───────────────────────
+// ── Card benefit data ─────────────────────────────────────────────────────
 const CARDS={
   gold:{name:'AMEX Gold',fee:325,historicalFees:{2025:325},sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
@@ -67,24 +67,11 @@ const CARDS={
 const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth();
 
 // ── Inject style overrides ────────────────────────────────────────────────
-(function(){
-  const s=document.createElement('style');
-  s.textContent=`
-    .heatmap-cell-custom { background:none !important; color:inherit !important; }
-    .drawer-item[data-primary="trends"] { display:none !important; }
-    .dark-toggle-label { display:none !important; }
-    .drawer-item[data-primary="best-card"] { display:none !important; }
-    .drawer-item[data-primary="calendar"] { display:none !important; }
-    .drawer-item[data-primary="my-cards"] { display:none !important; }
-    .drawer-item[data-primary="search"] { display:none !important; }
-    .drawer-item[data-primary="export"] { display:none !important; }
-  `;
-  document.head.appendChild(s);
-})();
 
 
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); }
 const FEE_MONTHS={gold:4,platinum:8,csr:4};
 const STORAGE_KEY='card-benefits-tracker-v1';
 const SUPABASE_URL='https://rsbvddlhismetljqoqre.supabase.co';
@@ -476,11 +463,20 @@ async function syncFromSupabase(){
   try{
     const {data,error}=await sb.from('tracker_data').select('data').eq('user_id',currentUser.id).single();
     if(!error&&data&&data.data){
-      const remote=JSON.stringify(data.data);
-      const local=JSON.stringify(DATA);
-      if(remote!==local){
-        DATA=Object.assign({gold:{},platinum:{},csr:{}},data.data);
+      const raw=data.data;
+      // Separate extras from benefit toggles
+      const remoteExtras={_customAmounts:raw._customAmounts||{},_partial:raw._partial||{},_notes:raw._notes||{},_credited:raw._credited||{}};
+      const benefitData={...raw};
+      delete benefitData._customAmounts; delete benefitData._partial; delete benefitData._notes; delete benefitData._credited;
+      const localExtras={_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited()};
+      const changed=JSON.stringify(benefitData)!==JSON.stringify(DATA)||JSON.stringify(remoteExtras)!==JSON.stringify(localExtras);
+      if(changed){
+        DATA=Object.assign({gold:{},platinum:{},csr:{}},benefitData);
         localStorage.setItem(STORAGE_KEY+'-'+currentUser.id,JSON.stringify(DATA));
+        saveCustomAmounts(remoteExtras._customAmounts);
+        savePartial(remoteExtras._partial);
+        saveNotes(remoteExtras._notes);
+        saveCredited(remoteExtras._credited);
         render();
       }
     }
@@ -493,7 +489,8 @@ async function saveToStorage(){
   setSave('saving','saving…');
   try{ localStorage.setItem(STORAGE_KEY+'-'+currentUser.id,JSON.stringify(DATA)); }catch(e){}
   try{
-    const {error}=await sb.from('tracker_data').upsert({user_id:currentUser.id,data:DATA,updated_at:new Date().toISOString()});
+    const payload={...DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited()};
+    const {error}=await sb.from('tracker_data').upsert({user_id:currentUser.id,data:payload,updated_at:new Date().toISOString()});
     if(error) throw error;
     setSave('saved','✓ saved');
     setTimeout(()=>setSave('',''),2000);
@@ -650,9 +647,6 @@ function getCurrentLabel(cardKey,cadence){
   for(const p of ps){if(isPCurrent(cadence,p)) return p.lbl+(p.endM!==undefined&&!p.lbl.includes('–')?` (${MONTHS[p.calM]}–${MONTHS[p.endM]})`:'');}
   return '';
 }
-
-// Card benefit data is loaded from js/cards-csr.js
-
 
 function getBAmount(b,p){ return (b.decAmount && p.m===11) ? b.decAmount : b.amount; }
 
@@ -1639,7 +1633,7 @@ function renderSearch(){
   if(!q){
     html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">Type to search across all benefits</div>`;
   } else if(!results.length){
-    html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">No benefits found for "${q}"</div>`;
+    html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">No benefits found for "${escapeHtml(q)}"</div>`;
   } else {
     html+=`<div style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);margin-bottom:10px">${results.length} result${results.length===1?'':'s'}</div>`;
     results.forEach(b=>{
@@ -2648,7 +2642,7 @@ function renderCurrent(){
         const dispAmt=b.note&&b.amount===0?b.note:`$${effectiveAmt}`;
         const note=getNote(activeCard,b.id,pk);
         const noteHTML=note
-          ?`<div class="benefit-note" data-id="${b.id}" data-pk="${pk}" data-name="${b.name}"><span class="note-dot"></span>${note}</div>`
+          ?`<div class="benefit-note" data-id="${b.id}" data-pk="${pk}" data-name="${b.name}"><span class="note-dot"></span>${escapeHtml(note)}</div>`
           :`<div class="add-note" data-id="${b.id}" data-pk="${pk}" data-name="${b.name}">+ add note</div>`;
         const partialHTML=b.partial&&used?buildPartialBar(activeCard,b.id,pk,effectiveAmt):'';
         const creditedHTML=used?`<div style="margin-top:4px;font-size:10px;font-family:var(--mono)">
@@ -2881,7 +2875,7 @@ function renderAllCards(){
 
 function render(){
   // Show/hide card selector and top nav based on view type
-  const _analyticsViews=['compare','streaks','history-log','recap','export','insights','heatmap','roi','priority','best-card','keep-card','calendar','search',];
+  const _analyticsViews=['compare','streaks','history-log','recap','export','insights','heatmap','roi','priority','best-card','keep-card','calendar','search','trends'];
   const _isAnalytics=_analyticsViews.includes(activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{
     const el=document.getElementById(id);
@@ -3068,9 +3062,7 @@ let activeSecondary = { 'card-year': 'history', 'ytd': 'ytd-history' };
 function updateYearSelector(show){
   const ys=document.getElementById('yearSelector');
   ys.classList.toggle('hidden',!show);
-  document.querySelectorAll('.year-btn').forEach(b=>{
-    b.classList.toggle('active', parseInt(b.dataset.year)===selectedYear);
-  });
+  ys.innerHTML=[CY-1,CY,CY+1].map(y=>`<button class="year-btn${y===selectedYear?' active':''}" data-year="${y}">${y}</button>`).join('');
 }
 
 function updateSecondaryNav(primary) {
@@ -3102,13 +3094,13 @@ function updateSecondaryNav(primary) {
   stabs.forEach(t => t.classList.toggle('active', t.dataset.view === activeView));
 }
 
-// Year button clicks
-document.getElementById('yearSelector').querySelectorAll('.year-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    selectedYear=parseInt(btn.dataset.year);
-    updateYearSelector(true);
-    render();
-  });
+// Year button clicks (delegated — buttons are regenerated dynamically)
+document.getElementById('yearSelector').addEventListener('click',e=>{
+  const btn=e.target.closest('.year-btn');
+  if(!btn) return;
+  selectedYear=parseInt(btn.dataset.year);
+  updateYearSelector(true);
+  render();
 });
 
 function setActiveView(primary) {
@@ -3129,7 +3121,9 @@ function setActiveView(primary) {
   else if(primary === 'best-card') activeView = 'best-card';
   else if(primary === 'keep-card') activeView = 'keep-card';
   else if(primary === 'calendar') activeView = 'calendar';
+  else if(primary === 'trends') activeView = 'trends';
   else if(primary === 'search') activeView = 'search';
+  else if(primary === 'my-cards') { openMyCards(); return; }
 
   const topViews=['all-cards','this-period','card-year','ytd'];
   if(topViews.includes(primary)){
