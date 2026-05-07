@@ -11,6 +11,51 @@
     --venturex: #3B5AAA;
     --venturex-bg: #EDF0F8;
     --venturex-text: #1A2D5E;
+    --jmr: #003087;
+    --jmr-bg: #E8EEF8;
+    --jmr-text: #001852;
+    --csp: #5B7FA8;
+    --csp-bg: #EBF2FA;
+    --csp-text: #1E3D66;
+    --bilt: #3D5470;
+    --bilt-bg: #EBF0F5;
+    --bilt-text: #1E3048;
+    --amexgreen: #1D6A40;
+    --amexgreen-bg: #E9F5EE;
+    --amexgreen-text: #0D3B20;
+    --hilton: #00205B;
+    --hilton-bg: #E6EAF2;
+    --hilton-text: #00113A;
+    --marriott: #8B1A4A;
+    --marriott-bg: #F5E9EE;
+    --marriott-text: #5C0D2E;
+    --marriottbiz: #C00000;
+    --marriottbiz-bg: #FAE8E8;
+    --marriottbiz-text: #800000;
+    --deltaresv: #003087;
+    --deltaresv-bg: #E8EEF8;
+    --deltaresv-text: #001852;
+    --deltaplat: #1565C0;
+    --deltaplat-bg: #EBF0FA;
+    --deltaplat-text: #0D3E7A;
+    --hyatt: #1A4731;
+    --hyatt-bg: #E8F2EC;
+    --hyatt-text: #0D2A1D;
+    --unitedq: #1E3867;
+    --unitedq-bg: #E8EDF5;
+    --unitedq-text: #0D1F3E;
+    --unitedclub: #0A2659;
+    --unitedclub-bg: #E6EBF5;
+    --unitedclub-text: #051438;
+    --citistrata: #003A87;
+    --citistrata-bg: #E8EFF8;
+    --citistrata-text: #001E52;
+    --usbalt: #CC0000;
+    --usbalt-bg: #FAE8E8;
+    --usbalt-text: #800000;
+    --venturexbiz: #2A4A8A;
+    --venturexbiz-bg: #EBF0F8;
+    --venturexbiz-text: #122358;
     --green: #2A9B6A;
     --red: #D94040;
     --bg: #F5F3EF;
@@ -35,6 +80,36 @@
     --csr-text: #6ABF84;
     --venturex-bg: #0D1526;
     --venturex-text: #7A9AE0;
+    --jmr-bg: #0A1428;
+    --jmr-text: #6A8FD8;
+    --csp-bg: #0E1B2E;
+    --csp-text: #6A9AC8;
+    --bilt-bg: #0E1828;
+    --bilt-text: #6A8AB0;
+    --amexgreen-bg: #0A1E12;
+    --amexgreen-text: #5AB884;
+    --hilton-bg: #060F24;
+    --hilton-text: #5A7AB8;
+    --marriott-bg: #1E0A14;
+    --marriott-text: #C06A8A;
+    --marriottbiz-bg: #200000;
+    --marriottbiz-text: #E06060;
+    --deltaresv-bg: #0A1428;
+    --deltaresv-text: #6A8FD8;
+    --deltaplat-bg: #0A1830;
+    --deltaplat-text: #6A9AE0;
+    --hyatt-bg: #081408;
+    --hyatt-text: #5A9E70;
+    --unitedq-bg: #0A1020;
+    --unitedq-text: #5A7AB8;
+    --unitedclub-bg: #080E1E;
+    --unitedclub-text: #4A6AB0;
+    --citistrata-bg: #0A1228;
+    --citistrata-text: #6A8FD8;
+    --usbalt-bg: #200000;
+    --usbalt-text: #E06060;
+    --venturexbiz-bg: #0D1526;
+    --venturexbiz-text: #7A9AE0;
     --green: #3ABF84;
     --red: #E05555;
     --bg: #111210;
@@ -311,14 +386,13 @@
     outline: none;
   }
   .card-btn:hover { transform: translateY(-3px); }
-  .card-btn.active-gold .card-visual,
-  .card-btn.active-platinum .card-visual,
-  .card-btn.active-csr .card-visual,
-  .card-btn.active-cap1_venture_x .card-visual {
+  .card-btn[class*="active-"] .card-visual {
     box-shadow: 0 12px 32px rgba(0,0,0,0.22);
     transform: translateY(-2px);
+    filter: none;
+    opacity: 1;
   }
-  .card-btn:not(.active-gold):not(.active-platinum):not(.active-csr):not(.active-cap1_venture_x) .card-visual {
+  .card-btn:not([class*="active-"]) .card-visual {
     filter: grayscale(0.3) brightness(0.92);
     opacity: 0.75;
   }
@@ -353,10 +427,26 @@
     font-family: var(--mono);
     transition: color 0.2s;
   }
-  .card-btn.active-gold .card-label { color: var(--gold-text); font-weight: 600; }
-  .card-btn.active-platinum .card-label { color: var(--plat-text); font-weight: 600; }
-  .card-btn.active-csr .card-label { color: var(--csr-text); font-weight: 600; }
-  .card-btn.active-cap1_venture_x .card-label { color: var(--venturex-text); font-weight: 600; }
+  .card-btn[class*="active-"] .card-label { font-weight: 600; }
+  .card-btn.active-gold .card-label { color: var(--gold-text); }
+  .card-btn.active-platinum .card-label { color: var(--plat-text); }
+  .card-btn.active-csr .card-label { color: var(--csr-text); }
+  .card-btn.active-cap1_venture_x .card-label { color: var(--venturex-text); }
+  .card-btn.active-jp_morgan_reserve .card-label { color: var(--jmr-text); }
+  .card-btn.active-chase_sapphire_pref .card-label { color: var(--csp-text); }
+  .card-btn.active-bilt .card-label { color: var(--bilt-text); }
+  .card-btn.active-amex_green .card-label { color: var(--amexgreen-text); }
+  .card-btn.active-amex_hilton_honors .card-label { color: var(--hilton-text); }
+  .card-btn.active-amex_marriott_brill .card-label { color: var(--marriott-text); }
+  .card-btn.active-amex_marriott_biz .card-label { color: var(--marriottbiz-text); }
+  .card-btn.active-amex_delta_reserve .card-label { color: var(--deltaresv-text); }
+  .card-btn.active-amex_delta_plat .card-label { color: var(--deltaplat-text); }
+  .card-btn.active-chase_world_of_hyatt .card-label { color: var(--hyatt-text); }
+  .card-btn.active-chase_united_quest .card-label { color: var(--unitedq-text); }
+  .card-btn.active-chase_united_club .card-label { color: var(--unitedclub-text); }
+  .card-btn.active-citi_strata_prem .card-label { color: var(--citistrata-text); }
+  .card-btn.active-usb_altitude_reserve .card-label { color: var(--usbalt-text); }
+  .card-btn.active-cap1_venture_x_biz .card-label { color: var(--venturexbiz-text); }
 
   .active-ring {
     position: absolute;
@@ -370,6 +460,21 @@
   .card-btn.active-platinum .active-ring { border: 2px solid var(--plat); opacity: 1; }
   .card-btn.active-csr .active-ring { border: 2px solid var(--csr); opacity: 1; }
   .card-btn.active-cap1_venture_x .active-ring { border: 2px solid var(--venturex); opacity: 1; }
+  .card-btn.active-jp_morgan_reserve .active-ring { border: 2px solid var(--jmr); opacity: 1; }
+  .card-btn.active-chase_sapphire_pref .active-ring { border: 2px solid var(--csp); opacity: 1; }
+  .card-btn.active-bilt .active-ring { border: 2px solid var(--bilt); opacity: 1; }
+  .card-btn.active-amex_green .active-ring { border: 2px solid var(--amexgreen); opacity: 1; }
+  .card-btn.active-amex_hilton_honors .active-ring { border: 2px solid var(--hilton); opacity: 1; }
+  .card-btn.active-amex_marriott_brill .active-ring { border: 2px solid var(--marriott); opacity: 1; }
+  .card-btn.active-amex_marriott_biz .active-ring { border: 2px solid var(--marriottbiz); opacity: 1; }
+  .card-btn.active-amex_delta_reserve .active-ring { border: 2px solid var(--deltaresv); opacity: 1; }
+  .card-btn.active-amex_delta_plat .active-ring { border: 2px solid var(--deltaplat); opacity: 1; }
+  .card-btn.active-chase_world_of_hyatt .active-ring { border: 2px solid var(--hyatt); opacity: 1; }
+  .card-btn.active-chase_united_quest .active-ring { border: 2px solid var(--unitedq); opacity: 1; }
+  .card-btn.active-chase_united_club .active-ring { border: 2px solid var(--unitedclub); opacity: 1; }
+  .card-btn.active-citi_strata_prem .active-ring { border: 2px solid var(--citistrata); opacity: 1; }
+  .card-btn.active-usb_altitude_reserve .active-ring { border: 2px solid var(--usbalt); opacity: 1; }
+  .card-btn.active-cap1_venture_x_biz .active-ring { border: 2px solid var(--venturexbiz); opacity: 1; }
 
   /* Nav — two level */
   /* Top nav */
@@ -779,6 +884,21 @@
   .all-cards-card-name.platinum { color: var(--plat); }
   .all-cards-card-name.csr { color: var(--csr); }
   .all-cards-card-name.venturex { color: var(--venturex); }
+  .all-cards-card-name.jmr { color: var(--jmr); }
+  .all-cards-card-name.csp { color: var(--csp); }
+  .all-cards-card-name.bilt { color: var(--bilt); }
+  .all-cards-card-name.amexgreen { color: var(--amexgreen); }
+  .all-cards-card-name.hilton { color: var(--hilton); }
+  .all-cards-card-name.marriott { color: var(--marriott); }
+  .all-cards-card-name.marriottbiz { color: var(--marriottbiz); }
+  .all-cards-card-name.deltaresv { color: var(--deltaresv); }
+  .all-cards-card-name.deltaplat { color: var(--deltaplat); }
+  .all-cards-card-name.hyatt { color: var(--hyatt); }
+  .all-cards-card-name.unitedq { color: var(--unitedq); }
+  .all-cards-card-name.unitedclub { color: var(--unitedclub); }
+  .all-cards-card-name.citistrata { color: var(--citistrata); }
+  .all-cards-card-name.usbalt { color: var(--usbalt); }
+  .all-cards-card-name.venturexbiz { color: var(--venturexbiz); }
   .all-cards-subtotal {
     font-size: 11px; font-family: var(--mono);
     color: var(--text-tertiary);
@@ -1395,6 +1515,21 @@
   .comparison-card.platinum { border-top: 3px solid var(--plat); }
   .comparison-card.csr { border-top: 3px solid var(--csr); }
   .comparison-card.venturex { border-top: 3px solid var(--venturex); }
+  .comparison-card.jmr { border-top: 3px solid var(--jmr); }
+  .comparison-card.csp { border-top: 3px solid var(--csp); }
+  .comparison-card.bilt { border-top: 3px solid var(--bilt); }
+  .comparison-card.amexgreen { border-top: 3px solid var(--amexgreen); }
+  .comparison-card.hilton { border-top: 3px solid var(--hilton); }
+  .comparison-card.marriott { border-top: 3px solid var(--marriott); }
+  .comparison-card.marriottbiz { border-top: 3px solid var(--marriottbiz); }
+  .comparison-card.deltaresv { border-top: 3px solid var(--deltaresv); }
+  .comparison-card.deltaplat { border-top: 3px solid var(--deltaplat); }
+  .comparison-card.hyatt { border-top: 3px solid var(--hyatt); }
+  .comparison-card.unitedq { border-top: 3px solid var(--unitedq); }
+  .comparison-card.unitedclub { border-top: 3px solid var(--unitedclub); }
+  .comparison-card.citistrata { border-top: 3px solid var(--citistrata); }
+  .comparison-card.usbalt { border-top: 3px solid var(--usbalt); }
+  .comparison-card.venturexbiz { border-top: 3px solid var(--venturexbiz); }
   .comp-card-name { font-size: 10px; font-family: var(--mono); color: var(--text-tertiary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
   .comp-metric { margin-bottom: 8px; }
   .comp-metric-val { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--text); letter-spacing: -0.02em; }

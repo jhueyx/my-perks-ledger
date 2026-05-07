@@ -1,7 +1,7 @@
 // ── Dark mode ─────────────────────────────────────────────────────────────
 // ── Card benefit data ─────────────────────────────────────────────────────
 const CARDS={
-  gold:{name:'AMEX Gold',fee:325,historicalFees:{2025:325},sections:[
+  gold:{name:'AMEX Gold',fee:325,historicalFees:{2025:325},feeMonth:4,feeDay:24,sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
       {id:'g_dining',name:'Dining Credit',desc:'Grubhub, Cheesecake Factory, Five Guys, BWW, Wonder',amount:10},
       {id:'g_uber',name:'Uber Cash',desc:'Uber rides or Uber Eats in the US',amount:10},
@@ -14,7 +14,7 @@ const CARDS={
       {id:'g_hotel',name:'Hotel Collection Credit',desc:'$100 on eligible charges, 2-night min via AMEX Travel',amount:100,partial:true},
     ]},
   ]},
-  platinum:{name:'AMEX Platinum',fee:895,historicalFees:{2025:695},sections:[
+  platinum:{name:'AMEX Platinum',fee:895,historicalFees:{2025:695},feeMonth:8,feeDay:17,sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
       {id:'p_uber',name:'Uber Cash',desc:'$15/mo · $35 in December',amount:15,decAmount:35},
       {id:'p_digital',name:'Digital Entertainment',desc:'Disney+, Hulu, ESPN+, Peacock, Paramount+, NYT, WSJ, YouTube',amount:25},
@@ -39,7 +39,7 @@ const CARDS={
       {id:'p_clear',name:'CLEAR Plus Credit',desc:'Annual CLEAR Plus membership',amount:189},
     ]},
   ]},
-  cap1_venture_x:{name:'Capital One Venture X',fee:395,historicalFees:{2025:395},sections:[
+  cap1_venture_x:{name:'Capital One Venture X',fee:395,historicalFees:{2025:395},feeMonth:0,feeDay:15,sections:[
     {label:'Annual',cadence:'annual',benefits:[
       {id:'vx_travel',name:'Annual Travel Credit',desc:'For bookings through Capital One Travel; resets on card anniversary',amount:300,partial:true},
       {id:'vx_anniv',name:'Anniversary Bonus Miles',desc:'10,000 bonus miles credited on each account anniversary (~$100 in travel value)',amount:100},
@@ -47,7 +47,7 @@ const CARDS={
       {id:'vx_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
     ]},
   ]},
-  csr:{name:'Chase Sapphire Reserve',fee:795,historicalFees:{2025:550},sections:[
+  csr:{name:'Chase Sapphire Reserve',fee:795,historicalFees:{2025:550},feeMonth:4,feeDay:1,sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
       {id:'c_dd_restaurant',name:'DoorDash Restaurant Credit',desc:'$5 promo for restaurant orders (DashPass required)',amount:5},
       {id:'c_dd_nonrest1',name:'DoorDash $10 Grocery Credit',desc:'$10 promo for grocery, convenience, etc',amount:10},
@@ -70,6 +70,109 @@ const CARDS={
       {id:'c_ge',name:'Global Entry / TSA PreCheck / NEXUS',desc:'Statement credit every 4 years',amount:120},
     ]},
   ]},
+  jp_morgan_reserve:{name:'JP Morgan Reserve',fee:595,historicalFees:{2025:595},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'jmr_dining',name:'Dining Credit',desc:'Statement credit for restaurant purchases',amount:300,partial:true},
+      {id:'jmr_travel',name:'Travel Credit',desc:'Statement credit for travel purchases',amount:300,partial:true},
+      {id:'jmr_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
+    ]},
+  ]},
+  chase_sapphire_pref:{name:'Chase Sapphire Preferred',fee:95,historicalFees:{2025:95},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual',cadence:'annual',benefits:[
+      {id:'csp_hotel',name:'Hotel Credit',desc:'$50 statement credit on hotel stays booked through Chase Travel',amount:50},
+    ]},
+  ]},
+  bilt:{name:'Bilt Mastercard',fee:0,historicalFees:{2025:0},feeMonth:0,feeDay:1,sections:[
+  ]},
+  amex_green:{name:'AMEX Green',fee:150,historicalFees:{2025:150},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'ag_clear',name:'CLEAR Plus Credit',desc:'Annual CLEAR Plus membership',amount:189},
+      {id:'ag_lounge',name:'LoungeBuddy Credit',desc:'Airport lounge access via LoungeBuddy app',amount:100},
+    ]},
+  ]},
+  amex_hilton_honors:{name:'Hilton Honors Aspire',fee:550,historicalFees:{2025:550},feeMonth:0,feeDay:1,sections:[
+    {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
+      {id:'ah_resort',name:'Hilton Resort Credit',desc:'At eligible Hilton resort properties worldwide',amount:200},
+    ]},
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'ah_airline',name:'Airline Fee Credit',desc:'Incidental fees with one selected airline',amount:200,partial:true},
+      {id:'ah_freenight',name:'Free Night Award',desc:'One free night at any Hilton property worldwide',amount:250},
+      {id:'ah_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
+    ]},
+  ]},
+  amex_marriott_brill:{name:'Marriott Bonvoy Brilliant',fee:650,historicalFees:{2025:650},feeMonth:0,feeDay:1,sections:[
+    {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
+      {id:'amb_dining',name:'Dining Credit',desc:'Statement credit for U.S. restaurant purchases',amount:150},
+    ]},
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'amb_freenight',name:'Free Night Award',desc:'One free night at any Marriott property (up to 85,000 pts)',amount:500},
+      {id:'amb_propcredit',name:'Property Credit',desc:'$100 on-property credit on qualifying 2-night+ paid stays',amount:100},
+      {id:'amb_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
+    ]},
+  ]},
+  amex_marriott_biz:{name:'Marriott Bonvoy Business',fee:125,historicalFees:{2025:125},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual',cadence:'annual',benefits:[
+      {id:'ambb_freenight',name:'Free Night Award',desc:'One free night at Marriott properties (up to 35,000 pts)',amount:175},
+    ]},
+  ]},
+  amex_delta_reserve:{name:'Delta SkyMiles Reserve',fee:650,historicalFees:{2025:650},feeMonth:0,feeDay:1,sections:[
+    {label:'Monthly',cadence:'monthly',benefits:[
+      {id:'adr_resy',name:'Resy Dining Credit',desc:'At eligible U.S. Resy restaurants',amount:20},
+    ]},
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'adr_stays',name:'Delta Stays Credit',desc:'For eligible bookings at DeltaStays.com',amount:200,partial:true},
+      {id:'adr_companion',name:'Companion Certificate',desc:'Domestic main cabin companion ticket annually',amount:300},
+      {id:'adr_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
+    ]},
+  ]},
+  amex_delta_plat:{name:'Delta SkyMiles Platinum',fee:350,historicalFees:{2025:350},feeMonth:0,feeDay:1,sections:[
+    {label:'Monthly',cadence:'monthly',benefits:[
+      {id:'adp_resy',name:'Resy Dining Credit',desc:'At eligible U.S. Resy restaurants',amount:10},
+    ]},
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'adp_stays',name:'Delta Stays Credit',desc:'For eligible bookings at DeltaStays.com',amount:150,partial:true},
+      {id:'adp_companion',name:'Companion Certificate (TDM)',desc:'Domestic main cabin companion ticket annually',amount:200},
+      {id:'adp_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
+    ]},
+  ]},
+  chase_world_of_hyatt:{name:'World of Hyatt',fee:95,historicalFees:{2025:95},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual',cadence:'annual',benefits:[
+      {id:'hyatt_freenight',name:'Free Night Award',desc:'One free night at Category 1–4 Hyatt properties',amount:150},
+    ]},
+  ]},
+  chase_united_quest:{name:'United Quest',fee:250,historicalFees:{2025:250},feeMonth:0,feeDay:1,sections:[
+    {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
+      {id:'uq_credit',name:'United Purchase Credit',desc:'Statement credit on United Airlines purchases',amount:125},
+    ]},
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'uq_miles',name:'Award Miles Back',desc:'Up to 10,000 miles back per year on United award redemptions',amount:100},
+      {id:'uq_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
+    ]},
+  ]},
+  chase_united_club:{name:'United Club Infinite',fee:525,historicalFees:{2025:525},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'uc_club',name:'United Club Membership',desc:'Unlimited United Club lounge access for cardholder + guests',amount:700},
+      {id:'uc_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
+    ]},
+  ]},
+  citi_strata_prem:{name:'Citi Strata Premier',fee:95,historicalFees:{2025:95},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'citist_hotel',name:'Hotel Benefit',desc:'$100 off a single hotel stay of $500+ via CitiTravel',amount:100},
+    ]},
+  ]},
+  usb_altitude_reserve:{name:'US Bank Altitude Reserve',fee:400,historicalFees:{2025:400},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'usbar_travel',name:'Travel & Mobile Credit',desc:'Automatic statement credit on travel and mobile wallet purchases',amount:325,partial:true},
+      {id:'usbar_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
+    ]},
+  ]},
+  cap1_venture_x_biz:{name:'Venture X Business',fee:395,historicalFees:{2025:395},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual',cadence:'annual',benefits:[
+      {id:'vxb_travel',name:'Annual Travel Credit',desc:'For bookings through Capital One Travel; resets on card anniversary',amount:300,partial:true},
+      {id:'vxb_anniv',name:'Anniversary Bonus Miles',desc:'10,000 bonus miles credited on each account anniversary (~$100 in travel value)',amount:100},
+      {id:'vxb_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
+    ]},
+  ]},
 };
 
 const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth();
@@ -80,7 +183,8 @@ const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth();
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); }
-const FEE_MONTHS={gold:4,platinum:8,csr:4,cap1_venture_x:0}; // Venture X: update month to match your card anniversary
+const FEE_MONTHS=Object.fromEntries(Object.keys(CARDS).map(k=>[k,CARDS[k].feeMonth??0]));
+function freshDATA(){ return Object.fromEntries(Object.keys(CARDS).map(k=>[k,{}])); }
 const STORAGE_KEY='card-benefits-tracker-v1';
 const SUPABASE_URL='https://rsbvddlhismetljqoqre.supabase.co';
 const SUPABASE_KEY='sb_publishable_uLJlvYnd-7MiGHMK9SEaww_JwIBveov';
@@ -92,29 +196,29 @@ const PREMIUM_CARD_CATALOG = [
   // American Express
   {id:'platinum',issuer:'American Express',name:'Amex Platinum',fee:695,supported:true},
   {id:'gold',issuer:'American Express',name:'Amex Gold',fee:325,supported:true},
-  {id:'amex_green',issuer:'American Express',name:'Amex Green',fee:150,supported:false},
+  {id:'amex_green',issuer:'American Express',name:'Amex Green',fee:150,supported:true},
   {id:'amex_biz_plat',issuer:'American Express',name:'Amex Business Platinum',fee:695,supported:false},
   {id:'amex_biz_gold',issuer:'American Express',name:'Amex Business Gold',fee:375,supported:false},
-  {id:'amex_delta_reserve',issuer:'American Express',name:'Delta SkyMiles Reserve',fee:650,supported:false},
-  {id:'amex_delta_plat',issuer:'American Express',name:'Delta SkyMiles Platinum',fee:350,supported:false},
-  {id:'amex_hilton_honors',issuer:'American Express',name:'Hilton Honors Aspire',fee:550,supported:false},
-  {id:'amex_marriott_brill',issuer:'American Express',name:'Marriott Bonvoy Brilliant',fee:650,supported:false},
-  {id:'amex_marriott_biz',issuer:'American Express',name:'Marriott Bonvoy Business',fee:125,supported:false},
+  {id:'amex_delta_reserve',issuer:'American Express',name:'Delta SkyMiles Reserve',fee:650,supported:true},
+  {id:'amex_delta_plat',issuer:'American Express',name:'Delta SkyMiles Platinum',fee:350,supported:true},
+  {id:'amex_hilton_honors',issuer:'American Express',name:'Hilton Honors Aspire',fee:550,supported:true},
+  {id:'amex_marriott_brill',issuer:'American Express',name:'Marriott Bonvoy Brilliant',fee:650,supported:true},
+  {id:'amex_marriott_biz',issuer:'American Express',name:'Marriott Bonvoy Business',fee:125,supported:true},
   // Chase
   {id:'csr',issuer:'Chase',name:'Chase Sapphire Reserve',fee:550,supported:true},
-  {id:'chase_sapphire_pref',issuer:'Chase',name:'Chase Sapphire Preferred',fee:95,supported:false},
+  {id:'chase_sapphire_pref',issuer:'Chase',name:'Chase Sapphire Preferred',fee:95,supported:true},
   {id:'chase_ink_pref',issuer:'Chase',name:'Chase Ink Business Preferred',fee:95,supported:false},
-  {id:'chase_world_of_hyatt',issuer:'Chase',name:'World of Hyatt',fee:95,supported:false},
-  {id:'chase_united_quest',issuer:'Chase',name:'United Quest',fee:250,supported:false},
-  {id:'chase_united_club',issuer:'Chase',name:'United Club Infinite',fee:525,supported:false},
+  {id:'chase_world_of_hyatt',issuer:'Chase',name:'World of Hyatt',fee:95,supported:true},
+  {id:'chase_united_quest',issuer:'Chase',name:'United Quest',fee:250,supported:true},
+  {id:'chase_united_club',issuer:'Chase',name:'United Club Infinite',fee:525,supported:true},
   {id:'chase_southwest_pref',issuer:'Chase',name:'Southwest Rapid Rewards Priority',fee:149,supported:false},
   {id:'chase_marriott_bold',issuer:'Chase',name:'Marriott Bonvoy Boundless',fee:95,supported:false},
   // Capital One
   {id:'cap1_venture_x',issuer:'Capital One',name:'Venture X',fee:395,supported:true},
-  {id:'cap1_venture_x_biz',issuer:'Capital One',name:'Venture X Business',fee:395,supported:false},
+  {id:'cap1_venture_x_biz',issuer:'Capital One',name:'Venture X Business',fee:395,supported:true},
   {id:'cap1_savor',issuer:'Capital One',name:'Savor Cash Rewards',fee:95,supported:false},
   // Citi
-  {id:'citi_strata_prem',issuer:'Citi',name:'Citi Strata Premier',fee:95,supported:false},
+  {id:'citi_strata_prem',issuer:'Citi',name:'Citi Strata Premier',fee:95,supported:true},
   {id:'citi_prestige',issuer:'Citi',name:'Citi Prestige',fee:495,supported:false},
   {id:'citi_aa_exec',issuer:'Citi',name:'AAdvantage Executive World Elite',fee:595,supported:false},
   {id:'citi_aa_plat',issuer:'Citi',name:'AAdvantage Platinum Select',fee:99,supported:false},
@@ -125,13 +229,14 @@ const PREMIUM_CARD_CATALOG = [
   {id:'boa_premium',issuer:'Bank of America',name:'Premium Rewards Elite',fee:550,supported:false},
   {id:'boa_alaska_sig',issuer:'Bank of America',name:'Alaska Airlines Signature',fee:95,supported:false},
   // US Bank
-  {id:'usb_altitude_reserve',issuer:'US Bank',name:'Altitude Reserve Visa Infinite',fee:400,supported:false},
+  {id:'usb_altitude_reserve',issuer:'US Bank',name:'Altitude Reserve Visa Infinite',fee:400,supported:true},
   {id:'usb_altitude_connect',issuer:'US Bank',name:'Altitude Connect',fee:95,supported:false},
   // Barclays
   {id:'barc_aa_aviator',issuer:'Barclays',name:'AAdvantage Aviator Red',fee:99,supported:false},
   {id:'barc_jac',issuer:'Barclays',name:'JetBlue Plus',fee:99,supported:false},
   // Other
-  {id:'bilt',issuer:'Bilt',name:'Bilt Mastercard',fee:0,supported:false},
+  {id:'jp_morgan_reserve',issuer:'JP Morgan',name:'JP Morgan Reserve',fee:595,supported:true},
+  {id:'bilt',issuer:'Bilt',name:'Bilt Mastercard',fee:0,supported:true},
   {id:'apple_card',issuer:'Apple',name:'Apple Card',fee:0,supported:false},
 ];
 
@@ -139,12 +244,11 @@ const PREMIUM_CARD_CATALOG = [
 let currentUser = null;
 let userCards = null; // array of card IDs the user has chosen
 
-let DATA={gold:{},platinum:{},csr:{}};
+let DATA=freshDATA();
 let saveTimer=null;
 let activeCard='csr', activeView='all-cards';
 function getVisibleCardKeys(){
-  const supported=['csr','gold','platinum','cap1_venture_x'];
-  return (userCards && userCards.length ? userCards : supported).filter(c=>supported.includes(c) && CARDS[c]);
+  return (userCards && userCards.length ? userCards : ['csr','gold','platinum','cap1_venture_x']).filter(c=>!!CARDS[c]);
 }
 let selectedYear=CY;
 let _collapsedSections=new Set(['cal-semi-annual','semi-annual','feb-annual','cal-annual','annual']);
@@ -278,7 +382,7 @@ function doUnlock(){
   try{
     const key = STORAGE_KEY + (currentUser ? '-'+currentUser.id : '');
     const val = localStorage.getItem(key);
-    if(val) DATA = Object.assign({gold:{},platinum:{},csr:{}}, JSON.parse(val));
+    if(val) DATA = Object.assign(freshDATA(), JSON.parse(val));
   }catch(e){}
   applyUserCards();
   render();
@@ -308,7 +412,7 @@ async function signOut(){
   _sessionHandled = false;
   currentUser = null;
   userCards = null;
-  DATA = {gold:{},platinum:{},csr:{}};
+  DATA = freshDATA();
   document.getElementById('splash').classList.remove('hidden');
   document.getElementById('authEmail').value = '';
   document.getElementById('authPassword').value = '';
@@ -479,7 +583,7 @@ async function syncFromSupabase(){
       const localExtras={_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited()};
       const changed=JSON.stringify(benefitData)!==JSON.stringify(DATA)||JSON.stringify(remoteExtras)!==JSON.stringify(localExtras);
       if(changed){
-        DATA=Object.assign({gold:{},platinum:{},csr:{}},benefitData);
+        DATA=Object.assign(freshDATA(),benefitData);
         localStorage.setItem(STORAGE_KEY+'-'+currentUser.id,JSON.stringify(DATA));
         saveCustomAmounts(remoteExtras._customAmounts);
         savePartial(remoteExtras._partial);
@@ -855,8 +959,8 @@ function calcCapturedByType(cardKey){
 }
 
 function buildProjection(cardKey){
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',jp_morgan_reserve:'jmr',chase_sapphire_pref:'csp',bilt:'bilt',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',amex_marriott_biz:'marriottbiz',amex_delta_reserve:'deltaresv',amex_delta_plat:'deltaplat',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',usb_altitude_reserve:'usbalt',cap1_venture_x_biz:'venturexbiz'};
   const {month:fm}=getCardYearStart(cardKey,CY);
   const monthsElapsed=Math.max(1, CM>=fm?CM-fm+1:12-(fm-CM));
   const monthsRemaining=12-monthsElapsed;
@@ -883,7 +987,7 @@ function buildProjection(cardKey){
 // ── Heatmap ───────────────────────────────────────────────────────────────
 function renderHeatmap(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
   let html=`<div class="banner">🗓 <strong>Missed money heatmap</strong> — monthly benefits capture rate by card</div>`;
   // Heatmap rendered as a plain CSS grid — no class-based colors so stylesheet can't interfere
   const CELL_W=42,CELL_H=36,COLS=13;
@@ -973,8 +1077,8 @@ function getROIGrade(captured, fee, cardKey){
 
 function renderROI(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',jp_morgan_reserve:'jmr',chase_sapphire_pref:'csp',bilt:'bilt',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',amex_marriott_biz:'marriottbiz',amex_delta_reserve:'deltaresv',amex_delta_plat:'deltaplat',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',usb_altitude_reserve:'usbalt',cap1_venture_x_biz:'venturexbiz'};
 
   let html=`<div class="banner">🎯 <strong>Card ROI scores</strong> — graded on annual fee coverage</div>`;
   html+=`<div class="comparison-grid">`;
@@ -1041,8 +1145,8 @@ function renderInsights(){
   // Mini ROI grid
   html+=`<div class="section-header" style="margin-top:16px"><span class="section-title">ROI scores</span><span class="section-period">tap for details</span></div>`;
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',jp_morgan_reserve:'jmr',chase_sapphire_pref:'csp',bilt:'bilt',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',amex_marriott_biz:'marriottbiz',amex_delta_reserve:'deltaresv',amex_delta_plat:'deltaplat',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',usb_altitude_reserve:'usbalt',cap1_venture_x_biz:'venturexbiz'};
   html+=`<div class="comparison-grid" style="margin-bottom:16px">`;
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
@@ -1108,7 +1212,7 @@ function buildPartialBar(cardKey,benefitId,pk,totalAmt){
 function buildPriorityQueue(){
   const eomDays=daysUntilEOM();
   const items=[];
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
 
   Object.keys(CARDS).forEach(cardKey=>{
     const card=CARDS[cardKey];
@@ -1171,14 +1275,28 @@ function renderPriorityQueue(){
 // ── Best Card for Purchase ────────────────────────────────────────────────
 const BENEFIT_CATEGORIES={
   vx_travel:'travel', vx_anniv:'travel', vx_hotel:'travel', vx_ge:'travel',
-  g_dining:'dining', g_uber:'dining', g_dunkin:'dining', g_resy:'dining',
+  g_dining:'dining', g_uber:'dining', g_dunkin:'dining', g_resy:'dining', g_hotel:'travel',
   p_uber:'travel', p_digital:'entertainment', p_walmart:'shopping',
-  p_resy:'dining', p_lulu:'shopping', p_hotel:'travel',
-  p_airline:'travel', p_equinox:'fitness', p_ge:'travel', p_clear:'travel',
+  p_resy:'dining', p_lulu:'shopping', p_hotel:'travel', p_saks:'shopping',
+  p_airline:'travel', p_equinox:'fitness', p_ge:'travel', p_clear:'travel', p_uberone:'travel', p_oura:'fitness',
   c_dd_restaurant:'dining', c_dd_nonrest1:'shopping', c_dd_nonrest2:'shopping',
   c_lyft:'travel', c_peloton:'fitness', c_dining:'dining', c_stub:'entertainment',
-  c_travel:'travel', c_edit1:'travel', c_edit2:'travel', c_ge:'travel',
+  c_travel:'travel', c_edit1:'travel', c_edit2:'travel', c_ge:'travel', c_selecthotel:'travel',
   c_apple:'entertainment',
+  jmr_dining:'dining', jmr_travel:'travel', jmr_ge:'travel',
+  csp_hotel:'travel',
+  ag_clear:'travel', ag_lounge:'travel',
+  ah_resort:'travel', ah_airline:'travel', ah_freenight:'travel', ah_ge:'travel',
+  amb_dining:'dining', amb_freenight:'travel', amb_propcredit:'travel', amb_ge:'travel',
+  ambb_freenight:'travel',
+  adr_resy:'dining', adr_stays:'travel', adr_companion:'travel', adr_ge:'travel',
+  adp_resy:'dining', adp_stays:'travel', adp_companion:'travel', adp_ge:'travel',
+  hyatt_freenight:'travel',
+  uq_credit:'travel', uq_miles:'travel', uq_ge:'travel',
+  uc_club:'travel', uc_ge:'travel',
+  citist_hotel:'travel',
+  usbar_travel:'travel', usbar_ge:'travel',
+  vxb_travel:'travel', vxb_anniv:'travel', vxb_ge:'travel',
 };
 
 function getCategoryIcon(cat){
@@ -1213,7 +1331,7 @@ function updateCardRec(){
   if(!results) return;
   if(!amt&&!_purchaseCat){ results.innerHTML='<div style="color:var(--text-tertiary);font-size:12px">Enter an amount or select a category to get recommendations.</div>'; return; }
 
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
   const recs=[];
 
   Object.keys(CARDS).forEach(cardKey=>{
@@ -1257,8 +1375,8 @@ function updateCardRec(){
 // ── Should I Keep This Card ───────────────────────────────────────────────
 function renderKeepCard(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',jp_morgan_reserve:'jmr',chase_sapphire_pref:'csp',bilt:'bilt',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',amex_marriott_biz:'marriottbiz',amex_delta_reserve:'deltaresv',amex_delta_plat:'deltaplat',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',usb_altitude_reserve:'usbalt',cap1_venture_x_biz:'venturexbiz'};
 
   let html=`<div class="banner">🤔 <strong>Should I keep this card?</strong> — renewal verdict based on fee coverage</div>`;
 
@@ -1328,7 +1446,7 @@ function renderBenefitCalendar(){
   // Add fee dates if in this month
   Object.keys(FEE_DATES).forEach(cardKey=>{
     const {month:fm,day:fd}=FEE_DATES[cardKey];
-    const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+    const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
     if(fm===month){
       resetDays[fd]=resetDays[fd]||[];
       resetDays[fd].push(`${CARD_LABELS[cardKey]} annual fee`);
@@ -1386,7 +1504,7 @@ function renderBenefitCalendar(){
 // ── Multi-year Trend ──────────────────────────────────────────────────────
 function renderTrends(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
 
   // Dynamic year range: last 3 years up to current
   const years=[CY-2,CY-1,CY].filter(y=>y>=2024);
@@ -1617,7 +1735,7 @@ function buildCategoryBreakdown(){
 // ── Search ────────────────────────────────────────────────────────────────
 let _searchQuery='';
 function renderSearch(){
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
   const q=_searchQuery.toLowerCase().trim();
   const results=[];
 
@@ -1781,6 +1899,86 @@ const POINTS_MULTIPLIERS={
     {cat:'Dining (worldwide)',pts:'3x'},
     {cat:'Peloton hardware (up to 50K pts)',pts:'10x'},
     {cat:'Everything else',pts:'1x'},
+  ],
+  jp_morgan_reserve:[
+    {cat:'Dining',pts:'3x'},
+    {cat:'Travel (Chase Travel portal)',pts:'3x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  chase_sapphire_pref:[
+    {cat:'Chase Travel℠',pts:'5x'},
+    {cat:'Dining & online grocery (excl. Walmart/Target)',pts:'3x'},
+    {cat:'Streaming services',pts:'3x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  bilt:[
+    {cat:'Rent (via Bilt, up to 100,000 pts/yr)',pts:'1x'},
+    {cat:'Dining',pts:'3x'},
+    {cat:'Travel',pts:'2x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  amex_green:[
+    {cat:'Travel (flights, hotels, transit, taxis)',pts:'3x'},
+    {cat:'Dining (worldwide)',pts:'3x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  amex_hilton_honors:[
+    {cat:'Hilton hotels & resorts',pts:'14x'},
+    {cat:'Dining (US), US Supermarkets, US Gas stations',pts:'7x'},
+    {cat:'Flights (direct or amextravel.com)',pts:'7x'},
+    {cat:'Everything else',pts:'3x'},
+  ],
+  amex_marriott_brill:[
+    {cat:'Marriott Bonvoy hotels',pts:'6x'},
+    {cat:'Dining (US restaurants)',pts:'4x'},
+    {cat:'Flights (direct or amextravel.com)',pts:'2x'},
+    {cat:'Everything else',pts:'2x'},
+  ],
+  amex_marriott_biz:[
+    {cat:'Marriott Bonvoy hotels',pts:'6x'},
+    {cat:'US restaurants, gas, wireless, shipping, transit',pts:'4x'},
+    {cat:'Everything else',pts:'2x'},
+  ],
+  amex_delta_reserve:[
+    {cat:'Delta purchases',pts:'3x'},
+    {cat:'Hotels & US restaurants',pts:'2x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  amex_delta_plat:[
+    {cat:'Delta purchases',pts:'3x'},
+    {cat:'Hotels & US restaurants',pts:'2x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  chase_world_of_hyatt:[
+    {cat:'Hyatt hotels & all-inclusive properties',pts:'9x'},
+    {cat:'Dining, local transit, gym memberships',pts:'2x'},
+    {cat:'Flights & car rentals (direct)',pts:'2x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  chase_united_quest:[
+    {cat:'United purchases',pts:'3x'},
+    {cat:'Dining & streaming services',pts:'2x'},
+    {cat:'Hotels & car rentals',pts:'2x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  chase_united_club:[
+    {cat:'United purchases',pts:'4x'},
+    {cat:'All other travel & dining',pts:'2x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  citi_strata_prem:[
+    {cat:'Air, hotels, car rentals & restaurants',pts:'3x'},
+    {cat:'Supermarkets & gas stations',pts:'3x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  usb_altitude_reserve:[
+    {cat:'Travel & mobile wallet purchases',pts:'3x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  cap1_venture_x_biz:[
+    {cat:'Capital One Travel (hotels & rental cars)',pts:'10x'},
+    {cat:'Capital One Travel (flights & vacation rentals)',pts:'5x'},
+    {cat:'Everything else',pts:'2x'},
   ],
 };
 
@@ -1950,7 +2148,7 @@ async function renderHistoryLog(){
     Object.keys(CARDS).forEach(ck=>{
       CARDS[ck].sections.forEach(s=>s.benefits.forEach(b=>{ benefitNames[b.id]=b.name; }));
     });
-    const cardNames={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+    const cardNames={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
 
     let html=`<div class="banner">📜 <strong>Benefit history</strong> — last ${data.length} actions</div>`;
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">`;
@@ -1981,7 +2179,7 @@ async function renderHistoryLog(){
 function renderRecap(){
   const year=selectedYear;
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
 
   // Calc stats for each card for the selected year
   let totalCaptured=0,totalMissed=0,totalFees=0;
@@ -2059,7 +2257,7 @@ function renderRecap(){
 function exportCSV(){
   const year=selectedYear;
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
   const rows=[['Card','Benefit','Period','Amount','Status']];
 
   CARD_KEYS.forEach(cardKey=>{
@@ -2092,7 +2290,7 @@ function exportCSV(){
 function shareRecap(){
   const year=selectedYear;
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
   let totalCaptured=0,totalMissed=0,totalFees=0;
 
   CARD_KEYS.forEach(cardKey=>{
@@ -2204,8 +2402,8 @@ document.getElementById('noteModal').addEventListener('click', e=>{ if(e.target=
 // ── Card Comparison ───────────────────────────────────────────────────────
 function renderComparison(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',jp_morgan_reserve:'jmr',chase_sapphire_pref:'csp',bilt:'bilt',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',amex_marriott_biz:'marriottbiz',amex_delta_reserve:'deltaresv',amex_delta_plat:'deltaplat',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',usb_altitude_reserve:'usbalt',cap1_venture_x_biz:'venturexbiz'};
 
   let html=`<div class="banner">📊 <strong>All cards compared</strong> — current card-year performance</div>`;
   html+=`<div class="comparison-grid">`;
@@ -2262,7 +2460,7 @@ function maxCardYearValue(cardKey){
 
 function renderStreaks(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
   const allStreaks=[];
 
   CARD_KEYS.forEach(cardKey=>{
@@ -2304,12 +2502,7 @@ function renderStreaks(){
 
 // Days until next fee
 // Days until next fee - using specific fee dates
-const FEE_DATES={
-  gold:{month:4,day:24},      // May 24
-  platinum:{month:8,day:17},  // Sep 17
-  csr:{month:4,day:1},        // May 1
-  cap1_venture_x:{month:0,day:15}, // Jan 15 default — update to your actual anniversary date
-};
+const FEE_DATES=Object.fromEntries(Object.keys(CARDS).map(k=>[k,{month:CARDS[k].feeMonth??0,day:CARDS[k].feeDay??1}]));
 
 function daysUntilFee(cardKey){
   const {month:fm,day:fd}=FEE_DATES[cardKey];
@@ -2354,9 +2547,10 @@ function getStreak(cardKey, benefitId){
 
 // Build countdown strip HTML
 function buildCountdownStrip(cardKey){
+  const fee=getFee(cardKey,CY);
+  if(!fee) return '';
   const days=daysUntilFee(cardKey);
   const {month:fm,day:fd}=FEE_DATES[cardKey];
-  const fee=getFee(cardKey,CY);
   const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
   const needed=Math.max(0,fee-captured);
   const cls=days<=30?'urgent':days<=90?'soon':'';
@@ -2784,8 +2978,8 @@ function set(html){
 
 function renderAllCards(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',jp_morgan_reserve:'JP Morgan Reserve',chase_sapphire_pref:'Sapphire Preferred',bilt:'Bilt Mastercard',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',amex_marriott_biz:'Marriott Bonvoy Business',amex_delta_reserve:'Delta SkyMiles Reserve',amex_delta_plat:'Delta SkyMiles Platinum',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',usb_altitude_reserve:'Altitude Reserve',cap1_venture_x_biz:'Venture X Business'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',jp_morgan_reserve:'jmr',chase_sapphire_pref:'csp',bilt:'bilt',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',amex_marriott_biz:'marriottbiz',amex_delta_reserve:'deltaresv',amex_delta_plat:'deltaplat',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',usb_altitude_reserve:'usbalt',cap1_venture_x_biz:'venturexbiz'};
 
   // Define cadence display order and labels
   const CADENCE_ORDER=['monthly','quarterly','cal-semi-annual','semi-annual','feb-annual','cal-annual','annual'];

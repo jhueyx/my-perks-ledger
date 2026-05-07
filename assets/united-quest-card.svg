@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 252" width="400" height="252">
+  <defs>
+    <linearGradient id="uqBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A2E5E"/>
+      <stop offset="100%" stop-color="#080F28"/>
+    </linearGradient>
+    <radialGradient id="uqSheen" cx="30%" cy="25%" r="65%">
+      <stop offset="0%" stop-color="#2A4A8C" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#080F28" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="252" rx="16" fill="url(#uqBg)"/>
+  <rect width="400" height="252" rx="16" fill="url(#uqSheen)"/>
+  <!-- United globe logo (simplified circle with meridians) -->
+  <g transform="translate(28, 24)" opacity="0.85">
+    <circle cx="22" cy="22" r="20" fill="none" stroke="#6A9AE0" stroke-width="1.8"/>
+    <ellipse cx="22" cy="22" rx="10" ry="20" fill="none" stroke="#6A9AE0" stroke-width="1.2"/>
+    <line x1="2" y1="22" x2="42" y2="22" stroke="#6A9AE0" stroke-width="1.2"/>
+    <line x1="5" y1="12" x2="39" y2="12" stroke="#6A9AE0" stroke-width="0.8"/>
+    <line x1="5" y1="32" x2="39" y2="32" stroke="#6A9AE0" stroke-width="0.8"/>
+  </g>
+  <!-- Airplane silhouette accent -->
+  <g transform="translate(310, 50)" opacity="0.15" fill="white">
+    <path d="M40 10 L50 20 L30 25 L20 45 L15 43 L22 23 L8 27 L5 22 L18 17 Z"/>
+  </g>
+  <!-- United wordmark -->
+  <text x="28" y="172" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="white" letter-spacing="3" opacity="0.9">UNITED</text>
+  <text x="28" y="192" font-family="system-ui" font-size="10" font-weight="300" fill="rgba(160,190,240,0.7)" letter-spacing="5">QUEST CARD</text>
+  <!-- Card number dots -->
+  <text x="28" y="222" font-family="monospace" font-size="11" fill="rgba(160,190,240,0.25)" letter-spacing="3">•••• •••• •••• ••••</text>
+  <text x="28" y="242" font-family="system-ui" font-size="8" fill="rgba(255,255,255,0.25)" letter-spacing="1">CHASE</text>
+</svg>
