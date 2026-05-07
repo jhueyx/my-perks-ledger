@@ -8,6 +8,9 @@
     --csr: #4A8A5A;
     --csr-bg: #EBF5EE;
     --csr-text: #1E5C30;
+    --venturex: #3B5AAA;
+    --venturex-bg: #EDF0F8;
+    --venturex-text: #1A2D5E;
     --green: #2A9B6A;
     --red: #D94040;
     --bg: #F5F3EF;
@@ -30,6 +33,8 @@
     --plat-text: #7AB4D4;
     --csr-bg: #0E1F14;
     --csr-text: #6ABF84;
+    --venturex-bg: #0D1526;
+    --venturex-text: #7A9AE0;
     --green: #3ABF84;
     --red: #E05555;
     --bg: #111210;
@@ -308,11 +313,12 @@
   .card-btn:hover { transform: translateY(-3px); }
   .card-btn.active-gold .card-visual,
   .card-btn.active-platinum .card-visual,
-  .card-btn.active-csr .card-visual {
+  .card-btn.active-csr .card-visual,
+  .card-btn.active-cap1_venture_x .card-visual {
     box-shadow: 0 12px 32px rgba(0,0,0,0.22);
     transform: translateY(-2px);
   }
-  .card-btn:not(.active-gold):not(.active-platinum):not(.active-csr) .card-visual {
+  .card-btn:not(.active-gold):not(.active-platinum):not(.active-csr):not(.active-cap1_venture_x) .card-visual {
     filter: grayscale(0.3) brightness(0.92);
     opacity: 0.75;
   }
@@ -350,6 +356,7 @@
   .card-btn.active-gold .card-label { color: var(--gold-text); font-weight: 600; }
   .card-btn.active-platinum .card-label { color: var(--plat-text); font-weight: 600; }
   .card-btn.active-csr .card-label { color: var(--csr-text); font-weight: 600; }
+  .card-btn.active-cap1_venture_x .card-label { color: var(--venturex-text); font-weight: 600; }
 
   .active-ring {
     position: absolute;
@@ -362,6 +369,7 @@
   .card-btn.active-gold .active-ring { border: 2px solid var(--gold); opacity: 1; }
   .card-btn.active-platinum .active-ring { border: 2px solid var(--plat); opacity: 1; }
   .card-btn.active-csr .active-ring { border: 2px solid var(--csr); opacity: 1; }
+  .card-btn.active-cap1_venture_x .active-ring { border: 2px solid var(--venturex); opacity: 1; }
 
   /* Nav — two level */
   /* Top nav */
@@ -770,6 +778,7 @@
   .all-cards-card-name.gold { color: var(--gold); }
   .all-cards-card-name.platinum { color: var(--plat); }
   .all-cards-card-name.csr { color: var(--csr); }
+  .all-cards-card-name.venturex { color: var(--venturex); }
   .all-cards-subtotal {
     font-size: 11px; font-family: var(--mono);
     color: var(--text-tertiary);
@@ -1385,6 +1394,7 @@
   .comparison-card.gold { border-top: 3px solid var(--gold); }
   .comparison-card.platinum { border-top: 3px solid var(--plat); }
   .comparison-card.csr { border-top: 3px solid var(--csr); }
+  .comparison-card.venturex { border-top: 3px solid var(--venturex); }
   .comp-card-name { font-size: 10px; font-family: var(--mono); color: var(--text-tertiary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
   .comp-metric { margin-bottom: 8px; }
   .comp-metric-val { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--text); letter-spacing: -0.02em; }

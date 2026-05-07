@@ -39,6 +39,14 @@ const CARDS={
       {id:'p_clear',name:'CLEAR Plus Credit',desc:'Annual CLEAR Plus membership',amount:189},
     ]},
   ]},
+  cap1_venture_x:{name:'Capital One Venture X',fee:395,historicalFees:{2025:395},sections:[
+    {label:'Annual',cadence:'annual',benefits:[
+      {id:'vx_travel',name:'Annual Travel Credit',desc:'For bookings through Capital One Travel; resets on card anniversary',amount:300,partial:true},
+      {id:'vx_anniv',name:'Anniversary Bonus Miles',desc:'10,000 bonus miles credited on each account anniversary (~$100 in travel value)',amount:100},
+      {id:'vx_hotel',name:'Premier Collection Hotel Credit',desc:'Experience credit on eligible 2-night+ stays via Capital One Travel',amount:100,partial:true},
+      {id:'vx_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
+    ]},
+  ]},
   csr:{name:'Chase Sapphire Reserve',fee:795,historicalFees:{2025:550},sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
       {id:'c_dd_restaurant',name:'DoorDash Restaurant Credit',desc:'$5 promo for restaurant orders (DashPass required)',amount:5},
@@ -72,7 +80,7 @@ const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth();
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); }
-const FEE_MONTHS={gold:4,platinum:8,csr:4};
+const FEE_MONTHS={gold:4,platinum:8,csr:4,cap1_venture_x:0}; // Venture X: update month to match your card anniversary
 const STORAGE_KEY='card-benefits-tracker-v1';
 const SUPABASE_URL='https://rsbvddlhismetljqoqre.supabase.co';
 const SUPABASE_KEY='sb_publishable_uLJlvYnd-7MiGHMK9SEaww_JwIBveov';
@@ -102,7 +110,7 @@ const PREMIUM_CARD_CATALOG = [
   {id:'chase_southwest_pref',issuer:'Chase',name:'Southwest Rapid Rewards Priority',fee:149,supported:false},
   {id:'chase_marriott_bold',issuer:'Chase',name:'Marriott Bonvoy Boundless',fee:95,supported:false},
   // Capital One
-  {id:'cap1_venture_x',issuer:'Capital One',name:'Venture X',fee:395,supported:false},
+  {id:'cap1_venture_x',issuer:'Capital One',name:'Venture X',fee:395,supported:true},
   {id:'cap1_venture_x_biz',issuer:'Capital One',name:'Venture X Business',fee:395,supported:false},
   {id:'cap1_savor',issuer:'Capital One',name:'Savor Cash Rewards',fee:95,supported:false},
   // Citi
@@ -135,7 +143,7 @@ let DATA={gold:{},platinum:{},csr:{}};
 let saveTimer=null;
 let activeCard='csr', activeView='all-cards';
 function getVisibleCardKeys(){
-  const supported=['csr','gold','platinum'];
+  const supported=['csr','gold','platinum','cap1_venture_x'];
   return (userCards && userCards.length ? userCards : supported).filter(c=>supported.includes(c) && CARDS[c]);
 }
 let selectedYear=CY;
@@ -847,8 +855,8 @@ function calcCapturedByType(cardKey){
 }
 
 function buildProjection(cardKey){
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
   const {month:fm}=getCardYearStart(cardKey,CY);
   const monthsElapsed=Math.max(1, CM>=fm?CM-fm+1:12-(fm-CM));
   const monthsRemaining=12-monthsElapsed;
@@ -875,7 +883,7 @@ function buildProjection(cardKey){
 // ── Heatmap ───────────────────────────────────────────────────────────────
 function renderHeatmap(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
   let html=`<div class="banner">🗓 <strong>Missed money heatmap</strong> — monthly benefits capture rate by card</div>`;
   // Heatmap rendered as a plain CSS grid — no class-based colors so stylesheet can't interfere
   const CELL_W=42,CELL_H=36,COLS=13;
@@ -965,8 +973,8 @@ function getROIGrade(captured, fee, cardKey){
 
 function renderROI(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
 
   let html=`<div class="banner">🎯 <strong>Card ROI scores</strong> — graded on annual fee coverage</div>`;
   html+=`<div class="comparison-grid">`;
@@ -1033,8 +1041,8 @@ function renderInsights(){
   // Mini ROI grid
   html+=`<div class="section-header" style="margin-top:16px"><span class="section-title">ROI scores</span><span class="section-period">tap for details</span></div>`;
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
   html+=`<div class="comparison-grid" style="margin-bottom:16px">`;
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
@@ -1100,7 +1108,7 @@ function buildPartialBar(cardKey,benefitId,pk,totalAmt){
 function buildPriorityQueue(){
   const eomDays=daysUntilEOM();
   const items=[];
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
 
   Object.keys(CARDS).forEach(cardKey=>{
     const card=CARDS[cardKey];
@@ -1162,6 +1170,7 @@ function renderPriorityQueue(){
 
 // ── Best Card for Purchase ────────────────────────────────────────────────
 const BENEFIT_CATEGORIES={
+  vx_travel:'travel', vx_anniv:'travel', vx_hotel:'travel', vx_ge:'travel',
   g_dining:'dining', g_uber:'dining', g_dunkin:'dining', g_resy:'dining',
   p_uber:'travel', p_digital:'entertainment', p_walmart:'shopping',
   p_resy:'dining', p_lulu:'shopping', p_hotel:'travel',
@@ -1204,7 +1213,7 @@ function updateCardRec(){
   if(!results) return;
   if(!amt&&!_purchaseCat){ results.innerHTML='<div style="color:var(--text-tertiary);font-size:12px">Enter an amount or select a category to get recommendations.</div>'; return; }
 
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
   const recs=[];
 
   Object.keys(CARDS).forEach(cardKey=>{
@@ -1248,8 +1257,8 @@ function updateCardRec(){
 // ── Should I Keep This Card ───────────────────────────────────────────────
 function renderKeepCard(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
 
   let html=`<div class="banner">🤔 <strong>Should I keep this card?</strong> — renewal verdict based on fee coverage</div>`;
 
@@ -1319,7 +1328,7 @@ function renderBenefitCalendar(){
   // Add fee dates if in this month
   Object.keys(FEE_DATES).forEach(cardKey=>{
     const {month:fm,day:fd}=FEE_DATES[cardKey];
-    const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+    const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
     if(fm===month){
       resetDays[fd]=resetDays[fd]||[];
       resetDays[fd].push(`${CARD_LABELS[cardKey]} annual fee`);
@@ -1377,7 +1386,7 @@ function renderBenefitCalendar(){
 // ── Multi-year Trend ──────────────────────────────────────────────────────
 function renderTrends(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
 
   // Dynamic year range: last 3 years up to current
   const years=[CY-2,CY-1,CY].filter(y=>y>=2024);
@@ -1608,7 +1617,7 @@ function buildCategoryBreakdown(){
 // ── Search ────────────────────────────────────────────────────────────────
 let _searchQuery='';
 function renderSearch(){
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
   const q=_searchQuery.toLowerCase().trim();
   const results=[];
 
@@ -1759,6 +1768,11 @@ const POINTS_MULTIPLIERS={
     {cat:'Flights (direct or amextravel.com, up to $500K/yr)',pts:'5x'},
     {cat:'Prepaid hotels (amextravel.com)',pts:'5x'},
     {cat:'Everything else',pts:'1x'},
+  ],
+  cap1_venture_x:[
+    {cat:'Capital One Travel (hotels & rental cars)',pts:'10x'},
+    {cat:'Capital One Travel (flights & vacation rentals)',pts:'5x'},
+    {cat:'Everything else',pts:'2x'},
   ],
   csr:[
     {cat:'Chase Travel℠ (incl. The Edit)',pts:'8x'},
@@ -1936,7 +1950,7 @@ async function renderHistoryLog(){
     Object.keys(CARDS).forEach(ck=>{
       CARDS[ck].sections.forEach(s=>s.benefits.forEach(b=>{ benefitNames[b.id]=b.name; }));
     });
-    const cardNames={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+    const cardNames={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
 
     let html=`<div class="banner">📜 <strong>Benefit history</strong> — last ${data.length} actions</div>`;
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">`;
@@ -1967,7 +1981,7 @@ async function renderHistoryLog(){
 function renderRecap(){
   const year=selectedYear;
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
 
   // Calc stats for each card for the selected year
   let totalCaptured=0,totalMissed=0,totalFees=0;
@@ -2045,7 +2059,7 @@ function renderRecap(){
 function exportCSV(){
   const year=selectedYear;
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
   const rows=[['Card','Benefit','Period','Amount','Status']];
 
   CARD_KEYS.forEach(cardKey=>{
@@ -2078,7 +2092,7 @@ function exportCSV(){
 function shareRecap(){
   const year=selectedYear;
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
   let totalCaptured=0,totalMissed=0,totalFees=0;
 
   CARD_KEYS.forEach(cardKey=>{
@@ -2190,8 +2204,8 @@ document.getElementById('noteModal').addEventListener('click', e=>{ if(e.target=
 // ── Card Comparison ───────────────────────────────────────────────────────
 function renderComparison(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
 
   let html=`<div class="banner">📊 <strong>All cards compared</strong> — current card-year performance</div>`;
   html+=`<div class="comparison-grid">`;
@@ -2248,7 +2262,7 @@ function maxCardYearValue(cardKey){
 
 function renderStreaks(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
   const allStreaks=[];
 
   CARD_KEYS.forEach(cardKey=>{
@@ -2294,6 +2308,7 @@ const FEE_DATES={
   gold:{month:4,day:24},      // May 24
   platinum:{month:8,day:17},  // Sep 17
   csr:{month:4,day:1},        // May 1
+  cap1_venture_x:{month:0,day:15}, // Jan 15 default — update to your actual anniversary date
 };
 
 function daysUntilFee(cardKey){
@@ -2769,8 +2784,8 @@ function set(html){
 
 function renderAllCards(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr'};
+  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X'};
+  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex'};
 
   // Define cadence display order and labels
   const CADENCE_ORDER=['monthly','quarterly','cal-semi-annual','semi-annual','feb-annual','cal-annual','annual'];
