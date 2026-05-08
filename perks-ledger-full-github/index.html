@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<!-- My Perks Ledger v2.1 -->
+<!-- Perks Ledger v2.1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>My Perks Ledger</title>
+<title>Perks Ledger</title>
 
 <!-- PWA Meta -->
-<meta name="application-name" content="My Perks Ledger">
+<meta name="application-name" content="Perks Ledger">
 <meta name="description" content="My personal credit card perks and benefits tracker">
 <link rel="manifest" href="manifest.json">
 
 <!-- iOS PWA -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="My Perks Ledger">
+<meta name="apple-mobile-web-app-title" content="Perks Ledger">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 
@@ -1511,7 +1511,7 @@
 <div class="splash" id="splash">
   <div class="splash-card" style="max-width:360px;width:100%">
     <span class="splash-icon">💳</span>
-    <div class="splash-title">My Perks Ledger</div>
+    <div class="splash-title">Perks Ledger</div>
     <div class="splash-sub" id="authSub">Sign in to track your credit card perks</div>
 
     <div class="auth-tabs">
@@ -1589,7 +1589,7 @@
 <div class="app-header">
   <div style="display:flex;align-items:center;gap:8px">
     <button class="menu-btn" id="menuBtn" title="More">☰</button>
-    <div class="app-title">My Perks Ledger</div>
+    <div class="app-title">Perks Ledger</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <button class="menu-btn" onclick="setActiveView('search')" title="Search (S)">🔍</button>
@@ -1607,7 +1607,7 @@
 <!-- Left drawer -->
 <nav class="left-drawer" id="navExtras">
   <div class="drawer-header">
-    <span class="drawer-title">My Perks Ledger</span>
+    <span class="drawer-title">Perks Ledger</span>
     <button class="drawer-close" id="drawerClose">✕</button>
   </div>
   <div class="drawer-items">
@@ -2476,7 +2476,7 @@ async function requestNotifications(){
   if(perm==='granted'){
     localStorage.setItem('perks-notif','1');
     scheduleMonthlyReminder();
-    new Notification('My Perks Ledger',{body:'Notifications enabled! You\'ll be reminded at month-end.',icon:'apple-touch-icon.png'});
+    new Notification('Perks Ledger',{body:'Notifications enabled! You\'ll be reminded at month-end.',icon:'apple-touch-icon.png'});
     renderInsights(); // re-render to update button
   }
 }
@@ -2495,7 +2495,7 @@ function scheduleMonthlyReminder(){
         total+=getUnclaimedMonthly(ck).reduce((s,b)=>s+b.amt,0);
       });
       if(total>0){
-        new Notification('My Perks Ledger 💳',{
+        new Notification('Perks Ledger 💳',{
           body:`You have $${total.toFixed(0)} in unclaimed benefits expiring this month!`,
           icon:'apple-touch-icon.png'
         });
@@ -3687,7 +3687,7 @@ function renderRecap(){
       <button class="action-btn" onclick="shareRecap()">↗ Share Summary</button>
     </div>
     <div class="recap-hero">
-      <div class="recap-year">${year} Annual Recap · My Perks Ledger</div>
+      <div class="recap-year">${year} Annual Recap · Perks Ledger</div>
       <div class="recap-total">$${totalCaptured.toFixed(0)}</div>
       <div class="recap-total-label">total value captured across all cards</div>
     </div>
@@ -3734,7 +3734,7 @@ function exportCSV(){
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download=`my-perks-ledger-${year}.csv`;
+  a.download=`Perks-Ledger-${year}.csv`;
   a.click();
 }
 
@@ -3797,12 +3797,12 @@ function shareRecap(){
   // Footer
   ctx.fillStyle='rgba(255,255,255,0.2)';
   ctx.font='500 12px DM Mono, monospace';
-  ctx.fillText('jhueyx.github.io/my-perks-ledger',40,420);
+  ctx.fillText('jhueyx.github.io/Perks-Ledger',40,420);
 
   // Share or download
   canvas.toBlob(blob=>{
     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([blob],'recap.png',{type:'image/png'})]})){
-      navigator.share({title:'My Perks Ledger Recap',files:[new File([blob],'recap.png',{type:'image/png'})]});
+      navigator.share({title:'Perks Ledger Recap',files:[new File([blob],'recap.png',{type:'image/png'})]});
     } else {
       const a=document.createElement('a');
       a.href=URL.createObjectURL(blob);

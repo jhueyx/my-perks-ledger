@@ -1,4 +1,4 @@
-# My Perks Ledger
+# Perks Ledger
 
 This is the full app split into separate files for GitHub Pages.
 

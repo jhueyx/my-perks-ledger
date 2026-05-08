@@ -801,7 +801,7 @@ async function requestNotifications(){
   if(perm==='granted'){
     localStorage.setItem('perks-notif','1');
     scheduleMonthlyReminder();
-    new Notification('My Perks Ledger',{body:'Notifications enabled! You\'ll be reminded at month-end.',icon:'apple-touch-icon.png'});
+    new Notification('Perks Ledger',{body:'Notifications enabled! You\'ll be reminded at month-end.',icon:'apple-touch-icon.png'});
     renderInsights(); // re-render to update button
   }
 }
@@ -820,7 +820,7 @@ function scheduleMonthlyReminder(){
         total+=getUnclaimedMonthly(ck).reduce((s,b)=>s+b.amt,0);
       });
       if(total>0){
-        new Notification('My Perks Ledger 💳',{
+        new Notification('Perks Ledger 💳',{
           body:`You have $${total.toFixed(0)} in unclaimed benefits expiring this month!`,
           icon:'apple-touch-icon.png'
         });
@@ -1991,7 +1991,7 @@ function renderRecap(){
 
   let html=`
     <div class="recap-hero">
-      <div class="recap-year">${year} Annual Recap · My Perks Ledger</div>
+      <div class="recap-year">${year} Annual Recap · Perks Ledger</div>
       <div class="recap-total">$${totalCaptured.toFixed(0)}</div>
       <div class="recap-total-label">total value captured across all cards</div>
     </div>
@@ -3006,7 +3006,7 @@ document.getElementById('navSecondary').addEventListener('click', e => {
   // Add app icon to drawer header + clicking goes home
   const drawerTitle=document.querySelector('.drawer-title');
   if(drawerTitle){
-    drawerTitle.innerHTML=`<img src="icon-192.png" style="width:24px;height:24px;border-radius:6px;vertical-align:middle;margin-right:8px;"> My Perks Ledger`;
+    drawerTitle.innerHTML=`<img src="icon-192.png" style="width:24px;height:24px;border-radius:6px;vertical-align:middle;margin-right:8px;"> Perks Ledger`;
     drawerTitle.style.cursor='pointer';
     drawerTitle.addEventListener('click',()=>{ closeDrawer(); setActiveView('all-cards'); });
   }

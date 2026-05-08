@@ -668,7 +668,7 @@ async function requestNotifications(){
   if(perm==='granted'){
     localStorage.setItem('perks-notif','1');
     scheduleMonthlyReminder();
-    new Notification('My Perks Ledger',{body:'Notifications enabled! You\'ll be reminded at month-end.',icon:'apple-touch-icon.png'});
+    new Notification('Perks Ledger',{body:'Notifications enabled! You\'ll be reminded at month-end.',icon:'apple-touch-icon.png'});
     renderInsights(); // re-render to update button
   }
 }
@@ -687,7 +687,7 @@ function scheduleMonthlyReminder(){
         total+=getUnclaimedMonthly(ck).reduce((s,b)=>s+b.amt,0);
       });
       if(total>0){
-        new Notification('My Perks Ledger 💳',{
+        new Notification('Perks Ledger 💳',{
           body:`You have $${total.toFixed(0)} in unclaimed benefits expiring this month!`,
           icon:'apple-touch-icon.png'
         });
@@ -1946,7 +1946,7 @@ function renderRecap(){
       <button class="action-btn" onclick="shareRecap()">↗ Share Summary</button>
     </div>
     <div class="recap-hero">
-      <div class="recap-year">${year} Annual Recap · My Perks Ledger</div>
+      <div class="recap-year">${year} Annual Recap · Perks Ledger</div>
       <div class="recap-total">$${totalCaptured.toFixed(0)}</div>
       <div class="recap-total-label">total value captured across all cards</div>
     </div>
@@ -1993,7 +1993,7 @@ function exportCSV(){
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download=`my-perks-ledger-${year}.csv`;
+  a.download=`Perks-Ledger-${year}.csv`;
   a.click();
 }
 
@@ -2056,12 +2056,12 @@ function shareRecap(){
   // Footer
   ctx.fillStyle='rgba(255,255,255,0.2)';
   ctx.font='500 12px DM Mono, monospace';
-  ctx.fillText('jhueyx.github.io/my-perks-ledger',40,420);
+  ctx.fillText('jhueyx.github.io/Perks-Ledger',40,420);
 
   // Share or download
   canvas.toBlob(blob=>{
     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([blob],'recap.png',{type:'image/png'})]})){
-      navigator.share({title:'My Perks Ledger Recap',files:[new File([blob],'recap.png',{type:'image/png'})]});
+      navigator.share({title:'Perks Ledger Recap',files:[new File([blob],'recap.png',{type:'image/png'})]});
     } else {
       const a=document.createElement('a');
       a.href=URL.createObjectURL(blob);

@@ -1,4 +1,4 @@
-# My Perks Ledger
+# Perks Ledger
 
 Full single-file version of the app, ready to upload to GitHub Pages.
 
