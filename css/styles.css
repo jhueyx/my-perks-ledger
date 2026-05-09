@@ -512,7 +512,7 @@
   }
   .nav-primary-btn:hover { color: var(--text); border-color: var(--border); }
   .nav-primary-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
-  .nav-primary-btn .nav-icon { display: block; font-size: 16px; margin-bottom: 3px; }
+  .nav-primary-btn .nav-icon { display: flex; align-items: center; justify-content: center; margin-bottom: 3px; }
 
   /* Left drawer */
   .drawer-overlay {
@@ -1453,7 +1453,7 @@
     .card-selector .card-btn { width: 150px; }
     .nav-primary { gap: 10px; }
     .nav-primary-btn { padding: 12px 16px; font-size: 13px; }
-    .nav-primary-btn .nav-icon { font-size: 18px; margin-bottom: 4px; }
+    .nav-primary-btn .nav-icon { margin-bottom: 4px; }
     .comparison-grid { grid-template-columns: repeat(3,1fr); }
   }
 
@@ -1468,7 +1468,7 @@
     .drag-hint { font-size: 9px; margin-bottom: 10px; }
     .metrics { grid-template-columns: repeat(2, 1fr); }
     .nav-primary-btn { font-size: 11px; padding: 8px 4px; }
-    .nav-primary-btn .nav-icon { font-size: 14px; }
+    .nav-primary-btn .nav-icon { }
     .stab { font-size: 11px; padding: 6px 8px; }
     .hist-row { grid-template-columns: 1fr; gap: 6px; }
     .benefit-row { grid-template-columns: 1fr auto auto; }

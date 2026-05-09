@@ -842,7 +842,7 @@ function scheduleMonthlyReminder(){
         total+=getUnclaimedMonthly(ck).reduce((s,b)=>s+b.amt,0);
       });
       if(total>0){
-        new Notification('Perks Ledger 💳',{
+        new Notification('Perks Ledger',{
           body:`You have $${total.toFixed(0)} in unclaimed benefits expiring this month!`,
           icon:'apple-touch-icon.png'
         });
@@ -952,11 +952,11 @@ function buildProjection(cardKey){
   return `<div class="projection-bar">
     <div>
       <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);margin-bottom:2px">${CARD_LABELS[cardKey]}</div>
-      <div class="projection-label">📈 Projected year-end capture</div>
+      <div class="projection-label">Projected year-end capture</div>
       <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">at current rate · ${monthsRemaining} months left</div>
     </div>
     <div style="text-align:right">
-      <div class="projection-val" style="color:${isProfit?'var(--green)':''}">$${projected.toFixed(0)}${isProfit?' 🎉':''}</div>
+      <div class="projection-val" style="color:${isProfit?'var(--green)':''}">$${projected.toFixed(0)}</div>
       <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">${isProfit?'+$'+Math.abs(projectedEffective).toFixed(0)+' profit':'~$'+Math.abs(projectedEffective).toFixed(0)+' effective fee'}</div>
     </div>
   </div>`;
@@ -966,7 +966,7 @@ function buildProjection(cardKey){
 function renderHeatmap(){
   const CARD_KEYS=getVisibleCardKeys();
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
-  let html=`<div class="banner">🗓 <strong>Missed money heatmap</strong> — monthly benefits capture rate by card</div>`;
+  let html=`<div class="banner"><strong>Missed money heatmap</strong> — monthly benefits capture rate by card</div>`;
   // Heatmap rendered as a plain CSS grid — no class-based colors so stylesheet can't interfere
   const CELL_W=42,CELL_H=36,COLS=13;
   html+=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
@@ -1058,7 +1058,7 @@ function renderROI(){
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
 
-  let html=`<div class="banner">🎯 <strong>Card ROI scores</strong> — graded on annual fee coverage</div>`;
+  let html=`<div class="banner"><strong>Card ROI scores</strong> — graded on annual fee coverage</div>`;
   html+=`<div class="comparison-grid">`;
 
   CARD_KEYS.forEach(cardKey=>{
@@ -1100,13 +1100,13 @@ function renderInsights(){
   const notifSupported='Notification' in window;
   const notifGranted=notifSupported&&Notification.permission==='granted';
 
-  let html=`<div class="banner">💡 <strong>Insights</strong> — projections, heatmap, and ROI scores</div>`;
+  let html=`<div class="banner"><strong>Insights</strong> — projections, heatmap, and ROI scores</div>`;
 
   // Notification section
   if(notifSupported){
     if(!notifGranted){
       html+=`<div class="notif-banner">
-        <div style="flex:1">🔔 <strong>Enable notifications</strong> — get reminded when monthly benefits are about to expire</div>
+        <div style="flex:1"><strong>Enable notifications</strong> — get reminded when monthly benefits are about to expire</div>
         <button class="notif-btn" onclick="requestNotifications()">Enable</button>
       </div>`;
     } else {
@@ -1203,17 +1203,17 @@ function buildPriorityQueue(){
         if(isSkipped(cardKey,b.id,pk)) return;
         const amt=getBAmount(b,{m:CM});
         // Urgency score: higher = more urgent. Cadence tier ensures monthly > period > anytime.
-        let urgency=0, urgencyLabel='✓ Anytime', urgencyCls='urgency-ok', tier=1;
+        let urgency=0, urgencyLabel='Anytime', urgencyCls='urgency-ok', tier=1;
         if(s.cadence==='monthly'){
           urgency = 40 + (1 - eomDays/31) * 55;
-          urgencyLabel = eomDays<=7 ? '⚠️ Expires soon' : '📅 This month';
+          urgencyLabel = eomDays<=7 ? 'Expires soon' : 'This month';
           urgencyCls   = eomDays<=7 ? 'urgency-fire'    : 'urgency-soon';
           tier = 3;
         } else if(s.cadence==='quarterly'||s.cadence==='cal-semi-annual'||s.cadence==='semi-annual'){
           const daysInQ=s.cadence==='quarterly'?92:182;
           const dayOfQ=s.cadence==='quarterly'?(CM%3)*30+new Date().getDate():((CM%6)*30+new Date().getDate());
           urgency = 20 + (dayOfQ/daysInQ)*40;
-          urgencyLabel = '📅 This period';
+          urgencyLabel = 'This period';
           urgencyCls   = urgency>50 ? 'urgency-soon' : 'urgency-ok';
           tier = 2;
         } else {
@@ -1232,14 +1232,14 @@ function buildPriorityQueue(){
 function renderPriorityQueue(){
   const items=buildPriorityQueue();
   const eomDays=daysUntilEOM();
-  let html=`<div class="banner">🎯 <strong>Use it now</strong> — ranked by urgency × value</div>`;
+  let html=`<div class="banner"><strong>Use it now</strong> — ranked by urgency × value</div>`;
 
   if(!items.length){
-    html+=`<div style="text-align:center;padding:32px;color:var(--green);font-size:14px">🎉 All current benefits claimed!</div>`;
+    html+=`<div style="text-align:center;padding:32px;color:var(--green);font-size:14px">All current benefits claimed!</div>`;
     set(html); return;
   }
 
-  if(eomDays<=5) html+=`<div class="eom-warning">⚠️ Only ${eomDays} day${eomDays===1?'':'s'} left — monthly benefits reset soon!</div>`;
+  if(eomDays<=5) html+=`<div class="eom-warning">Only ${eomDays} day${eomDays===1?'':'s'} left — monthly benefits reset soon!</div>`;
 
   html+=`<div style="margin-bottom:8px;font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">${items.length} unclaimed benefits · sorted by urgency</div>`;
 
@@ -1297,7 +1297,7 @@ function renderKeepCard(){
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
 
-  let html=`<div class="banner">🤔 <strong>Should I keep this card?</strong> — renewal verdict based on fee coverage</div>`;
+  let html=`<div class="banner"><strong>Should I keep this card?</strong> — renewal verdict based on fee coverage</div>`;
 
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
@@ -1318,7 +1318,7 @@ function renderKeepCard(){
       reason=`You've captured $${captured.toFixed(0)} so far. At this rate you'll hit $${projected.toFixed(0)} by card year end — covering the $${fee} fee.`;
       action='On track to break even. Renewal recommended.';
     } else if(projected>=fee*0.9){
-      verdict='⚠️ Reconsider'; cls='reconsider';
+      verdict='Reconsider'; cls='reconsider';
       reason=`Projecting $${projected.toFixed(0)} by year end vs $${fee} fee. You'll be $${(fee-projected).toFixed(0)} short of breaking even.`;
       action='Try to use more benefits before renewal.';
     } else {
@@ -1358,7 +1358,7 @@ function renderTrends(){
   const years=[CY-2,CY-1,CY].filter(y=>y>=2024);
 
   const yearRange=years.length>1?`${years[0]}–${years[years.length-1]}`:`${years[0]}`;
-  let html=`<div class="banner">📊 <strong>Multi-year trends</strong> — ${yearRange} comparison</div>`;
+  let html=`<div class="banner"><strong>Multi-year trends</strong> — ${yearRange} comparison</div>`;
 
   // Compute total captured value for a card in a given calendar year,
   // covering ALL cadences including card-year-aligned ones.
@@ -1548,9 +1548,9 @@ function buildLiveBanner(){
   if(!items.length) return '';
   const top=items[0];
   const eomDays=daysUntilEOM();
-  const urgency=eomDays<=3?`⚠️ ${eomDays}d left!`:eomDays<=7?`📅 ${eomDays}d left`:'This month';
+  const urgency=eomDays<=3?`${eomDays}d left`:eomDays<=7?`${eomDays}d left`:'This month';
   return `<div class="live-banner" onclick="setActiveView('this-period')">
-    <div class="live-banner-icon">⚡</div>
+    <div class="live-banner-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
     <div>
       <div class="live-banner-title">Use next: ${top.name}</div>
       <div class="live-banner-sub">${top.card} · ${urgency}</div>
@@ -1580,7 +1580,7 @@ function buildCategoryBreakdown(){
   const sorted=Object.entries(cats).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   if(!sorted.length) return '';
 
-  const catIcons={dining:'🍽',travel:'✈️',shopping:'🛍',fitness:'💪',entertainment:'🎬',other:'💳'};
+  const catIcons={dining:'Dining',travel:'Travel',shopping:'Shopping',fitness:'Fitness',entertainment:'Ent.',other:'Other'};
   let html=`<div style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Claimed by category</div>`;
   sorted.forEach(([cat,val])=>{
     const pct=Math.round(val/total*100);
@@ -1640,7 +1640,7 @@ function buildAllCardsSummary(){
     <div class="allcards-track-labels">
       <span>$0</span>
       <span style="color:${isProfitable?'var(--green)':'var(--text-tertiary)'}">
-        ${isProfitable?'🎉 In profit! +$'+Math.abs(effectiveFee).toFixed(0):'Break-even at $'+totalFees}
+        ${isProfitable?'In profit +$'+Math.abs(effectiveFee).toFixed(0):'Break-even at $'+totalFees}
       </span>
       <span>${isProfitable?'':'$'+totalFees}</span>
     </div>
@@ -1939,14 +1939,14 @@ function buildDonut(captured,missed,remaining,size=100){
 
 // ── Benefit History Log ───────────────────────────────────────────────────
 async function renderHistoryLog(){
-  set(`<div class="banner">📜 <strong>Benefit history</strong> — recent activity across all cards</div><div style="text-align:center;padding:24px;color:var(--text-tertiary);font-size:13px">Loading history…</div>`);
+  set(`<div class="banner"><strong>Benefit history</strong> — recent activity across all cards</div><div style="text-align:center;padding:24px;color:var(--text-tertiary);font-size:13px">Loading history…</div>`);
 
   try{
     const {data,error}=await sb.from('benefit_log')
       .select('*').order('created_at',{ascending:false}).limit(100);
 
     if(error||!data||!data.length){
-      set(`<div class="banner">📜 <strong>Benefit history</strong></div><div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">No history yet — start marking benefits used!</div>`);
+      set(`<div class="banner"><strong>Benefit history</strong></div><div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">No history yet — start marking benefits used!</div>`);
       return;
     }
 
@@ -1957,7 +1957,7 @@ async function renderHistoryLog(){
     });
     const cardNames={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier'};
 
-    let html=`<div class="banner">📜 <strong>Benefit history</strong> — last ${data.length} actions</div>`;
+    let html=`<div class="banner"><strong>Benefit history</strong> — last ${data.length} actions</div>`;
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">`;
 
     data.forEach(entry=>{
@@ -1978,7 +1978,7 @@ async function renderHistoryLog(){
     html+=`</div>`;
     set(html);
   }catch(e){
-    set(`<div class="banner">📜 <strong>Benefit history</strong></div><div style="text-align:center;padding:32px;color:var(--red);font-size:13px">Could not load history. Make sure the benefit_log table exists in Supabase.</div>`);
+    set(`<div class="banner"><strong>Benefit history</strong></div><div style="text-align:center;padding:32px;color:var(--red);font-size:13px">Could not load history. Make sure the benefit_log table exists in Supabase.</div>`);
   }
 }
 
@@ -2049,9 +2049,9 @@ function renderRecap(){
       <div class="recap-stat"><div class="recap-stat-val ${effectiveFees<=0?'green':''}">${effectiveFees<=0?'+$'+Math.abs(effectiveFees).toFixed(0):'$'+effectiveFees.toFixed(0)}</div><div class="recap-stat-label">${effectiveFees<=0?'Net profit':'Effective fees'}</div></div>
     </div>`;
 
-  if(bestCard.key) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">🏆</div><div><div class="recap-highlight-label">Best card</div><div class="recap-highlight-val">${CARD_LABELS[bestCard.key]} — $${bestCard.captured.toFixed(0)} captured</div></div></div>`;
-  if(biggestMiss.name) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">😬</div><div><div class="recap-highlight-label">Biggest miss</div><div class="recap-highlight-val">${biggestMiss.name} — $${biggestMiss.amt.toFixed(0)} left on table</div></div></div>`;
-  if(longestStreak.streak>=2) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">🔥</div><div><div class="recap-highlight-label">Best streak</div><div class="recap-highlight-val">${longestStreak.name} — ${longestStreak.streak} months in a row</div></div></div>`;
+  if(bestCard.key) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">#1</div><div><div class="recap-highlight-label">Best card</div><div class="recap-highlight-val">${CARD_LABELS[bestCard.key]} — $${bestCard.captured.toFixed(0)} captured</div></div></div>`;
+  if(biggestMiss.name) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">!</div><div><div class="recap-highlight-label">Biggest miss</div><div class="recap-highlight-val">${biggestMiss.name} — $${biggestMiss.amt.toFixed(0)} left on table</div></div></div>`;
+  if(longestStreak.streak>=2) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">${longestStreak.streak}mo</div><div><div class="recap-highlight-label">Best streak</div><div class="recap-highlight-val">${longestStreak.name} — ${longestStreak.streak} months in a row</div></div></div>`;
 
   set(html);
 }
@@ -2101,7 +2101,7 @@ function renderComparison(){
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
   const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
 
-  let html=`<div class="banner">📊 <strong>All cards compared</strong> — current card-year performance</div>`;
+  let html=`<div class="banner"><strong>All cards compared</strong> — current card-year performance</div>`;
   html+=`<div class="comparison-grid">`;
 
   CARD_KEYS.forEach(cardKey=>{
@@ -2173,20 +2173,20 @@ function renderStreaks(){
 
   allStreaks.sort((a,b)=>b.streak-a.streak);
 
-  let html=`<div class="banner">🔥 <strong>Streak leaderboard</strong> — consecutive months claimed</div>`;
+  let html=`<div class="banner"><strong>Streak leaderboard</strong> — consecutive months claimed</div>`;
 
   if(!allStreaks.length){
     html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">No streaks yet — start claiming your monthly benefits!</div>`;
   } else {
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">`;
     allStreaks.forEach((s,i)=>{
-      const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      const medal=i===0?'1st':i===1?'2nd':i===2?'3rd':'';
       html+=`<div class="streak-row">
         <div>
-          <span>${medal} <span style="color:var(--text);font-weight:500">${s.name}</span></span>
+          <span>${medal?`<span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">${medal}</span> `:''}<span style="color:var(--text);font-weight:500">${s.name}</span></span>
           <span class="streak-card-tag">${s.card}</span>
         </div>
-        <div class="streak-count">${s.streak} mo 🔥</div>
+        <div class="streak-count">${s.streak} mo</div>
       </div>`;
     });
     html+=`</div>`;
@@ -2280,7 +2280,7 @@ function buildCountdownStrip(cardKey){
     </div>`;
   } else {
     html+=`<div class="countdown-pill" style="border-color:var(--green)">
-      <span style="font-size:16px">🎉</span>
+      <span style="font-size:13px;font-family:var(--mono);color:var(--green);font-weight:600">+</span>
       <div>
         <div style="font-size:11px;font-weight:600;color:var(--green)">$${Math.abs(fee-captured).toFixed(0)} in profit</div>
         <div style="font-size:10px;color:var(--text-tertiary)">Fee fully offset</div>
@@ -2298,12 +2298,12 @@ function buildBreakevenBar(cardKey){
   const diff=captured-fee;
   if(diff>=0){
     return `<div class="breakeven-bar in-profit">
-      <div>🟢 You're in profit — you've extracted more than the annual fee</div>
+      <div>In profit — you've extracted more than the annual fee</div>
       <div class="breakeven-amt">+$${diff.toFixed(0)}</div>
     </div>`;
   } else {
     return `<div class="breakeven-bar needs-more">
-      <div>⚡ Claim <strong>$${Math.abs(diff).toFixed(0)}</strong> more to fully offset your $${fee} annual fee</div>
+      <div>Claim <strong>$${Math.abs(diff).toFixed(0)}</strong> more to fully offset your $${fee} annual fee</div>
       <div class="breakeven-amt">$${captured.toFixed(0)}/$${fee}</div>
     </div>`;
   }
@@ -2318,7 +2318,7 @@ function buildEOMWarning(cardKey){
   const total=unclaimed.reduce((s,b)=>s+b.amt,0);
   const names=unclaimed.map(b=>b.name).join(', ');
   return `<div class="eom-warning">
-    ⚠️ <div><strong>${days} day${days===1?'':'s'} left this month</strong> — you still have $${total.toFixed(0)} unclaimed: ${names}</div>
+    <div><strong>${days} day${days===1?'':'s'} left this month</strong> — you still have $${total.toFixed(0)} unclaimed: ${names}</div>
   </div>`;
 }
 
@@ -2424,7 +2424,7 @@ function renderCurrent(){
         const used=isUsed(activeCard,b.id,pk);
         const credited=isCredited(activeCard,b.id,pk);
         const streak=s.cadence==='monthly'?getStreak(activeCard,b.id):0;
-        const streakBadge=streak>=2?`<span class="streak-badge">🔥 ${streak} mo streak</span>`:'';
+        const streakBadge=streak>=2?`<span class="streak-badge">${streak} mo streak</span>`:'';
         const expiryBadge=getExpiryBadge(b)+getBenefitExpiryLabel(b);
         const catTag=getCategoryTag(b.id);
         const effectiveAmt=getEffectiveAmount(activeCard,b.id,getBAmount(b,{m:CM}));
@@ -2653,7 +2653,7 @@ function renderAllCards(){
   });
 
   if(!anyShown){
-    html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">🎉 All visible card benefits claimed!</div>`;
+    html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">All visible card benefits claimed!</div>`;
   }
 
   html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:12px">Active periods only · switch to a card tab to mark benefits used</div>`;
@@ -2683,10 +2683,10 @@ function render(){
   const fee=getFee(activeCard,selectedYear);
   const {year:fy,month:fm}=getCardYearStart(activeCard,selectedYear);
   const cyEnd=(fm+11)%12,cyEndY=fy+Math.floor((fm+11)/12);
-  const cyBanner=`<div class="banner">💳 Card year: <strong>${MONTHS[fm]} ${fy} → ${MONTHS[cyEnd]} ${cyEndY}</strong> &nbsp;·&nbsp; Annual fee: <strong>$${fee}</strong></div>`;
+  const cyBanner=`<div class="banner">Card year: <strong>${MONTHS[fm]} ${fy} → ${MONTHS[cyEnd]} ${cyEndY}</strong> &nbsp;·&nbsp; Annual fee: <strong>$${fee}</strong></div>`;
   const isCurrentYear=selectedYear===CY;
   const ytdEndLabel=isCurrentYear?`${MONTHS_FULL[CM]} ${CY}`:`Dec ${selectedYear}`;
-  const ytdBanner=`<div class="banner">📅 <strong>Jan ${selectedYear} → ${ytdEndLabel}</strong> &nbsp;·&nbsp; ${isCurrentYear?'Calendar YTD':selectedYear+' full year'} &nbsp;·&nbsp; Annual fee: <strong>$${fee}</strong></div>`;
+  const ytdBanner=`<div class="banner"><strong>Jan ${selectedYear} → ${ytdEndLabel}</strong> &nbsp;·&nbsp; ${isCurrentYear?'Calendar YTD':selectedYear+' full year'} &nbsp;·&nbsp; Annual fee: <strong>$${fee}</strong></div>`;
   if(activeView==='all-cards') renderAllCards();
   else if(activeView==='current') renderCurrent();
   else if(activeView==='history') renderHistBase(c=>getCardYearPeriods(activeCard,c),isPCurrent,cyBanner,()=>render());
