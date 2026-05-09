@@ -565,7 +565,9 @@
   }
   .drawer-item:hover { background: var(--border-light); color: var(--text); }
   .drawer-item.active { background: rgba(200,146,42,0.12); color: var(--gold); }
-  .drawer-item .drawer-icon { font-size: 20px; width: 28px; text-align: center; }
+  .drawer-item .drawer-icon { width: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-tertiary); }
+  .drawer-item.active .drawer-icon { color: var(--gold); }
+  .drawer-item:hover .drawer-icon { color: var(--text); }
 
   /* Hamburger button in header */
   .menu-btn {
