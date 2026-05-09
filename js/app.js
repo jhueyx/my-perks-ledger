@@ -1201,14 +1201,23 @@ function buildPriorityQueue(){
         if(isUsed(cardKey,b.id,pk)) return;
         const amt=getBAmount(b,{m:CM});
         // Urgency score: higher = more urgent
-        let urgency=0;
-        if(s.cadence==='monthly') urgency = (31-eomDays)/31 * 100; // % of month elapsed
-        else if(s.cadence==='quarterly'){
-          const daysInQ=92, dayOfQ=(CM%3)*30+new Date().getDate();
-          urgency=(daysInQ-dayOfQ)/daysInQ*50;
-        } else urgency=10;
+        let urgency=0, urgencyLabel='✓ Anytime', urgencyCls='urgency-ok';
+        if(s.cadence==='monthly'){
+          // Monthly always expires this month — urgency rises toward EOM
+          urgency = 40 + (1 - eomDays/31) * 55;
+          urgencyLabel = eomDays<=7 ? '⚠️ Expires soon' : '📅 This month';
+          urgencyCls   = eomDays<=7 ? 'urgency-fire'    : 'urgency-soon';
+        } else if(s.cadence==='quarterly'||s.cadence==='cal-semi-annual'||s.cadence==='semi-annual'){
+          const daysInQ=s.cadence==='quarterly'?92:182;
+          const dayOfQ=s.cadence==='quarterly'?(CM%3)*30+new Date().getDate():((CM%6)*30+new Date().getDate());
+          urgency = 20 + (dayOfQ/daysInQ)*40;
+          urgencyLabel = '📅 This period';
+          urgencyCls   = urgency>50 ? 'urgency-soon' : 'urgency-ok';
+        } else {
+          urgency = 10;
+        }
         const score=urgency * Math.log(amt+1);
-        items.push({cardKey,benefitId:b.id,pk,name:b.name,card:CARD_LABELS[cardKey],amt,urgency,score,cadence:s.cadence});
+        items.push({cardKey,benefitId:b.id,pk,name:b.name,card:CARD_LABELS[cardKey],amt,urgency,urgencyLabel,urgencyCls,score,cadence:s.cadence});
       });
     });
   });
@@ -1231,8 +1240,8 @@ function renderPriorityQueue(){
   html+=`<div style="margin-bottom:8px;font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">${items.length} unclaimed benefits · sorted by urgency</div>`;
 
   items.forEach((item,i)=>{
-    const urgencyLabel=item.urgency>60?'⚠️ Expiring soon':item.urgency>30?'📅 This period':'✓ Anytime';
-    const urgencyCls=item.urgency>60?'urgency-fire':item.urgency>30?'urgency-soon':'urgency-ok';
+    const urgencyLabel=item.urgencyLabel;
+    const urgencyCls=item.urgencyCls;
     const rankCls=i===0?'urgent':i<3?'high':'normal';
     html+=`<div class="priority-row" onclick="setActiveView('this-period')">
       <div class="priority-rank ${rankCls}">${i+1}</div>
