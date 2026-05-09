@@ -1191,7 +1191,7 @@ function buildPriorityQueue(){
   const items=[];
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
 
-  Object.keys(CARDS).forEach(cardKey=>{
+  (userCards||[]).filter(k=>CARDS[k]).forEach(cardKey=>{
     const card=CARDS[cardKey];
     card.sections.forEach(s=>{
       const pk=getCurrentPK(cardKey,s.cadence);
@@ -1200,23 +1200,25 @@ function buildPriorityQueue(){
         if(isBExpired(b,p)||isBNotAvailable(b,CY)) return;
         if(isUsed(cardKey,b.id,pk)) return;
         const amt=getBAmount(b,{m:CM});
-        // Urgency score: higher = more urgent
-        let urgency=0, urgencyLabel='✓ Anytime', urgencyCls='urgency-ok';
+        // Urgency score: higher = more urgent. Cadence tier ensures monthly > period > anytime.
+        let urgency=0, urgencyLabel='✓ Anytime', urgencyCls='urgency-ok', tier=1;
         if(s.cadence==='monthly'){
-          // Monthly always expires this month — urgency rises toward EOM
           urgency = 40 + (1 - eomDays/31) * 55;
           urgencyLabel = eomDays<=7 ? '⚠️ Expires soon' : '📅 This month';
           urgencyCls   = eomDays<=7 ? 'urgency-fire'    : 'urgency-soon';
+          tier = 3;
         } else if(s.cadence==='quarterly'||s.cadence==='cal-semi-annual'||s.cadence==='semi-annual'){
           const daysInQ=s.cadence==='quarterly'?92:182;
           const dayOfQ=s.cadence==='quarterly'?(CM%3)*30+new Date().getDate():((CM%6)*30+new Date().getDate());
           urgency = 20 + (dayOfQ/daysInQ)*40;
           urgencyLabel = '📅 This period';
           urgencyCls   = urgency>50 ? 'urgency-soon' : 'urgency-ok';
+          tier = 2;
         } else {
           urgency = 10;
+          tier = 1;
         }
-        const score=urgency * Math.log(amt+1);
+        const score = tier * 1000 + urgency * Math.log(amt+1);
         items.push({cardKey,benefitId:b.id,pk,name:b.name,card:CARD_LABELS[cardKey],amt,urgency,urgencyLabel,urgencyCls,score,cadence:s.cadence});
       });
     });
