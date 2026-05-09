@@ -579,6 +579,7 @@ async function saveToStorage(){
     setSave('saved','✓ saved');
     setTimeout(()=>setSave('',''),2000);
   }catch(e){
+    console.error('[tracker_data save error]', e?.message, e?.code, e?.details, e?.hint);
     setSave('error','⚠ cloud sync failed — saved locally');
     setTimeout(()=>setSave('',''),3000);
   }
@@ -598,7 +599,7 @@ function toggle(card,id,pk){
   scheduleSave();
   showUndo(card,id,pk,action);
   if(sb&&currentUser){
-    sb.from('benefit_log').insert({user_id:currentUser.id,card_key:card,benefit_id:id,period_key:pk,action}).then(()=>{}).catch(()=>{});
+    sb.from('benefit_log').insert({user_id:currentUser.id,card_key:card,benefit_id:id,period_key:pk,action}).then(()=>{}).catch(e=>console.error('[benefit_log insert error]', e?.message, e?.code, e?.details, e?.hint));
   }
 }
 
