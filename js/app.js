@@ -574,8 +574,13 @@ async function saveToStorage(){
   }catch(e){}
   try{
     const payload={...DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited()};
-    const {error}=await sb.from('tracker_data').upsert({user_id:currentUser.id,data:payload,updated_at:ts},{onConflict:'user_id'});
-    if(error) throw error;
+    // Try update first; if no row exists yet, insert
+    const {data:updated,error:upErr}=await sb.from('tracker_data').update({data:payload,updated_at:ts}).eq('user_id',currentUser.id).select('user_id');
+    if(upErr) throw upErr;
+    if(!updated||updated.length===0){
+      const {error:insErr}=await sb.from('tracker_data').insert({user_id:currentUser.id,data:payload,updated_at:ts});
+      if(insErr) throw insErr;
+    }
     setSave('saved','✓ saved');
     setTimeout(()=>setSave('',''),2000);
   }catch(e){
@@ -599,7 +604,7 @@ function toggle(card,id,pk){
   scheduleSave();
   showUndo(card,id,pk,action);
   if(sb&&currentUser){
-    sb.from('benefit_log').insert({user_id:currentUser.id,card_key:card,benefit_id:id,period_key:pk,action}).then(()=>{}).catch(e=>console.error('[benefit_log insert error]', e?.message, e?.code, e?.details, e?.hint));
+    sb.from('benefit_log').insert({user_id:currentUser.id,card_key:card,benefit_id:id,period_key:pk,action}).then(({error:e})=>{if(e)console.error('[benefit_log]',e.message,e.code,e.details,e.hint);}).catch(e=>console.error('[benefit_log throw]',e));
   }
 }
 
