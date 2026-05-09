@@ -2601,7 +2601,6 @@ function renderAllCards(){
   let html=``;
   html+=buildAllCardsSummary();
   html+=buildLiveBanner();
-  html+=`<div class="banner">📋 <strong>Still available to collect</strong> across all cards this period</div>`;
 
   // Grand total up top
   html+=`<div class="grand-total-row" style="margin-top:0;margin-bottom:16px">
