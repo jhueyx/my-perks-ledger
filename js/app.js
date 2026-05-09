@@ -544,10 +544,10 @@ async function syncFromSupabase(){
       if(localTs && data.updated_at && new Date(data.updated_at) <= new Date(localTs)) return;
       const raw=data.data;
       // Separate extras from benefit toggles
-      const remoteExtras={_customAmounts:raw._customAmounts||{},_partial:raw._partial||{},_notes:raw._notes||{},_credited:raw._credited||{}};
+      const remoteExtras={_customAmounts:raw._customAmounts||{},_partial:raw._partial||{},_notes:raw._notes||{},_credited:raw._credited||{},_skipped:raw._skipped||{}};
       const benefitData={...raw};
-      delete benefitData._customAmounts; delete benefitData._partial; delete benefitData._notes; delete benefitData._credited;
-      const localExtras={_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited()};
+      delete benefitData._customAmounts; delete benefitData._partial; delete benefitData._notes; delete benefitData._credited; delete benefitData._skipped;
+      const localExtras={_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped()};
       const changed=JSON.stringify(benefitData)!==JSON.stringify(DATA)||JSON.stringify(remoteExtras)!==JSON.stringify(localExtras);
       if(changed){
         DATA=Object.assign(freshDATA(),benefitData);
@@ -557,6 +557,7 @@ async function syncFromSupabase(){
         savePartial(remoteExtras._partial);
         saveNotes(remoteExtras._notes);
         saveCredited(remoteExtras._credited);
+        saveSkipped(remoteExtras._skipped);
         render();
       }
     }
@@ -573,7 +574,7 @@ async function saveToStorage(){
     localStorage.setItem(STORAGE_KEY+'-ts-'+currentUser.id,ts);
   }catch(e){}
   try{
-    const payload={...DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited()};
+    const payload={...DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped()};
     // Try update first; if no row exists yet, insert
     const {data:updated,error:upErr}=await sb.from('tracker_data').update({data:payload,updated_at:ts}).eq('user_id',currentUser.id).select('user_id');
     if(upErr) throw upErr;
@@ -1199,6 +1200,7 @@ function buildPriorityQueue(){
       s.benefits.forEach(b=>{
         if(isBExpired(b,p)||isBNotAvailable(b,CY)) return;
         if(isUsed(cardKey,b.id,pk)) return;
+        if(isSkipped(cardKey,b.id,pk)) return;
         const amt=getBAmount(b,{m:CM});
         // Urgency score: higher = more urgent. Cadence tier ensures monthly > period > anytime.
         let urgency=0, urgencyLabel='✓ Anytime', urgencyCls='urgency-ok', tier=1;
@@ -1245,16 +1247,17 @@ function renderPriorityQueue(){
     const urgencyLabel=item.urgencyLabel;
     const urgencyCls=item.urgencyCls;
     const rankCls=i===0?'urgent':i<3?'high':'normal';
-    html+=`<div class="priority-row" onclick="setActiveView('this-period')">
-      <div class="priority-rank ${rankCls}">${i+1}</div>
-      <div style="flex:1">
+    html+=`<div class="priority-row">
+      <div class="priority-rank ${rankCls}" onclick="setActiveView('this-period')">${i+1}</div>
+      <div style="flex:1;cursor:pointer" onclick="setActiveView('this-period')">
         <div style="font-size:13px;font-weight:500;color:var(--text)">${item.name}</div>
         <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--mono)">${item.card}</div>
       </div>
-      <div style="text-align:right">
+      <div style="text-align:right;cursor:pointer" onclick="setActiveView('this-period')">
         <div style="font-size:14px;font-weight:700;font-family:var(--mono);color:var(--green)">$${item.amt}</div>
         <span class="priority-urgency ${urgencyCls}">${urgencyLabel}</span>
       </div>
+      <button onclick="skipBenefit('${item.cardKey}','${item.benefitId}','${item.pk}')" title="Dismiss" style="margin-left:10px;background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:16px;padding:4px;line-height:1;opacity:0.5" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.5'">×</button>
     </div>`;
   });
   set(html);
@@ -1433,6 +1436,19 @@ function renderTrends(){
     html+=`</div>`;
   });
   set(html);
+}
+
+// ── Skipped (dismissed from Use It Now) ──────────────────────────────────
+const SKIPPED_KEY='perks-skipped';
+function loadSkipped(){ try{ return JSON.parse(localStorage.getItem(SKIPPED_KEY)||'{}'); }catch(e){ return {}; } }
+function saveSkipped(d){ localStorage.setItem(SKIPPED_KEY,JSON.stringify(d)); }
+function isSkipped(cardKey,id,pk){ return !!(loadSkipped()[`${cardKey}__${id}__${pk}`]); }
+function skipBenefit(cardKey,id,pk){
+  const d=loadSkipped();
+  d[`${cardKey}__${id}__${pk}`]=true;
+  saveSkipped(d);
+  scheduleSave();
+  renderPriorityQueue();
 }
 
 // ── Actual vs Credited ────────────────────────────────────────────────────
