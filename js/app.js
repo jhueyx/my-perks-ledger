@@ -149,6 +149,12 @@ const SUPABASE_URL='https://rsbvddlhismetljqoqre.supabase.co';
 const SUPABASE_KEY='sb_publishable_uLJlvYnd-7MiGHMK9SEaww_JwIBveov';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
+// Show login only if no cached session exists — prevents flash for returning users
+try {
+  const hasSession = Object.keys(localStorage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+  if (!hasSession) document.getElementById('splash').classList.remove('hidden');
+} catch(e) { document.getElementById('splash').classList.remove('hidden'); }
+
 // ── Premium card catalog ──────────────────────────────────────────────────
 // Keys for existing supported cards match CARDS object keys; others are catalog-only
 const PREMIUM_CARD_CATALOG = [
@@ -390,6 +396,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
       _sessionHandled = true;
       await onSignedIn(session.user, false);
     } else if(!session){
+      document.getElementById('splash').classList.remove('hidden');
       setTimeout(()=>document.getElementById('authEmail').focus(), 100);
     }
   }
@@ -473,7 +480,7 @@ async function confirmCardPick(){
   if(cards.length === 0) return;
   document.getElementById('cpConfirm').textContent = 'Saving…';
   document.getElementById('cpConfirm').disabled = true;
-  await sb.from('user_profiles').upsert({user_id: currentUser.id, cards, updated_at: new Date().toISOString()});
+  await sb.from('user_profiles').upsert({user_id: currentUser.id, cards, updated_at: new Date().toISOString()},{onConflict:'user_id'});
   userCards = cards;
   document.getElementById('cardPickerOverlay').classList.add('hidden');
   doUnlock();
@@ -494,7 +501,7 @@ async function saveMyCards(){
   const cards = [..._mcSelected];
   if(cards.length === 0){ alert('Please select at least one card.'); return; }
   document.getElementById('mcSave').textContent = 'Saving…';
-  await sb.from('user_profiles').upsert({user_id: currentUser.id, cards, updated_at: new Date().toISOString()});
+  await sb.from('user_profiles').upsert({user_id: currentUser.id, cards, updated_at: new Date().toISOString()},{onConflict:'user_id'});
   userCards = cards;
   applyUserCards();
   if(!userCards.includes(activeCard)) activeCard = getVisibleCardKeys()[0] || 'csr';
@@ -530,8 +537,11 @@ function toggleDark(){
 async function syncFromSupabase(){
   if(!currentUser || currentUser.id === 'demo') return;
   try{
-    const {data,error}=await sb.from('tracker_data').select('data').eq('user_id',currentUser.id).single();
+    const {data,error}=await sb.from('tracker_data').select('data,updated_at').eq('user_id',currentUser.id).single();
     if(!error&&data&&data.data){
+      // Don't overwrite local changes that are newer than the remote row
+      const localTs=localStorage.getItem(STORAGE_KEY+'-ts-'+currentUser.id);
+      if(localTs && data.updated_at && new Date(data.updated_at) <= new Date(localTs)) return;
       const raw=data.data;
       // Separate extras from benefit toggles
       const remoteExtras={_customAmounts:raw._customAmounts||{},_partial:raw._partial||{},_notes:raw._notes||{},_credited:raw._credited||{}};
@@ -542,6 +552,7 @@ async function syncFromSupabase(){
       if(changed){
         DATA=Object.assign(freshDATA(),benefitData);
         localStorage.setItem(STORAGE_KEY+'-'+currentUser.id,JSON.stringify(DATA));
+        localStorage.setItem(STORAGE_KEY+'-ts-'+currentUser.id,data.updated_at);
         saveCustomAmounts(remoteExtras._customAmounts);
         savePartial(remoteExtras._partial);
         saveNotes(remoteExtras._notes);
@@ -556,10 +567,14 @@ async function saveToStorage(){
   if(!currentUser) return;
   if(currentUser.id === 'demo'){ setSave('saved','✓ saved locally'); setTimeout(()=>setSave('',''),2000); return; }
   setSave('saving','saving…');
-  try{ localStorage.setItem(STORAGE_KEY+'-'+currentUser.id,JSON.stringify(DATA)); }catch(e){}
+  const ts=new Date().toISOString();
+  try{
+    localStorage.setItem(STORAGE_KEY+'-'+currentUser.id,JSON.stringify(DATA));
+    localStorage.setItem(STORAGE_KEY+'-ts-'+currentUser.id,ts);
+  }catch(e){}
   try{
     const payload={...DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited()};
-    const {error}=await sb.from('tracker_data').upsert({user_id:currentUser.id,data:payload,updated_at:new Date().toISOString()});
+    const {error}=await sb.from('tracker_data').upsert({user_id:currentUser.id,data:payload,updated_at:ts},{onConflict:'user_id'});
     if(error) throw error;
     setSave('saved','✓ saved');
     setTimeout(()=>setSave('',''),2000);
