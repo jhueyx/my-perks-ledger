@@ -83,6 +83,34 @@
   </div>
 </div>
 
+<!-- Fee date settings modal -->
+<div class="modal-overlay hidden" id="feeDateModal">
+  <div class="modal">
+    <div class="modal-title">Fee Date</div>
+    <div class="modal-sub" id="feeDateCardName"></div>
+    <div style="display:flex;gap:8px;margin:16px 0">
+      <div style="flex:1">
+        <label style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);display:block;margin-bottom:4px">MONTH</label>
+        <select id="feeDateMonth" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:14px">
+          <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+          <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+          <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+          <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+        </select>
+      </div>
+      <div style="width:72px">
+        <label style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);display:block;margin-bottom:4px">DAY</label>
+        <input id="feeDateDay" type="number" min="1" max="31" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn danger" id="feeDateReset">Reset</button>
+      <button class="modal-btn" id="feeDateCancel">Cancel</button>
+      <button class="modal-btn primary" id="feeDateSave">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Card info bottom sheet -->
 <div class="card-sheet-overlay" id="cardSheetOverlay"></div>
 <div class="card-sheet" id="cardSheet">

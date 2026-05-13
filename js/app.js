@@ -619,7 +619,7 @@ function toggle(card,id,pk){
 //   'feb-annual'                    — Feb–Jan cycle (Chase travel credit)
 
 function getCardYearStart(c, forYear){
-  const fm=FEE_MONTHS[c];
+  const fm=getCardFeeMonth(c);
   const yr=forYear||selectedYear;
   // If viewing a past year, use that year's card year start
   if(yr<CY) return {year:yr, month:fm};
@@ -1384,14 +1384,14 @@ function renderTrends(){
         periods.push({pk:`${y}-annual`,m:0,calY:y,calM:0});
       } else if(s.cadence==='semi-annual'){
         // construct card-year h1/h2 PKs directly from feeMonth — avoids selectedYear dependency
-        const fm=FEE_MONTHS[cardKey];
+        const fm=getCardFeeMonth(cardKey);
         periods.push({pk:`cy-${y}-${fm}-h1`,m:fm,calY:y,calM:fm,endM:(fm+5)%12,endY:fm+5>=12?y+1:y});
         periods.push({pk:`cy-${y}-${fm}-h2`,m:(fm+6)%12,calY:y,calM:(fm+6)%12,endM:(fm+11)%12,endY:fm+11>=12?y+1:y});
         // include prev year's h2 if it ends in year y (e.g. Oct–Dec of y-1 card that runs into Jan y)
         if(fm>0){const pEndY=fm+11>=12?y:y-1;if(pEndY===y)periods.push({pk:`cy-${y-1}-${fm}-h2`,m:(fm+6)%12,calY:y-1,calM:(fm+6)%12,endM:(fm+11)%12,endY:pEndY});}
       } else if(s.cadence==='annual'){
         // construct card-year annual PK directly from feeMonth — avoids selectedYear dependency
-        const fm=FEE_MONTHS[cardKey];
+        const fm=getCardFeeMonth(cardKey);
         periods.push({pk:`cy-${y}-${fm}-annual`,m:fm,calY:y,calM:fm});
       } else if(s.cadence==='feb-annual'){
         // feb-y covers Feb y → Jan y+1 (most of calendar year y)
@@ -1992,7 +1992,7 @@ function renderRecap(){
   let totalCaptured=0,totalMissed=0,totalFees=0;
   let bestCard={key:'',captured:0},worstCard={key:'',missed:0};
   let biggestMiss={name:'',amt:0,card:''};
-  let longestStreak={name:'',streak:0,card:''};
+  let longestStreak={name:'',streak:0,card:''},longestStreakCount=0;
 
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,year);
@@ -2029,7 +2029,8 @@ function renderRecap(){
       s.benefits.forEach(b=>{
         if(isBNotAvailable(b,year)) return;
         const streak=getStreak(cardKey,b.id);
-        if(streak>longestStreak.streak) longestStreak={name:b.name,streak,card:CARD_LABELS[cardKey]};
+        if(streak>longestStreak.streak){ longestStreak={name:b.name,streak,card:CARD_LABELS[cardKey]}; longestStreakCount=1; }
+        else if(streak===longestStreak.streak&&streak>0) longestStreakCount++;
       });
     });
   });
@@ -2051,7 +2052,7 @@ function renderRecap(){
 
   if(bestCard.key) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">#1</div><div><div class="recap-highlight-label">Best card</div><div class="recap-highlight-val">${CARD_LABELS[bestCard.key]} — $${bestCard.captured.toFixed(0)} captured</div></div></div>`;
   if(biggestMiss.name) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">!</div><div><div class="recap-highlight-label">Biggest miss</div><div class="recap-highlight-val">${biggestMiss.name} — $${biggestMiss.amt.toFixed(0)} left on table</div></div></div>`;
-  if(longestStreak.streak>=2) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">${longestStreak.streak}mo</div><div><div class="recap-highlight-label">Best streak</div><div class="recap-highlight-val">${longestStreak.name} — ${longestStreak.streak} months in a row</div></div></div>`;
+  if(longestStreak.streak>=2&&longestStreakCount===1) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">${longestStreak.streak}mo</div><div><div class="recap-highlight-label">Best streak</div><div class="recap-highlight-val">${longestStreak.name} — ${longestStreak.streak} months in a row</div></div></div>`;
 
   set(html);
 }
@@ -2166,7 +2167,7 @@ function renderStreaks(){
       s.benefits.forEach(b=>{
         if(isBNotAvailable(b,CY)) return;
         const streak=getStreak(cardKey,b.id);
-        if(streak>0) allStreaks.push({name:b.name,card:CARD_LABELS[cardKey],streak});
+        allStreaks.push({name:b.name,card:CARD_LABELS[cardKey],streak});
       });
     });
   });
@@ -2200,8 +2201,43 @@ function renderStreaks(){
 // Days until next fee - using specific fee dates
 const FEE_DATES=Object.fromEntries(Object.keys(CARDS).map(k=>[k,{month:CARDS[k].feeMonth??0,day:CARDS[k].feeDay??1}]));
 
+// ── Fee date overrides ─────────────────────────────────────────────────────
+let _feeOverrides=null;
+function getFeeOverrides(){ if(!_feeOverrides) _feeOverrides=JSON.parse(localStorage.getItem('perks-fee-overrides')||'{}'); return _feeOverrides; }
+function saveFeeOverridesData(d){ _feeOverrides=d; localStorage.setItem('perks-fee-overrides',JSON.stringify(d)); }
+function getCardFeeMonth(cardKey){ return getFeeOverrides()[cardKey]?.feeMonth??FEE_MONTHS[cardKey]??0; }
+function getCardFeeDay(cardKey){ return getFeeOverrides()[cardKey]?.feeDay??CARDS[cardKey]?.feeDay??1; }
+
+let _feeDateEditCard=null;
+function openFeeDateModal(cardKey){
+  _feeDateEditCard=cardKey;
+  document.getElementById('feeDateCardName').textContent=CARDS[cardKey].name;
+  document.getElementById('feeDateMonth').value=getCardFeeMonth(cardKey);
+  document.getElementById('feeDateDay').value=getCardFeeDay(cardKey);
+  document.getElementById('feeDateModal').classList.remove('hidden');
+}
+function closeFeeDateModal(){ document.getElementById('feeDateModal').classList.add('hidden'); _feeDateEditCard=null; }
+document.getElementById('feeDateSave').addEventListener('click',()=>{
+  if(!_feeDateEditCard) return;
+  const d=getFeeOverrides();
+  d[_feeDateEditCard]={feeMonth:parseInt(document.getElementById('feeDateMonth').value),feeDay:parseInt(document.getElementById('feeDateDay').value)||1};
+  saveFeeOverridesData(d);
+  closeFeeDateModal();
+  render();
+});
+document.getElementById('feeDateReset').addEventListener('click',()=>{
+  if(!_feeDateEditCard) return;
+  const d=getFeeOverrides();
+  delete d[_feeDateEditCard];
+  saveFeeOverridesData(d);
+  closeFeeDateModal();
+  render();
+});
+document.getElementById('feeDateCancel').addEventListener('click',closeFeeDateModal);
+document.getElementById('feeDateModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeFeeDateModal(); });
+
 function daysUntilFee(cardKey){
-  const {month:fm,day:fd}=FEE_DATES[cardKey];
+  const fm=getCardFeeMonth(cardKey), fd=getCardFeeDay(cardKey);
   const now=new Date();
   let feeDate=new Date(now.getFullYear(), fm, fd);
   if(feeDate<=now) feeDate=new Date(now.getFullYear()+1, fm, fd);
@@ -2230,13 +2266,14 @@ function getUnclaimedMonthly(cardKey){
   return unclaimed;
 }
 
-// Get streak for a benefit (consecutive months used)
+// Get streak for a benefit (consecutive months used, spans year boundaries)
 function getStreak(cardKey, benefitId){
-  let streak=0;
-  for(let m=CM;m>=0;m--){
-    const pk=getPK('monthly',m,CY);
+  let streak=0, m=CM, y=CY;
+  while(y>=CY-2){
+    const pk=getPK('monthly',m,y);
     if(isUsed(cardKey,benefitId,pk)) streak++;
     else break;
+    if(m>0) m--; else { m=11; y--; }
   }
   return streak;
 }
@@ -2246,18 +2283,18 @@ function buildCountdownStrip(cardKey){
   const fee=getFee(cardKey,CY);
   if(!fee) return '';
   const days=daysUntilFee(cardKey);
-  const {month:fm,day:fd}=FEE_DATES[cardKey];
+  const fm=getCardFeeMonth(cardKey), fd=getCardFeeDay(cardKey);
   const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
   const needed=Math.max(0,fee-captured);
   const cls=days<=30?'urgent':days<=90?'soon':'';
   const feeLabel=`${MONTHS[fm]} ${fd}`;
 
   // iOS-style calendar icon showing the fee due day
-  const feeDay=fd;
   const feeMonthShort=MONTHS[fm].toUpperCase();
+  const editBtn=`<button onclick="openFeeDateModal('${cardKey}')" style="background:none;border:none;cursor:pointer;padding:2px 4px;color:var(--text-tertiary);font-size:10px;font-family:var(--mono);line-height:1" title="Edit fee date">✎</button>`;
   const calSvg=`<span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:32px;height:32px;border-radius:7px;background:var(--surface);border:1px solid var(--border);overflow:hidden;line-height:1;flex-shrink:0">
     <span style="background:#e03030;color:#fff;font-size:7px;font-weight:700;font-family:var(--mono);width:100%;text-align:center;padding:1px 0;letter-spacing:0.04em">${feeMonthShort}</span>
-    <span style="font-size:14px;font-weight:700;font-family:var(--font);color:var(--text);line-height:1.5">${feeDay}</span>
+    <span style="font-size:14px;font-weight:700;font-family:var(--font);color:var(--text);line-height:1.5">${fd}</span>
   </span>`;
 
   const targetSvg=`<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex-shrink:0;color:var(--text-secondary)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.6"/><line x1="10" y1="2" x2="10" y2="5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="10" y1="15" x2="10" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="2" y1="10" x2="5" y2="10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="15" y1="10" x2="18" y2="10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>`;
@@ -2266,7 +2303,7 @@ function buildCountdownStrip(cardKey){
   html+=`<div class="countdown-pill ${cls}">
     ${calSvg}
     <div>
-      <div style="font-size:11px;font-weight:600;color:inherit">${days}d until fee</div>
+      <div style="font-size:11px;font-weight:600;color:inherit">${days}d until fee ${editBtn}</div>
       <div style="font-size:10px;opacity:0.7">Due ${feeLabel} · $${fee}</div>
     </div>
   </div>`;
