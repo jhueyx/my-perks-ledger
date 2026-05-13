@@ -1,17 +1,17 @@
 // ── Dark mode ─────────────────────────────────────────────────────────────
 // ── Card benefit data ─────────────────────────────────────────────────────
 const CARDS={
-  gold:{name:'AMEX Gold',fee:325,historicalFees:{2025:325},feeMonth:4,feeDay:24,sections:[
+  gold:{name:'AMEX Gold',fee:325,historicalFees:{2024:250,2025:325},feeMonth:4,feeDay:24,sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
       {id:'g_dining',name:'Dining Credit',desc:'Grubhub, Cheesecake Factory, Five Guys, BWW, Wonder',amount:10},
       {id:'g_uber',name:'Uber Cash',desc:'Uber rides or Uber Eats in the US',amount:10},
-      {id:'g_dunkin',name:"Dunkin' Credit",desc:"At U.S. Dunkin' locations",amount:7},
+      {id:'g_dunkin',name:"Dunkin' Credit",desc:"At U.S. Dunkin' locations",amount:7,startsFrom:2025},
     ]},
     {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
-      {id:'g_resy',name:'Resy Dining Credit',desc:'Any U.S. Resy restaurant — no reservation required',amount:50},
+      {id:'g_resy',name:'Resy Dining Credit',desc:'Any U.S. Resy restaurant — no reservation required',amount:50,startsFrom:2025},
     ]},
     {label:'Annual',cadence:'annual',benefits:[
-      {id:'g_hotel',name:'Hotel Collection Credit',desc:'$100 on eligible charges, 2-night min via AMEX Travel',amount:100,partial:true},
+      {id:'g_hotel',name:'Hotel Collection Credit',desc:'$100 on eligible charges, 2-night min via AMEX Travel',amount:100,partial:true,startsFrom:2025},
     ]},
   ]},
   platinum:{name:'AMEX Platinum',fee:895,historicalFees:{2025:695},feeMonth:8,feeDay:17,sections:[
