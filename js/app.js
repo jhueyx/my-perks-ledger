@@ -2038,11 +2038,11 @@ function renderRecap(){
   const effectiveFees=totalFees-totalCaptured;
   const feeCoverageRate=totalFees>0?Math.min(100,Math.round(totalCaptured/totalFees*100)):0;
 
-  const recapYearBtns=[CY-1,CY].map(y=>`<button onclick="selectedYear=${y};renderRecap()" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:${y===year?'var(--text)':'transparent'};color:${y===year?'var(--bg)':'var(--text-secondary)'};font-size:12px;font-family:var(--mono);cursor:pointer">${y===CY?y+' YTD':y}</button>`).join('');
+  const recapYearBtns=[CY-1,CY].map(y=>`<button onclick="selectedYear=${y};renderRecap()" style="padding:3px 12px;border-radius:20px;border:1px solid ${y===year?'rgba(255,255,255,0.5)':'rgba(255,255,255,0.2)'};background:${y===year?'rgba(255,255,255,0.2)':'transparent'};color:${y===year?'#fff':'rgba(255,255,255,0.5)'};font-size:11px;font-family:var(--mono);cursor:pointer;transition:all 0.15s">${y===CY?y+' YTD':y}</button>`).join('');
 
   let html=`
-    <div style="display:flex;justify-content:center;gap:6px;margin-bottom:12px">${recapYearBtns}</div>
     <div class="recap-hero">
+      <div style="display:flex;justify-content:center;gap:6px;margin-bottom:14px">${recapYearBtns}</div>
       <div class="recap-year">${year===CY?year+' YTD':year} Annual Recap · Perks Ledger</div>
       <div class="recap-total">$${totalCaptured.toFixed(0)}</div>
       <div class="recap-total-label">total value captured across all cards</div>
