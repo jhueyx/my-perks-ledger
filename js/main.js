@@ -1,5 +1,5 @@
 import { CARDS, CARD_LABELS, PREMIUM_CARD_CATALOG } from './cards.js';
-import { state, CY, CM, MONTHS, MONTHS_FULL, sb, freshDATA, STORAGE_KEY } from './state.js';
+import { state, CY, CM, MONTHS, MONTHS_FULL, sb, freshDATA, STORAGE_KEY, escapeHtml } from './state.js';
 import {
   toggle, scheduleSave, setSave, syncFromSupabase,
   loadCustomAmounts, saveCustomAmounts, setCustomAmount,
@@ -99,9 +99,19 @@ async function handleAuth(){
   }
 }
 
+function updateDrawerGreeting(){
+  const user=state.currentUser;
+  if(!user) return;
+  const name=user.user_metadata?.display_name;
+  const greetEl=document.getElementById('drawerGreeting');
+  const emailEl=document.getElementById('drawerUserEmail');
+  if(greetEl) greetEl.textContent=name?`Hi, ${name}`:'';
+  if(emailEl) emailEl.textContent=user.email||'';
+}
+
 async function onSignedIn(user,isNew){
   state.currentUser=user;
-  document.getElementById('drawerUserEmail').textContent=user.email;
+  updateDrawerGreeting();
   const {data:profile}=await sb.from('user_profiles').select('cards').eq('user_id',user.id).single();
   if(isNew||!profile||!profile.cards||profile.cards.length===0){
     document.getElementById('splash').classList.add('hidden');
@@ -201,7 +211,9 @@ function toggleCPCard(id,gridId,searchId){
     document.getElementById('cpCount').textContent=`${state._cpSelected.size} card${state._cpSelected.size!==1?'s':''} selected`;
     document.getElementById('cpConfirm').disabled=state._cpSelected.size===0;
   } else {
-    document.getElementById('mcCount').textContent=`${state._mcSelected.size} card${state._mcSelected.size!==1?'s':''} selected`;
+    const countId=gridId==='settingsCardGrid'?'settingsCardCount':'mcCount';
+    const countEl=document.getElementById(countId);
+    if(countEl) countEl.textContent=`${state._mcSelected.size} card${state._mcSelected.size!==1?'s':''} selected`;
   }
 }
 
@@ -249,6 +261,103 @@ async function saveMyCards(){
   setSave('saved','✓ Cards updated');
   setTimeout(()=>setSave('',''),2000);
 }
+
+// ── Settings screen ──────────────────────────────────────────────────────
+function renderSettings(){
+  const user=state.currentUser;
+  const displayName=user?.user_metadata?.display_name||'';
+  const email=escapeHtml(user?.email||'');
+  state._mcSelected=new Set(state.userCards||['csr','gold','platinum']);
+  document.getElementById('main').innerHTML=`
+    <div class="settings-page">
+      <div class="settings-page-header">Settings</div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Profile</div>
+        <div class="settings-field">
+          <label class="settings-label">What to call you</label>
+          <input class="settings-input" id="settingsName" type="text" placeholder="e.g. Jason" value="${escapeHtml(displayName)}"/>
+        </div>
+        <div class="settings-field">
+          <label class="settings-label">Email</label>
+          <input class="settings-input" type="email" value="${email}" readonly/>
+        </div>
+        <button class="settings-btn settings-btn-primary" onclick="saveSettingsProfile()">Save Profile</button>
+        <div class="settings-feedback" id="settingsProfileMsg"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Security</div>
+        <div class="settings-field">
+          <label class="settings-label">New password</label>
+          <input class="settings-input" id="settingsNewPwd" type="password" placeholder="At least 6 characters" autocomplete="new-password"/>
+        </div>
+        <div class="settings-field">
+          <label class="settings-label">Confirm new password</label>
+          <input class="settings-input" id="settingsConfirmPwd" type="password" placeholder="Confirm new password" autocomplete="new-password"/>
+        </div>
+        <button class="settings-btn settings-btn-primary" onclick="saveSettingsPassword()">Change Password</button>
+        <div class="settings-feedback" id="settingsPwdMsg"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">My Cards</div>
+        <div class="settings-sub">Select the cards you want to track.</div>
+        <input class="cp-search" id="settingsCardSearch" placeholder="Search cards…" oninput="filterSettingsCards()" style="margin:12px 0 8px"/>
+        <div class="cp-count" id="settingsCardCount">${state._mcSelected.size} card${state._mcSelected.size!==1?'s':''} selected</div>
+        <div class="cp-grid" id="settingsCardGrid" style="margin-bottom:16px"></div>
+        <button class="settings-btn settings-btn-primary" id="settingsCardSave" onclick="saveSettingsCards()">Save Cards</button>
+        <div class="settings-feedback" id="settingsCardMsg"></div>
+      </div>
+    </div>`;
+  renderCPGrid('settingsCardGrid','settingsCardSearch',state._mcSelected);
+}
+
+async function saveSettingsProfile(){
+  const name=document.getElementById('settingsName').value.trim();
+  const msg=document.getElementById('settingsProfileMsg');
+  msg.textContent='Saving…'; msg.style.color='var(--text-tertiary)';
+  const {data,error}=await sb.auth.updateUser({data:{display_name:name}});
+  if(error){ msg.textContent=error.message; msg.style.color='var(--red)'; return; }
+  if(data?.user) state.currentUser=data.user;
+  updateDrawerGreeting();
+  msg.textContent='✓ Saved'; msg.style.color='var(--green)';
+  setTimeout(()=>{ if(msg) msg.textContent=''; },2500);
+}
+
+async function saveSettingsPassword(){
+  const pwd=document.getElementById('settingsNewPwd').value;
+  const confirm=document.getElementById('settingsConfirmPwd').value;
+  const msg=document.getElementById('settingsPwdMsg');
+  msg.style.color='var(--red)';
+  if(!pwd){ msg.textContent='Enter a new password.'; return; }
+  if(pwd.length<6){ msg.textContent='Password must be at least 6 characters.'; return; }
+  if(pwd!==confirm){ msg.textContent='Passwords do not match.'; return; }
+  msg.textContent='Saving…'; msg.style.color='var(--text-tertiary)';
+  const {error}=await sb.auth.updateUser({password:pwd});
+  if(error){ msg.textContent=error.message; msg.style.color='var(--red)'; return; }
+  document.getElementById('settingsNewPwd').value='';
+  document.getElementById('settingsConfirmPwd').value='';
+  msg.textContent='✓ Password changed'; msg.style.color='var(--green)';
+  setTimeout(()=>{ if(msg) msg.textContent=''; },2500);
+}
+
+async function saveSettingsCards(){
+  const cards=[...state._mcSelected];
+  const msg=document.getElementById('settingsCardMsg');
+  if(cards.length===0){ msg.textContent='Select at least one card.'; msg.style.color='var(--red)'; return; }
+  const btn=document.getElementById('settingsCardSave');
+  if(btn){ btn.textContent='Saving…'; btn.disabled=true; }
+  await sb.from('user_profiles').upsert({user_id:state.currentUser.id,cards,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  state.userCards=cards;
+  applyUserCards();
+  if(!state.userCards.includes(state.activeCard)) state.activeCard=getVisibleCardKeys()[0]||'csr';
+  if(btn){ btn.textContent='Save Cards'; btn.disabled=false; }
+  msg.textContent='✓ Cards updated'; msg.style.color='var(--green)';
+  setTimeout(()=>{ if(msg) msg.textContent=''; },2500);
+}
+
+function filterSettingsCards(){ renderCPGrid('settingsCardGrid','settingsCardSearch',state._mcSelected); }
 
 // ── Card selector ─────────────────────────────────────────────────────────
 function sizeCardSelector(){
@@ -393,6 +502,7 @@ function setActiveView(primary){
   else if(primary==='priority') state.activeView='priority';
   else if(primary==='keep-card') state.activeView='keep-card';
   else if(primary==='trends') state.activeView='trends';
+  else if(primary==='settings') state.activeView='settings';
   else if(primary==='my-cards'){ openMyCards(); return; }
 
   const topViews=['all-cards','this-period','card-year','ytd'];
@@ -404,6 +514,7 @@ function setActiveView(primary){
     document.querySelectorAll('.drawer-item').forEach(b=>b.classList.toggle('active',b.dataset.primary===primary));
   }
   updateSecondaryNav(primary);
+  if(primary==='settings'){ renderSettings(); return; }
   render();
 }
 
@@ -505,7 +616,7 @@ function showUndo(cardKey,id,pk,action){
 document.addEventListener('perks:benefit-toggled',e=>{
   showUndo(e.detail.cardKey,e.detail.id,e.detail.pk,e.detail.action);
 });
-document.addEventListener('perks:rerender',()=>render());
+document.addEventListener('perks:rerender',()=>{ if(state.activeView!=='settings') render(); });
 
 // ── Event listeners ───────────────────────────────────────────────────────
 document.getElementById('authBtn').addEventListener('click',handleAuth);
@@ -729,6 +840,7 @@ document.addEventListener('keydown',e=>{
     'history-log':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><polyline points="8,5 8,8.5 10.5,10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
     'recap':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L9.5 6h4L10 8.5l1.5 4.5L8 10.5 4.5 13 6 8.5 2.5 6h4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
     'trends':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,13 6,9 9,11 13,5 14,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
   };
   Object.entries(drawerIconMap).forEach(([primary,svg])=>{
     const btn=document.querySelector(`.drawer-item[data-primary="${primary}"]`);
@@ -806,6 +918,10 @@ window.signOut=signOut;
 window.openMyCards=openMyCards;
 window.closeMyCards=closeMyCards;
 window.saveMyCards=saveMyCards;
+window.saveSettingsProfile=saveSettingsProfile;
+window.saveSettingsPassword=saveSettingsPassword;
+window.saveSettingsCards=saveSettingsCards;
+window.filterSettingsCards=filterSettingsCards;
 window.scheduleMonthlyReminder=scheduleMonthlyReminder;
 window.isSkipped=isSkipped;
 window.renderRecap=renderRecap;
