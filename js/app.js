@@ -1416,19 +1416,18 @@ function renderTrends(){
     html+=`<div style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">${CARD_LABELS[cardKey]}</div>`;
 
     const vals=years.map(y=>({y,captured:capturedForYear(cardKey,y),fee:getFee(cardKey,y)}));
-    const maxVal=Math.max(...vals.map(v=>v.captured),1);
 
     vals.forEach(({y,captured,fee})=>{
-      const barPct=Math.round(captured/maxVal*100);
+      const barPct=Math.min(100,Math.round(captured/fee*100));
       const isCurrent=y===CY;
       const profit=captured-fee;
       const label=isCurrent?`${y} YTD`:String(y);
       html+=`<div class="trend-row">
         <div class="trend-year" style="color:${isCurrent?'var(--text)':'var(--text-tertiary)'}">${label}</div>
         <div style="flex:1;position:relative">
-          <div class="trend-bar-wrap"><div class="trend-bar-fill" style="width:${barPct}%;background:${captured>=fee?'var(--green)':'var(--gold)'}"></div></div>
+          <div class="trend-bar-wrap"><div class="trend-bar-fill" style="width:${barPct}%;background:${captured>fee?'var(--blue)':captured>=fee?'var(--green)':'var(--gold)'}"></div></div>
         </div>
-        <div class="trend-val" style="color:${profit>=0?'var(--green)':'var(--text-secondary)'}">
+        <div class="trend-val" style="color:${profit>0?'var(--blue)':profit===0?'var(--green)':'var(--text-secondary)'}">
           $${captured.toFixed(0)}
           <span style="font-size:9px;color:var(--text-tertiary)"> / $${fee}</span>
         </div>
