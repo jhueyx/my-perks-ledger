@@ -1421,6 +1421,18 @@
     margin-left: 6px;
     vertical-align: middle;
   }
+  .cat-tag {
+    display: inline-block;
+    font-size: 9px;
+    font-family: var(--mono);
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 100px;
+    margin-left: 6px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
 
   @media (min-width: 768px) {
     .metrics { grid-template-columns: repeat(4, 1fr); }

@@ -143,6 +143,8 @@ const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov',
 const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); }
 const FEE_MONTHS=Object.fromEntries(Object.keys(CARDS).map(k=>[k,CARDS[k].feeMonth??0]));
+const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
+const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
 function freshDATA(){ return Object.fromEntries(Object.keys(CARDS).map(k=>[k,{}])); }
 const STORAGE_KEY='card-benefits-tracker-v1';
 const SUPABASE_URL='https://rsbvddlhismetljqoqre.supabase.co';
@@ -544,10 +546,10 @@ async function syncFromSupabase(){
       if(localTs && data.updated_at && new Date(data.updated_at) <= new Date(localTs)) return;
       const raw=data.data;
       // Separate extras from benefit toggles
-      const remoteExtras={_customAmounts:raw._customAmounts||{},_partial:raw._partial||{},_notes:raw._notes||{},_credited:raw._credited||{},_skipped:raw._skipped||{}};
+      const remoteExtras={_customAmounts:raw._customAmounts||{},_partial:raw._partial||{},_notes:raw._notes||{},_credited:raw._credited||{},_skipped:raw._skipped||{},_feeOverrides:raw._feeOverrides||{}};
       const benefitData={...raw};
-      delete benefitData._customAmounts; delete benefitData._partial; delete benefitData._notes; delete benefitData._credited; delete benefitData._skipped;
-      const localExtras={_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped()};
+      delete benefitData._customAmounts; delete benefitData._partial; delete benefitData._notes; delete benefitData._credited; delete benefitData._skipped; delete benefitData._feeOverrides;
+      const localExtras={_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped(),_feeOverrides:getFeeOverrides()};
       const changed=JSON.stringify(benefitData)!==JSON.stringify(DATA)||JSON.stringify(remoteExtras)!==JSON.stringify(localExtras);
       if(changed){
         DATA=Object.assign(freshDATA(),benefitData);
@@ -558,6 +560,7 @@ async function syncFromSupabase(){
         saveNotes(remoteExtras._notes);
         saveCredited(remoteExtras._credited);
         saveSkipped(remoteExtras._skipped);
+        if(Object.keys(remoteExtras._feeOverrides).length) saveFeeOverridesData(remoteExtras._feeOverrides);
         render();
       }
     }
@@ -574,7 +577,7 @@ async function saveToStorage(){
     localStorage.setItem(STORAGE_KEY+'-ts-'+currentUser.id,ts);
   }catch(e){}
   try{
-    const payload={...DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped()};
+    const payload={...DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped(),_feeOverrides:getFeeOverrides()};
     // Try update first; if no row exists yet, insert
     const {data:updated,error:upErr}=await sb.from('tracker_data').update({data:payload,updated_at:ts}).eq('user_id',currentUser.id).select('user_id');
     if(upErr) throw upErr;
@@ -939,8 +942,6 @@ function calcCapturedByType(cardKey){
 }
 
 function buildProjection(cardKey){
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
   const {month:fm}=getCardYearStart(cardKey,CY);
   const monthsElapsed=Math.max(1, CM>=fm?CM-fm+1:12-(fm-CM));
   const monthsRemaining=12-monthsElapsed;
@@ -967,7 +968,6 @@ function buildProjection(cardKey){
 // ── Heatmap ───────────────────────────────────────────────────────────────
 function renderHeatmap(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
   let html=`<div class="banner"><strong>Missed money heatmap</strong> — monthly benefits capture rate by card</div>`;
   // Heatmap rendered as a plain CSS grid — no class-based colors so stylesheet can't interfere
   const CELL_W=42,CELL_H=36,COLS=13;
@@ -1057,8 +1057,6 @@ function getROIGrade(captured, fee, cardKey){
 
 function renderROI(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
 
   let html=`<div class="banner"><strong>Card ROI scores</strong> — graded on annual fee coverage</div>`;
   html+=`<div class="comparison-grid">`;
@@ -1125,8 +1123,6 @@ function renderInsights(){
   // Mini ROI grid
   html+=`<div class="section-header" style="margin-top:16px"><span class="section-title">ROI scores</span><span class="section-period">tap for details</span></div>`;
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
   html+=`<div class="comparison-grid" style="margin-bottom:16px">`;
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
@@ -1144,7 +1140,7 @@ function renderInsights(){
 
   // Heatmap link
   html+=`<div class="section-header"><span class="section-title">Missed money heatmap</span><span class="section-period" style="cursor:pointer;color:var(--gold)" onclick="setActiveView('heatmap')">View →</span></div>`;
-  html+=`<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">See which months you consistently miss benefits across all 3 cards.</div>`;
+  html+=`<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">See which months you consistently miss benefits across your selected cards.</div>`;
 
   set(html);
 }
@@ -1192,7 +1188,6 @@ function buildPartialBar(cardKey,benefitId,pk,totalAmt){
 function buildPriorityQueue(){
   const eomDays=daysUntilEOM();
   const items=[];
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
 
   (userCards||[]).filter(k=>CARDS[k]).forEach(cardKey=>{
     const card=CARDS[cardKey];
@@ -1231,6 +1226,7 @@ function buildPriorityQueue(){
   return items.sort((a,b)=>b.score-a.score);
 }
 
+function goToCardPeriod(cardKey){ activeCard=cardKey; setActiveView('this-period'); }
 function renderPriorityQueue(){
   const items=buildPriorityQueue();
   const eomDays=daysUntilEOM();
@@ -1250,12 +1246,12 @@ function renderPriorityQueue(){
     const urgencyCls=item.urgencyCls;
     const rankCls=i===0?'urgent':i<3?'high':'normal';
     html+=`<div class="priority-row">
-      <div class="priority-rank ${rankCls}" onclick="setActiveView('this-period')">${i+1}</div>
-      <div style="flex:1;cursor:pointer" onclick="setActiveView('this-period')">
+      <div class="priority-rank ${rankCls}" onclick="goToCardPeriod('${item.cardKey}')">${i+1}</div>
+      <div style="flex:1;cursor:pointer" onclick="goToCardPeriod('${item.cardKey}')">
         <div style="font-size:13px;font-weight:500;color:var(--text)">${item.name}</div>
         <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--mono)">${item.card}</div>
       </div>
-      <div style="text-align:right;cursor:pointer" onclick="setActiveView('this-period')">
+      <div style="text-align:right;cursor:pointer" onclick="goToCardPeriod('${item.cardKey}')">
         <div style="font-size:14px;font-weight:700;font-family:var(--mono);color:var(--green)">$${item.amt}</div>
         <span class="priority-urgency ${urgencyCls}">${urgencyLabel}</span>
       </div>
@@ -1296,8 +1292,6 @@ const BENEFIT_CATEGORIES={
 // ── Should I Keep This Card ───────────────────────────────────────────────
 function renderKeepCard(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
 
   let html=`<div class="banner"><strong>Should I keep this card?</strong> — renewal verdict based on fee coverage</div>`;
 
@@ -1348,13 +1342,18 @@ function renderKeepCard(){
 }
 
 // ── Category Tags ─────────────────────────────────────────────────────────
-function getCategoryTag(benefitId){ return ''; }
+const CAT_COLORS={dining:'#C86428',travel:'#6366f1',shopping:'var(--gold)',fitness:'var(--green)',entertainment:'#9333ea'};
+function getCategoryTag(benefitId){
+  const cat=BENEFIT_CATEGORIES[benefitId];
+  if(!cat||cat==='other') return '';
+  const color=CAT_COLORS[cat]||'var(--text-tertiary)';
+  return `<span class="cat-tag" style="background:${color}20;color:${color}">${cat}</span>`;
+}
 
 
 // ── Multi-year Trend ──────────────────────────────────────────────────────
 function renderTrends(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
 
   // Dynamic year range: last 3 years up to current
   const years=[CY-1,CY];
@@ -1976,7 +1975,6 @@ async function renderHistoryLog(){
 function renderRecap(){
   const year=selectedYear;
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
 
   // Calc stats for each card for the selected year
   let totalCaptured=0,totalMissed=0,totalFees=0;
@@ -2092,8 +2090,6 @@ document.getElementById('noteModal').addEventListener('click', e=>{ if(e.target=
 // ── Card Comparison ───────────────────────────────────────────────────────
 function renderComparison(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
 
   let html=`<div class="banner"><strong>All cards compared</strong> — current card-year performance</div>`;
   html+=`<div class="comparison-grid">`;
@@ -2150,7 +2146,6 @@ function maxCardYearValue(cardKey){
 
 function renderStreaks(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
   const allStreaks=[];
 
   CARD_KEYS.forEach(cardKey=>{
@@ -2588,8 +2583,6 @@ function set(html){
 
 function renderAllCards(){
   const CARD_KEYS=getVisibleCardKeys();
-  const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
-  const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
 
   // Define cadence display order and labels
   const CADENCE_ORDER=['monthly','quarterly','cal-semi-annual','semi-annual','feb-annual','cal-annual','annual'];
