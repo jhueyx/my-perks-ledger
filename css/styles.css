@@ -499,6 +499,11 @@
   .nav-primary-btn {
     flex: 1;
     padding: 10px 8px;
+    min-height: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     border-radius: var(--radius);
     border: 1px solid var(--border);
     background: var(--surface);
@@ -556,6 +561,7 @@
   .drawer-item {
     display: flex; align-items: center; gap: 12px;
     padding: 11px 12px;
+    min-height: 44px;
     border-radius: var(--radius);
     border: none; background: transparent;
     cursor: pointer; width: 100%; text-align: left;
@@ -735,13 +741,14 @@
   .benefit-amt { font-size: 13px; font-family: var(--mono); font-weight: 500; color: var(--text); text-align: right; }
 
   .check-btn {
-    width: 26px; height: 26px;
+    width: 36px; height: 36px;
     border-radius: 50%;
     border: 1.5px solid var(--border);
     background: transparent;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.15s;
+    flex-shrink: 0;
     flex-shrink: 0;
     position: relative;
   }
@@ -1484,7 +1491,7 @@
   .modal-overlay.hidden { display: none; }
   .modal {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 16px; padding: 24px; width: 100%; max-width: 400px;
+    border-radius: 16px; padding: 24px; width: 100%; max-width: min(400px, calc(100vw - 32px));
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
   }
   .modal-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }

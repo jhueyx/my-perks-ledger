@@ -981,8 +981,7 @@ function buildProjection(cardKey){
 // ── Heatmap ───────────────────────────────────────────────────────────────
 function renderHeatmap(){
   const CARD_KEYS=getVisibleCardKeys();
-  let html=`<div class="banner"><strong>Missed money heatmap</strong> — monthly benefits capture rate by card</div>`;
-  // Heatmap rendered as a plain CSS grid — no class-based colors so stylesheet can't interfere
+  let html=`<div class="banner"><strong>Missed money heatmap</strong> — benefit capture rate by card</div>`;
   const CELL_W=42,CELL_H=36,COLS=13;
   html+=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
   html+=`<div style="display:grid;grid-template-columns:80px repeat(12,${CELL_W}px);gap:3px;min-width:${80+COLS*CELL_W+COLS*3}px">`;
@@ -993,26 +992,96 @@ function renderHeatmap(){
 
   CARD_KEYS.forEach(cardKey=>{
     const card=CARDS[cardKey];
+    const {year:fy,month:fm}=getCardYearStart(cardKey,CY);
+
+    // Build per-display-month totals across all cadences
+    const monthData=Array.from({length:12},()=>({total:0,claimed:0}));
+
+    card.sections.forEach(s=>{
+      const cadence=s.cadence||'monthly';
+      if(cadence==='monthly'){
+        for(let m=0;m<12;m++){
+          const pk=`${CY}-m${m}`;
+          s.benefits.forEach(b=>{
+            if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:m,m})) return;
+            monthData[m].total++;
+            if(isUsed(cardKey,b.id,pk)) monthData[m].claimed++;
+          });
+        }
+      } else if(cadence==='quarterly'){
+        // Q0→Mar(2), Q1→Jun(5), Q2→Sep(8), Q3→Dec(11)
+        [[2,0],[5,1],[8,2],[11,3]].forEach(([displayM,q])=>{
+          const pk=`${CY}-q${q}`;
+          s.benefits.forEach(b=>{
+            if(isBNotAvailable(b,CY)) return;
+            monthData[displayM].total++;
+            if(isUsed(cardKey,b.id,pk)) monthData[displayM].claimed++;
+          });
+        });
+      } else if(cadence==='cal-semi-annual'){
+        // H0→Jun(5), H1→Dec(11)
+        [[5,0],[11,1]].forEach(([displayM,h])=>{
+          const pk=`${CY}-h${h}`;
+          s.benefits.forEach(b=>{
+            if(isBNotAvailable(b,CY)) return;
+            monthData[displayM].total++;
+            if(isUsed(cardKey,b.id,pk)) monthData[displayM].claimed++;
+          });
+        });
+      } else if(cadence==='semi-annual'){
+        // Card-year semi-annual: display H1→Jun(5), H2→Dec(11)
+        const pkH1=`cy-${fy}-${fm}-h1`;
+        const pkH2=`cy-${fy}-${fm}-h2`;
+        s.benefits.forEach(b=>{
+          if(isBNotAvailable(b,CY)) return;
+          monthData[5].total++;
+          if(isUsed(cardKey,b.id,pkH1)) monthData[5].claimed++;
+          monthData[11].total++;
+          if(isUsed(cardKey,b.id,pkH2)) monthData[11].claimed++;
+        });
+      } else if(cadence==='annual'){
+        // Card-year annual → Dec(11)
+        const pk=`cy-${fy}-${fm}-annual`;
+        s.benefits.forEach(b=>{
+          if(isBNotAvailable(b,CY)) return;
+          monthData[11].total++;
+          if(isUsed(cardKey,b.id,pk)) monthData[11].claimed++;
+        });
+      } else if(cadence==='cal-annual'){
+        // Calendar annual → Dec(11)
+        const pk=`${CY}-annual`;
+        s.benefits.forEach(b=>{
+          if(isBNotAvailable(b,CY)) return;
+          monthData[11].total++;
+          if(isUsed(cardKey,b.id,pk)) monthData[11].claimed++;
+        });
+      } else if(cadence==='feb-annual'){
+        // Feb–Jan annual → Dec(11)
+        const febY=CM>=1?CY:CY-1;
+        const pk=`feb-${febY}`;
+        s.benefits.forEach(b=>{
+          if(isBNotAvailable(b,CY)) return;
+          monthData[11].total++;
+          if(isUsed(cardKey,b.id,pk)) monthData[11].claimed++;
+        });
+      }
+    });
+
     html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);display:flex;align-items:center;padding-right:6px">${CARD_LABELS[cardKey]}</div>`;
     for(let m=0;m<12;m++){
       const isFut=m>CM;
+      const {total,claimed}=monthData[m];
       if(isFut){
         html+=`<div style="height:${CELL_H}px;border-radius:5px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">–</div>`;
         continue;
       }
-      let total=0,claimed=0;
-      card.sections.forEach(s=>{
-        if(s.cadence!=='monthly') return;
-        const pk=getPK('monthly',m,CY);
-        s.benefits.forEach(b=>{
-          if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:m,m})) return;
-          total++;
-          if(isUsed(cardKey,b.id,pk)) claimed++;
-        });
-      });
-      const rate=total>0?claimed/total:0;
-      const pct=total>0?Math.round(rate*100):null;
-      const bg=total===0||rate===0
+      if(total===0){
+        html+=`<div style="height:${CELL_H}px;border-radius:5px"></div>`;
+        continue;
+      }
+      const rate=claimed/total;
+      const pct=Math.round(rate*100);
+      const bg=rate===0
         ? 'var(--border-light)'
         : rate<0.5
           ? 'rgba(220,60,60,0.6)'
@@ -1022,7 +1091,7 @@ function renderHeatmap(){
               ? 'rgba(210,160,0,0.85)'
               : '#2a9b6a';
       const fg=rate>=1?'#fff':rate>0&&rate<0.5?'#fff':'var(--text)';
-      html+=`<div style="height:${CELL_H}px;border-radius:5px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:${fg}" title="${MONTHS[m]}: ${claimed}/${total} claimed">${pct!==null?pct+'%':'–'}</div>`;
+      html+=`<div style="height:${CELL_H}px;border-radius:5px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:${fg}" title="${MONTHS[m]}: ${claimed}/${total} claimed">${pct}%</div>`;
     }
   });
 
