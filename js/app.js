@@ -327,12 +327,25 @@ async function handleAuth(){
   }
 }
 
+function sizeCardSelector(){
+  const selector=document.getElementById('cardSelector');
+  if(!selector) return;
+  const visible=[...selector.querySelectorAll('.card-btn[data-card]')].filter(b=>b.style.display!=='none');
+  const count=visible.length;
+  if(!count) return;
+  const innerW=selector.clientWidth-8; // 4px padding each side
+  const gapTotal=(count-1)*10;
+  const w=Math.floor(Math.min(160,Math.max(110,(innerW-gapTotal)/count)));
+  visible.forEach(b=>{ b.style.flex=`0 0 ${w}px`; });
+}
+
 function applyUserCards(){
   // Show only the cards the user has selected, hide the rest
   document.querySelectorAll('.card-btn[data-card]').forEach(btn => {
     const card = btn.dataset.card;
     btn.style.display = (userCards && userCards.includes(card)) ? '' : 'none';
   });
+  sizeCardSelector();
   // Set activeCard to first supported visible card
   const firstCard = (userCards || ['csr']).find(c => CARDS[c]) || 'csr';
   activeCard = firstCard;
@@ -2807,6 +2820,7 @@ function initCardSelector() {
 document.querySelectorAll('.card-btn[data-card]').forEach(btn => btn.style.display = 'none');
 
 initCardSelector();
+window.addEventListener('resize', sizeCardSelector);
 
 // ── Event delegation for all interactive elements in #main ────────────────
 document.getElementById('main').addEventListener('click', e=>{
