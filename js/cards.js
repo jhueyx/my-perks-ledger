@@ -180,6 +180,9 @@ export const PREMIUM_CARD_CATALOG = [
   {id:'apple_card',issuer:'Apple',name:'Apple Card',fee:0,supported:false},
 ];
 
+export const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+export const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+export const CAT_COLORS={dining:'#C86428',travel:'#6366f1',shopping:'var(--gold)',fitness:'var(--green)',entertainment:'#9333ea'};
 export const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
 export const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
 export const FEE_MONTHS=Object.fromEntries(Object.keys(CARDS).map(k=>[k,CARDS[k].feeMonth??0]));

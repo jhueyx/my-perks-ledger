@@ -11,20 +11,6 @@ import {
 } from './storage.js';
 import { render, getVisibleCardKeys, renderCurrent, renderInsights, renderPriorityQueue, renderRecap, haptic, checkAllClaimed, animateCounters } from './views.js';
 
-// ── Dark mode IIFE ────────────────────────────────────────────────────────
-(function(){
-  const saved=localStorage.getItem('perks-theme');
-  const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const theme=saved||(prefersDark?'dark':'light');
-  if(theme==='dark'){
-    document.documentElement.setAttribute('data-theme','dark');
-    const el=document.getElementById('darkIcon');
-    if(el) el.innerHTML=`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="1" x2="8" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="13" x2="8" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="8" x2="3" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="13" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="3.05" y1="3.05" x2="4.46" y2="4.46" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="11.54" y1="11.54" x2="12.95" y2="12.95" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12.95" y1="3.05" x2="11.54" y2="4.46" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="4.46" y1="11.54" x2="3.05" y2="12.95" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
-    const lbl=document.getElementById('darkLabel');
-    if(lbl) lbl.textContent='Light';
-  }
-})();
-
 // ── Splash: show login only if no cached session ──────────────────────────
 try {
   const hasSession=Object.keys(localStorage).some(k=>k.startsWith('sb-')&&k.endsWith('-auth-token'));
