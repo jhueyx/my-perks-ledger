@@ -2038,9 +2038,12 @@ function renderRecap(){
   const effectiveFees=totalFees-totalCaptured;
   const feeCoverageRate=totalFees>0?Math.min(100,Math.round(totalCaptured/totalFees*100)):0;
 
+  const recapYearBtns=[CY-1,CY].map(y=>`<button onclick="selectedYear=${y};renderRecap()" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:${y===year?'var(--text)':'transparent'};color:${y===year?'var(--bg)':'var(--text-secondary)'};font-size:12px;font-family:var(--mono);cursor:pointer">${y===CY?y+' YTD':y}</button>`).join('');
+
   let html=`
+    <div style="display:flex;justify-content:center;gap:6px;margin-bottom:12px">${recapYearBtns}</div>
     <div class="recap-hero">
-      <div class="recap-year">${year} Annual Recap · Perks Ledger</div>
+      <div class="recap-year">${year===CY?year+' YTD':year} Annual Recap · Perks Ledger</div>
       <div class="recap-total">$${totalCaptured.toFixed(0)}</div>
       <div class="recap-total-label">total value captured across all cards</div>
     </div>
