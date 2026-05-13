@@ -670,6 +670,7 @@
   }
   .metric-val.green { color: var(--green); }
   .metric-val.red { color: var(--red); }
+  .metric-val.blue { color: var(--blue); }
   .metric-sub {
     font-size: 10px;
     color: var(--text-tertiary);

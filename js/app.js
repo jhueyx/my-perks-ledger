@@ -771,7 +771,7 @@ function metricsHTML(m1l,m1v,m2l,m2v,m3l,m3v,m4l,m4v,m4cls=''){
   return `<div class="metrics">
     <div class="metric"><div class="metric-label">${m1l}</div><div class="metric-val">${m1v}</div></div>
     <div class="metric"><div class="metric-label">${m2l}</div><div class="metric-val green">${m2v}</div></div>
-    <div class="metric"><div class="metric-label">${m3l}</div><div class="metric-val red">${m3v}</div></div>
+    <div class="metric"><div class="metric-label">${m3l}</div><div class="metric-val blue">${m3v}</div></div>
     <div class="metric"><div class="metric-label">${m4l}</div><div class="metric-val ${m4cls}">${m4v}</div></div>
   </div>`;
 }
@@ -2408,7 +2408,7 @@ function renderCurrent(){
   const {year:fy,month:fm}=getCardYearStart(activeCard,CY);
   const cyEnd=(fm+11)%12,cyEndY=fy+Math.floor((fm+11)/12);
   let totalNow=0,usedNow=0;
-  card.sections.forEach(s=>{ const pk=getCurrentPK(activeCard,s.cadence); s.benefits.forEach(b=>{ if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)) return; totalNow+=getBAmount(b,{m:CM}); if(isUsed(activeCard,b.id,pk)) usedNow+=getBAmount(b,{m:CM}); }); });
+  card.sections.forEach(s=>{ if(s.cadence!=='monthly') return; const pk=getCurrentPK(activeCard,s.cadence); s.benefits.forEach(b=>{ if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)) return; totalNow+=getBAmount(b,{m:CM}); if(isUsed(activeCard,b.id,pk)) usedNow+=getBAmount(b,{m:CM}); }); });
   const pct=totalNow>0?Math.round(usedNow/totalNow*100):0;
   const {captured}=calcStats(activeCard,c=>getCardYearPeriods(activeCard,c),isPCurrent);
   const effectiveFee=getFee(activeCard,CY)-captured;
@@ -2416,8 +2416,8 @@ function renderCurrent(){
   let html=buildCountdownStrip(activeCard);
   html+=buildEOMWarning(activeCard);
   html+=buildBreakevenBar(activeCard);
-  html+=metricsHTML('Available now',`$${totalNow.toFixed(0)}`,'Claimed',`$${usedNow.toFixed(0)}`,'Card-yr captured',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
-  html+=progressHTML(pct,'',`${MONTHS_FULL[CM]}: $${usedNow.toFixed(0)} of $${totalNow.toFixed(0)} available claimed this month`);
+  html+=metricsHTML('Monthly available',`$${totalNow.toFixed(0)}`,'Monthly claimed',`$${usedNow.toFixed(0)}`,'Card-yr captured',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
+  if(totalNow>0) html+=progressHTML(pct,'',`${MONTHS_FULL[CM]}: $${usedNow.toFixed(0)} of $${totalNow.toFixed(0)} monthly credits claimed`);
   html+=`<div class="period-note">Active periods for <strong>${MONTHS_FULL[CM]} ${CY}</strong> — check off as you use each benefit.</div>`;
 
   card.sections.forEach(s=>{
