@@ -134,7 +134,7 @@ const CARDS={
   ]},
 };
 
-const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth();
+const NOW=new Date(), CY=NOW.getFullYear(), CM=NOW.getMonth(), CD=NOW.getDate();
 
 // ── Inject style overrides ────────────────────────────────────────────────
 
@@ -619,11 +619,13 @@ function toggle(card,id,pk){
 //   'feb-annual'                    — Feb–Jan cycle (Chase travel credit)
 
 function getCardYearStart(c, forYear){
-  const fm=getCardFeeMonth(c);
+  const fm=getCardFeeMonth(c), fd=getCardFeeDay(c);
   const yr=forYear||selectedYear;
   // If viewing a past year, use that year's card year start
   if(yr<CY) return {year:yr, month:fm};
-  return CM>=fm?{year:CY,month:fm}:{year:CY-1,month:fm};
+  // Card year started in CY only if we've reached or passed the anniversary date
+  const pastAnniversary = CM>fm || (CM===fm && CD>=fd);
+  return pastAnniversary?{year:CY,month:fm}:{year:CY-1,month:fm};
 }
 function getCardYearMonths(c){ const {year,month:fm}=getCardYearStart(c); return Array.from({length:12},(_,i)=>({m:(fm+i)%12,y:year+Math.floor((fm+i)/12)})); }
 function isCalFuture(m,y){ return y>CY||(y===CY&&m>CM); }
