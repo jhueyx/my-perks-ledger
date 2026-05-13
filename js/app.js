@@ -2807,6 +2807,10 @@ function initCardSelector() {
   });
 }
 
+// Hide all card buttons immediately — applyUserCards() will reveal only the right ones
+// once the user profile loads. Prevents flash of all cards on refresh.
+document.querySelectorAll('.card-btn[data-card]').forEach(btn => btn.style.display = 'none');
+
 initCardSelector();
 
 // ── Event delegation for all interactive elements in #main ────────────────
