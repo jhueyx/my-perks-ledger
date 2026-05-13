@@ -2873,7 +2873,11 @@ let activeSecondary = { 'card-year': 'history', 'ytd': 'ytd-history' };
 function updateYearSelector(show){
   const ys=document.getElementById('yearSelector');
   ys.classList.toggle('hidden',!show);
-  ys.innerHTML=[CY-1,CY].map(y=>`<button class="year-btn${y===selectedYear?' active':''}" data-year="${y}">${y}</button>`).join('');
+  // For card-year view use the card's actual year start so pre-anniversary cards show correctly
+  const cardYearStart = (activePrimary==='card-year') ? getCardYearStart(activeCard,CY).year : CY;
+  const years = [cardYearStart-1, cardYearStart];
+  if(activePrimary==='card-year' && !years.includes(selectedYear)) selectedYear=cardYearStart;
+  ys.innerHTML=years.map(y=>`<button class="year-btn${y===selectedYear?' active':''}" data-year="${y}">${y}</button>`).join('');
 }
 
 function updateSecondaryNav(primary) {
