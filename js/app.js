@@ -1355,7 +1355,7 @@ function renderTrends(){
   const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
 
   // Dynamic year range: last 3 years up to current
-  const years=[CY-2,CY-1,CY].filter(y=>y>=2024);
+  const years=[CY-1,CY];
 
   const yearRange=years.length>1?`${years[0]}–${years[years.length-1]}`:`${years[0]}`;
   let html=`<div class="banner"><strong>Multi-year trends</strong> — ${yearRange} comparison</div>`;
@@ -1383,20 +1383,21 @@ function renderTrends(){
       } else if(s.cadence==='cal-annual'){
         periods.push({pk:`${y}-annual`,m:0,calY:y,calM:0});
       } else if(s.cadence==='semi-annual'){
-        // card-year halves — find the two h1/h2 PKs that overlap calendar year y
-        const allPs=getCardYearPeriods(cardKey,s.cadence);
-        allPs.forEach(p=>{ if(p.calY===y||(p.endY&&p.endY===y)) periods.push(p); });
+        // construct card-year h1/h2 PKs directly from feeMonth — avoids selectedYear dependency
+        const fm=FEE_MONTHS[cardKey];
+        periods.push({pk:`cy-${y}-${fm}-h1`,m:fm,calY:y,calM:fm,endM:(fm+5)%12,endY:fm+5>=12?y+1:y});
+        periods.push({pk:`cy-${y}-${fm}-h2`,m:(fm+6)%12,calY:y,calM:(fm+6)%12,endM:(fm+11)%12,endY:fm+11>=12?y+1:y});
+        // include prev year's h2 if it ends in year y (e.g. Oct–Dec of y-1 card that runs into Jan y)
+        if(fm>0){const pEndY=fm+11>=12?y:y-1;if(pEndY===y)periods.push({pk:`cy-${y-1}-${fm}-h2`,m:(fm+6)%12,calY:y-1,calM:(fm+6)%12,endM:(fm+11)%12,endY:pEndY});}
       } else if(s.cadence==='annual'){
-        // card-year annual — find the period whose window overlaps year y
-        const allPs=getCardYearPeriods(cardKey,s.cadence);
-        allPs.forEach(p=>{ if(p.calY===y) periods.push(p); });
+        // construct card-year annual PK directly from feeMonth — avoids selectedYear dependency
+        const fm=FEE_MONTHS[cardKey];
+        periods.push({pk:`cy-${y}-${fm}-annual`,m:fm,calY:y,calM:fm});
       } else if(s.cadence==='feb-annual'){
-        // Feb–Jan cycle: find the one that starts in year y
-        const allPs=getCardYearPeriods(cardKey,s.cadence);
-        allPs.forEach(p=>{ if(p.calY===y) periods.push(p); });
-        // also check previous feb window if it spans into y
-        const prev={m:1,calY:y-1,calM:1,pk:`feb-${y-1}`,endM:0,endY:y};
-        allPs.forEach(p=>{ if(p.calY===y-1&&!periods.find(x=>x.pk===p.pk)) periods.push(p); });
+        // feb-y covers Feb y → Jan y+1 (most of calendar year y)
+        periods.push({pk:`feb-${y}`,m:1,calY:y,calM:1,endM:0,endY:y+1});
+        // feb-(y-1) ends in Jan y — also overlaps calendar year y
+        periods.push({pk:`feb-${y-1}`,m:1,calY:y-1,calM:1,endM:0,endY:y});
       }
 
       s.benefits.forEach(b=>{
@@ -2846,7 +2847,7 @@ let activeSecondary = { 'card-year': 'history', 'ytd': 'ytd-history' };
 function updateYearSelector(show){
   const ys=document.getElementById('yearSelector');
   ys.classList.toggle('hidden',!show);
-  ys.innerHTML=[CY-1,CY,CY+1].map(y=>`<button class="year-btn${y===selectedYear?' active':''}" data-year="${y}">${y}</button>`).join('');
+  ys.innerHTML=[CY-1,CY].map(y=>`<button class="year-btn${y===selectedYear?' active':''}" data-year="${y}">${y}</button>`).join('');
 }
 
 function updateSecondaryNav(primary) {
