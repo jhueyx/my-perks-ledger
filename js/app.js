@@ -126,7 +126,7 @@ const CARDS={
       {id:'citist_hotel',name:'Hotel Benefit',desc:'$100 off a single hotel stay of $500+ via CitiTravel',amount:100},
     ]},
   ]},
-  wf_premier_autograph:{name:'WF Premier Autograph',fee:95,historicalFees:{2026:95},feeMonth:0,feeDay:1,sections:[
+  wf_premier_autograph:{name:'WF Premier Autograph',fee:95,historicalFees:{2025:95,2026:95},feeMonth:0,feeDay:1,sections:[
     {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
       {id:'wfpa_airline',name:'Airline Credit',desc:'Annual statement credit toward airline purchases',amount:50},
       {id:'wfpa_hotel',name:'Hotel Credit',desc:'Annual statement credit toward hotel purchases',amount:50},
@@ -1330,7 +1330,7 @@ function renderKeepCard(){
     }
 
     const days=daysUntilFee(cardKey);
-    const {month:fm2,day:fd}=FEE_DATES[cardKey];
+    const fm2=getCardFeeMonth(cardKey),fd=getCardFeeDay(cardKey);
 
     html+=`<div style="margin-bottom:12px">
       <div style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">${CARD_LABELS[cardKey]}</div>
