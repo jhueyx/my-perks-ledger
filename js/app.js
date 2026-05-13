@@ -2417,7 +2417,7 @@ function renderCurrent(){
   html+=buildEOMWarning(activeCard);
   html+=buildBreakevenBar(activeCard);
   html+=metricsHTML('Available now',`$${totalNow.toFixed(0)}`,'Claimed',`$${usedNow.toFixed(0)}`,'Card-yr captured',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
-  html+=progressHTML(pct,'',`$${getFee(activeCard,CY)} fee − $${captured.toFixed(0)} captured = $${effectiveFee.toFixed(0)} effective`);
+  html+=progressHTML(pct,'',`${MONTHS_FULL[CM]}: $${usedNow.toFixed(0)} of $${totalNow.toFixed(0)} available claimed this month`);
   html+=`<div class="period-note">Active periods for <strong>${MONTHS_FULL[CM]} ${CY}</strong> — check off as you use each benefit.</div>`;
 
   card.sections.forEach(s=>{
