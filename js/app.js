@@ -1526,20 +1526,8 @@ function updateCardBadges(){
 function updateTabBadge(){
   const btn=document.querySelector('.nav-primary-btn[data-primary="this-period"]');
   if(!btn) return;
-  let unclaimed=0;
-  Object.keys(CARDS).forEach(cardKey=>{
-    unclaimed+=getUnclaimedMonthly(cardKey).length;
-  });
-  let dot=btn.querySelector('.tab-dot');
-  if(unclaimed>0){
-    if(!dot){
-      dot=document.createElement('span');
-      dot.className='tab-dot';
-      btn.appendChild(dot);
-    }
-  } else {
-    if(dot) dot.remove();
-  }
+  const dot=btn.querySelector('.tab-dot');
+  if(dot) dot.remove();
 }
 
 // ── Live Activity Banner ──────────────────────────────────────────────────
