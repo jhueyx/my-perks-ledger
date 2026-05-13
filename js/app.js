@@ -999,13 +999,17 @@ function renderHeatmap(){
 
     card.sections.forEach(s=>{
       const cadence=s.cadence||'monthly';
+      const addAmt=(displayM,b,pk)=>{
+        const amt=b.amount||0;
+        monthData[displayM].total+=amt;
+        if(isUsed(cardKey,b.id,pk)) monthData[displayM].claimed+=amt;
+      };
       if(cadence==='monthly'){
         for(let m=0;m<12;m++){
           const pk=`${CY}-m${m}`;
           s.benefits.forEach(b=>{
             if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:m,m})) return;
-            monthData[m].total++;
-            if(isUsed(cardKey,b.id,pk)) monthData[m].claimed++;
+            addAmt(m,b,pk);
           });
         }
       } else if(cadence==='quarterly'){
@@ -1014,8 +1018,7 @@ function renderHeatmap(){
           const pk=`${CY}-q${q}`;
           s.benefits.forEach(b=>{
             if(isBNotAvailable(b,CY)) return;
-            monthData[displayM].total++;
-            if(isUsed(cardKey,b.id,pk)) monthData[displayM].claimed++;
+            addAmt(displayM,b,pk);
           });
         });
       } else if(cadence==='cal-semi-annual'){
@@ -1024,8 +1027,7 @@ function renderHeatmap(){
           const pk=`${CY}-h${h}`;
           s.benefits.forEach(b=>{
             if(isBNotAvailable(b,CY)) return;
-            monthData[displayM].total++;
-            if(isUsed(cardKey,b.id,pk)) monthData[displayM].claimed++;
+            addAmt(displayM,b,pk);
           });
         });
       } else if(cadence==='semi-annual'){
@@ -1034,26 +1036,22 @@ function renderHeatmap(){
         const pkH2=`cy-${fy}-${fm}-h2`;
         s.benefits.forEach(b=>{
           if(isBNotAvailable(b,CY)) return;
-          monthData[5].total++;
-          if(isUsed(cardKey,b.id,pkH1)) monthData[5].claimed++;
-          monthData[11].total++;
-          if(isUsed(cardKey,b.id,pkH2)) monthData[11].claimed++;
+          addAmt(5,b,pkH1);
+          addAmt(11,b,pkH2);
         });
       } else if(cadence==='annual'){
         // Card-year annual → Dec(11)
         const pk=`cy-${fy}-${fm}-annual`;
         s.benefits.forEach(b=>{
           if(isBNotAvailable(b,CY)) return;
-          monthData[11].total++;
-          if(isUsed(cardKey,b.id,pk)) monthData[11].claimed++;
+          addAmt(11,b,pk);
         });
       } else if(cadence==='cal-annual'){
         // Calendar annual → Dec(11)
         const pk=`${CY}-annual`;
         s.benefits.forEach(b=>{
           if(isBNotAvailable(b,CY)) return;
-          monthData[11].total++;
-          if(isUsed(cardKey,b.id,pk)) monthData[11].claimed++;
+          addAmt(11,b,pk);
         });
       } else if(cadence==='feb-annual'){
         // Feb–Jan annual → Dec(11)
@@ -1061,8 +1059,7 @@ function renderHeatmap(){
         const pk=`feb-${febY}`;
         s.benefits.forEach(b=>{
           if(isBNotAvailable(b,CY)) return;
-          monthData[11].total++;
-          if(isUsed(cardKey,b.id,pk)) monthData[11].claimed++;
+          addAmt(11,b,pk);
         });
       }
     });
@@ -1091,7 +1088,7 @@ function renderHeatmap(){
               ? 'rgba(210,160,0,0.85)'
               : '#2a9b6a';
       const fg=rate>=1?'#fff':rate>0&&rate<0.5?'#fff':'var(--text)';
-      html+=`<div style="height:${CELL_H}px;border-radius:5px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:${fg}" title="${MONTHS[m]}: ${claimed}/${total} claimed">${pct}%</div>`;
+      html+=`<div style="height:${CELL_H}px;border-radius:5px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:${fg}" title="${MONTHS[m]}: $${claimed}/$${total} claimed">${pct}%</div>`;
     }
   });
 
