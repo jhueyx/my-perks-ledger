@@ -80,7 +80,7 @@ export function checkAllClaimed(cardKey){
   card.sections.forEach(s=>{
     const pk=getCurrentPK(cardKey,s.cadence);
     s.benefits.forEach(b=>{
-      if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)||isGloballySnoozed(cardKey,b.id)) return;
+      if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY,{calM:CM,calY:CY})||isGloballySnoozed(cardKey,b.id)) return;
       if(!isUsed(cardKey,b.id,pk)) allDone=false;
     });
   });
@@ -231,7 +231,7 @@ function buildAllCardsSummary(){
       const pk=getCurrentPK(cardKey,s.cadence);
       const p={calY:CY,calM:CM,m:CM};
       s.benefits.forEach(b=>{
-        if(isBExpired(b,p)||isBNotAvailable(b,CY)||isGloballySnoozed(cardKey,b.id)) return;
+        if(isBExpired(b,p)||isBNotAvailable(b,CY,p)||isGloballySnoozed(cardKey,b.id)) return;
         const amt=getBAmount(b,{m:CM});
         totalAvail+=amt;
         if(isUsed(cardKey,b.id,pk)) totalClaimed+=amt;
@@ -280,7 +280,7 @@ function buildCategoryBreakdown(){
     CARDS[cardKey].sections.forEach(s=>{
       const pk=getCurrentPK(cardKey,s.cadence);
       s.benefits.forEach(b=>{
-        if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:CM,m:CM})||isGloballySnoozed(cardKey,b.id)) return;
+        if(isBNotAvailable(b,CY,{calM:CM,calY:CY})||isBExpired(b,{calY:CY,calM:CM,m:CM})||isGloballySnoozed(cardKey,b.id)) return;
         if(!isUsed(cardKey,b.id,pk)) return;
         const cat=BENEFIT_CATEGORIES[b.id]||'other';
         cats[cat]+=getBAmount(b,{m:CM});
@@ -354,7 +354,7 @@ export function buildCardBack(cardKey){
   card.sections.forEach(s=>{
     const pk=getCurrentPK(cardKey,s.cadence);
     s.benefits.forEach(b=>{
-      if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:CM,m:CM})||isGloballySnoozed(cardKey,b.id)) return;
+      if(isBNotAvailable(b,CY,{calM:CM,calY:CY})||isBExpired(b,{calY:CY,calM:CM,m:CM})||isGloballySnoozed(cardKey,b.id)) return;
       benefits.push({name:b.name,amt:getBAmount(b,{m:CM}),used:isUsed(cardKey,b.id,pk)});
     });
   });
@@ -559,7 +559,7 @@ export function renderAllCards(){
     CARDS[cardKey].sections.forEach(s=>{
       const pk=getCurrentPK(cardKey,s.cadence);
       s.benefits.forEach(b=>{
-        if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)||isGloballySnoozed(cardKey,b.id)) return;
+        if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY,{calM:CM,calY:CY})||isGloballySnoozed(cardKey,b.id)) return;
         byPeriodTotal[s.cadence]=(byPeriodTotal[s.cadence]||0)+1;
         const used=isUsed(cardKey,b.id,pk);
         if(!used){

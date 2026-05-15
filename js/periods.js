@@ -191,7 +191,7 @@ export function getUnclaimedMonthly(cardKey){
     if(s.cadence!=='monthly') return;
     const pk=getCurrentPK(cardKey,s.cadence);
     s.benefits.forEach(b=>{
-      if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)||isGloballySnoozed(cardKey,b.id)) return;
+      if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY,{calM:CM,calY:CY})||isGloballySnoozed(cardKey,b.id)) return;
       if(!isUsed(cardKey,b.id,pk)) unclaimed.push({name:b.name,amt:getBAmount(b,{m:CM})});
     });
   });
