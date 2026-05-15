@@ -784,7 +784,12 @@ document.getElementById('drawerClose').addEventListener('click',closeDrawer);
 document.getElementById('drawerOverlay').addEventListener('click',closeDrawer);
 
 // ── Bottom tab bar + menu sheet ───────────────────────────────────────────
+let _menuTapTime=0;
 document.getElementById('bottomMenuBtn').addEventListener('click',()=>{
+  const now=Date.now();
+  const isDouble=now-_menuTapTime<350;
+  _menuTapTime=isDouble?0:now;
+  if(isDouble){ closeMenuSheet(); setActiveView('priority'); return; }
   const sheet=document.getElementById('bottomSheet');
   if(sheet.classList.contains('open')) closeMenuSheet(); else openMenuSheet();
 });
