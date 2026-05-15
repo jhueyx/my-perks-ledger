@@ -385,7 +385,7 @@
   .card-selector:active { cursor: grabbing; }
   .card-selector::-webkit-scrollbar { display: none; }
   .card-selector .card-btn {
-    flex: 0 0 130px;
+    flex: 0 0 150px;
     scroll-snap-align: start;
   }
 
@@ -1449,7 +1449,7 @@
   @media (min-width: 768px) {
     .metrics { grid-template-columns: repeat(4, 1fr); }
     .card-selector { gap: 16px; margin-bottom: 12px; max-width: 480px; }
-    .card-selector .card-btn { width: 190px; }
+    .card-selector .card-btn { flex: 0 0 200px; }
     .nav-primary { gap: 10px; }
     .nav-primary-btn { padding: 12px 16px; font-size: 13px; }
     .nav-primary-btn .nav-icon { margin-bottom: 4px; }
@@ -1457,13 +1457,13 @@
   }
   @media (min-width: 1024px) {
     .card-selector { max-width: 560px; }
-    .card-selector .card-btn { width: 220px; }
+    .card-selector .card-btn { flex: 0 0 240px; }
   }
 
   @media (max-width: 600px) {
     .container { padding: 12px 12px 72px; }
     .card-selector { gap: 6px; margin-bottom: 8px; }
-    .card-selector .card-btn { width: 110px; }
+    .card-selector .card-btn { flex: 0 0 130px; }
     .card-visual { border-radius: 8px; }
     .card-btn { border-radius: 8px; }
     .active-ring { border-radius: 11px !important; }
