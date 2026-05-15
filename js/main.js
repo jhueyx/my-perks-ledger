@@ -1,4 +1,4 @@
-import { CARDS, CARD_LABELS, PREMIUM_CARD_CATALOG } from './cards.js';
+import { CARDS, CARD_LABELS, PREMIUM_CARD_CATALOG, POINTS_MULTIPLIERS } from './cards.js';
 import { state, CY, CM, MONTHS, MONTHS_FULL, sb, freshDATA, STORAGE_KEY, escapeHtml } from './state.js';
 import {
   toggle, scheduleSave, setSave, syncFromSupabase,
@@ -425,18 +425,39 @@ function initCardSelector(){
 // ── Card info sheet ───────────────────────────────────────────────────────
 function openCardSheet(cardKey){
   const card=CARDS[cardKey];
-  const {captured}=(() => {
-    const {calcStats,getCardYearPeriods,isPCurrent}=window._periodsModule||{};
-    if(!calcStats) return {captured:0};
-    return calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
-  })();
-  const fee=CARDS[cardKey].fee;
+  const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
+  const fee=getFee(cardKey,CY);
+  const effectiveFee=fee-captured;
+  const multipliers=POINTS_MULTIPLIERS[cardKey]||[];
+
+  let html=`<div class="card-sheet-section">
+    <div class="card-sheet-section-title">Card Year</div>
+    <div class="card-sheet-row"><span style="color:var(--text-secondary)">Annual fee</span><span style="font-family:var(--mono);font-weight:600">$${fee}</span></div>
+    <div class="card-sheet-row"><span style="color:var(--text-secondary)">Captured so far</span><span style="font-family:var(--mono);font-weight:600;color:var(--green)">$${captured.toFixed(0)}</span></div>
+    <div class="card-sheet-row"><span style="color:var(--text-secondary)">Effective fee</span><span style="font-family:var(--mono);font-weight:600;color:${effectiveFee<=0?'var(--green)':'var(--text)'}">${effectiveFee<=0?'+$'+Math.abs(effectiveFee).toFixed(0)+' profit':'$'+effectiveFee.toFixed(0)}</span></div>
+  </div>`;
+
+  if(multipliers.length){
+    html+=`<div class="card-sheet-section">
+      <div class="card-sheet-section-title">Earning rates</div>`;
+    multipliers.forEach(m=>{
+      html+=`<div class="card-sheet-row"><span style="color:var(--text-secondary);font-size:12px">${m.cat}</span><span style="font-family:var(--mono);font-weight:700;color:var(--gold);font-size:13px">${m.pts}</span></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  html+=`<div class="card-sheet-section"><div class="card-sheet-section-title">Benefits</div>`;
+  card.sections.forEach(s=>{
+    const cadLbl=s.cadence==='monthly'?'monthly':s.cadence==='quarterly'?'quarterly':s.cadence==='cal-semi-annual'||s.cadence==='semi-annual'?'semi-annual':'annual';
+    s.benefits.filter(b=>!b.startsFrom||b.startsFrom<=CY).forEach(b=>{
+      const amt=b.amount>0?`$${b.amount}`:(b.note||'');
+      html+=`<div class="card-sheet-row"><span style="color:var(--text-secondary);font-size:12px">${b.name}</span><span style="font-family:var(--mono);font-size:12px;color:var(--text)">${amt}<span style="color:var(--text-tertiary);font-size:10px"> /${cadLbl}</span></span></div>`;
+    });
+  });
+  html+=`</div>`;
+
   document.getElementById('cardSheetTitle').textContent=card.name;
-  document.getElementById('cardSheetBody').innerHTML=`
-    <div class="card-sheet-section">
-      <div class="card-sheet-section-title">Card Year Performance</div>
-      <div class="card-sheet-row"><span style="color:var(--text-secondary)">Annual fee</span><span style="font-family:var(--mono);font-weight:600;color:var(--text)">$${fee}</span></div>
-    </div>`;
+  document.getElementById('cardSheetBody').innerHTML=html;
   document.getElementById('cardSheetOverlay').classList.add('open');
   document.getElementById('cardSheet').classList.add('open');
   haptic('medium');
