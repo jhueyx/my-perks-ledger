@@ -479,17 +479,23 @@ export function renderSummBase(getPsFn,isCurFn,bannerHTML,label){
       const ps=getPsFn(s.cadence);
       if(isBNotAvailable(b,state.selectedYear)) return;
       if(isBExpired(b,{calY:state.selectedYear,calM:11,m:11})) return;
-      if(isGloballySnoozed(state.activeCard,b.id)) return;
+      const snoozed=isGloballySnoozed(state.activeCard,b.id);
+      const snoozedUntil=getSnoozedUntil(state.activeCard,b.id);
+      const cadLbl=s.cadence==='semi-annual'||s.cadence==='cal-semi-annual'?'half':s.cadence==='monthly'?'mo':s.cadence==='quarterly'?'qtr':'yr';
+      const amtLbl=b.decAmount?`$${b.amount}–$${b.decAmount}/mo`:`$${b.amount}/${cadLbl}`;
+      const expiredTag=b.expiresAfter?`<span style="font-size:10px;color:var(--red);margin-left:4px">ends Jun 2026</span>`:'';
+      if(snoozed){
+        html+=`<div class="summary-row-item" style="opacity:0.45"><div><span class="summary-item-name">${b.name}</span>${expiredTag}<span class="summary-item-cadence">${amtLbl}</span><span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-left:6px">⏸ until ${snoozedUntil} · <span style="cursor:pointer;text-decoration:underline" data-unsnooze="${b.id}" data-unsnooze-card="${state.activeCard}">resume</span></span></div></div>`;
+        return;
+      }
       let bc=0,bm=0,bl=0;
       ps.forEach(p=>{
         if(isBExpired(b,p)) return;
         const fut=isPFuture(p),cur=isCurFn(s.cadence,p),used=isUsed(state.activeCard,b.id,p.pk),amt=getBAmount(b,p);
         if(used) bc+=amt; else if(!fut&&!cur) bm+=amt; else bl+=amt;
       });
-      const cadLbl=s.cadence==='semi-annual'||s.cadence==='cal-semi-annual'?'half':s.cadence==='monthly'?'mo':s.cadence==='quarterly'?'qtr':'yr';
-      const amtLbl=b.decAmount?`$${b.amount}–$${b.decAmount}/mo`:`$${b.amount}/${cadLbl}`;
-      const expiredTag=b.expiresAfter?`<span style="font-size:10px;color:var(--red);margin-left:4px">ends Jun 2026</span>`:'';
-      html+=`<div class="summary-row-item"><div><span class="summary-item-name">${b.name}</span>${expiredTag}<span class="summary-item-cadence">${amtLbl}</span></div><div class="badges">${bc>0?`<span class="badge-captured">+$${bc.toFixed(0)}</span>`:''}${bm>0?`<span class="badge-missed">−$${bm.toFixed(0)} missed</span>`:''}${bl>0?`<span class="badge-left">$${bl.toFixed(0)} left</span>`:''}</div></div>`;
+      const snoozeBtn=`<button class="snooze-btn" data-snooze-id="${b.id}" data-snooze-card="${state.activeCard}" data-snooze-name="${b.name}" title="Snooze this benefit" style="background:none;border:none;cursor:pointer;font-size:11px;padding:1px 4px;color:var(--text-tertiary);opacity:0.3;transition:opacity 0.15s;line-height:1;border-radius:3px;flex-shrink:0" aria-label="Snooze benefit">⏸</button>`;
+      html+=`<div class="summary-row-item"><div><span class="summary-item-name">${b.name}</span>${expiredTag}<span class="summary-item-cadence">${amtLbl}</span></div><div class="badges" style="display:flex;align-items:center;gap:4px">${bc>0?`<span class="badge-captured">+$${bc.toFixed(0)}</span>`:''}${bm>0?`<span class="badge-missed">−$${bm.toFixed(0)} missed</span>`:''}${bl>0?`<span class="badge-left">$${bl.toFixed(0)} left</span>`:''}${snoozeBtn}</div></div>`;
     });
   });
   html+=`</div>`;
