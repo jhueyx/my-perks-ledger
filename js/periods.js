@@ -139,6 +139,7 @@ export function isBNotAvailable(b,viewYear,p){
     if(checkYear<b.startsFrom) return true;
   }
   if(b.halfStart!==undefined&&p!==undefined&&Math.floor(p.calM/6)<b.halfStart) return true;
+  if(b.halfEnd!==undefined&&p!==undefined&&Math.floor(p.calM/6)>b.halfEnd) return true;
   return false;
 }
 
@@ -200,7 +201,7 @@ export function maxCardYearValue(cardKey){
   const card=CARDS[cardKey]; let t=0;
   card.sections.forEach(s=>{
     const n=s.cadence==='monthly'?12:s.cadence==='quarterly'?4:s.cadence==='cal-semi-annual'||s.cadence==='semi-annual'?2:1;
-    s.benefits.forEach(b=>{ if(isGloballySnoozed(cardKey,b.id)||isBNotAvailable(b,CY)) return; t+=b.amount*(b.halfStart!==undefined?1:n); });
+    s.benefits.forEach(b=>{ if(isGloballySnoozed(cardKey,b.id)||isBNotAvailable(b,CY)) return; t+=b.amount*((b.halfStart!==undefined||b.halfEnd!==undefined)?1:n); });
   });
   return t;
 }

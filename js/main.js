@@ -775,11 +775,9 @@ document.getElementById('drawerClose').addEventListener('click',closeDrawer);
 document.getElementById('drawerOverlay').addEventListener('click',closeDrawer);
 
 // ── Bottom tab bar + menu sheet ───────────────────────────────────────────
-let _menuTapTime=0;
 document.getElementById('bottomMenuBtn').addEventListener('click',()=>{
-  const now=Date.now();
-  if(now-_menuTapTime<350){ _menuTapTime=0; closeMenuSheet(); setActiveView('priority'); }
-  else { _menuTapTime=now; openMenuSheet(); }
+  const sheet=document.getElementById('bottomSheet');
+  if(sheet.classList.contains('open')) closeMenuSheet(); else openMenuSheet();
 });
 document.getElementById('bottomSheetOverlay').addEventListener('click',closeMenuSheet);
 document.getElementById('bottomTabBar').querySelectorAll('.bottom-tab[data-bottom]').forEach(btn=>{
@@ -950,7 +948,7 @@ document.addEventListener('touchend',e=>{
   const dx=e.changedTouches[0].clientX-state.touchStartX;
   const dy=e.changedTouches[0].clientY-state.touchStartY;
   if(Math.abs(dx)<40||Math.abs(dy)>Math.abs(dx)*0.8) return;
-  if(dx<-40&&state.touchStartX>30){ const idx=TOP_VIEWS.indexOf(state.activePrimary); if(idx<TOP_VIEWS.length-1) setActiveView(TOP_VIEWS[idx+1]); }
+  if(dx<-40&&state.touchStartX>30){ const idx=TOP_VIEWS.indexOf(state.activePrimary); if(idx>=0&&idx<TOP_VIEWS.length-1) setActiveView(TOP_VIEWS[idx+1]); }
   else if(dx>40){ const idx=TOP_VIEWS.indexOf(state.activePrimary); if(idx>0) setActiveView(TOP_VIEWS[idx-1]); }
 },{passive:true});
 
@@ -1194,6 +1192,16 @@ if('serviceWorker' in navigator&&location.hostname!=='www.claudeusercontent.com'
       .then(reg=>console.log('SW registered:',reg.scope))
       .catch(err=>console.log('SW registration failed:',err));
   });
+  // Force reload when SW updates so stale cached HTML is replaced
+  let _swRefreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!_swRefreshing){ _swRefreshing=true; window.location.reload(); }
+  });
+}
+
+// ── iOS PWA standalone mode ──────────────────────────────────────────────
+if(window.navigator.standalone===true||window.matchMedia('(display-mode:standalone)').matches){
+  document.body.classList.add('pwa-mode');
 }
 
 // ── window.* exports for inline onclick handlers ──────────────────────────

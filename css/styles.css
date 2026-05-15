@@ -577,7 +577,7 @@
     transition: all 0.15s;
     margin-bottom: 2px;
   }
-  .drawer-item:hover { background: var(--border-light); color: var(--text); }
+  .drawer-item:hover, .drawer-item:active { background: var(--border-light); color: var(--text); }
   .drawer-item.active { background: rgba(200,146,42,0.12); color: var(--gold); }
   .drawer-item .drawer-icon { width: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-tertiary); }
   .drawer-item.active .drawer-icon { color: var(--gold); }
@@ -1763,3 +1763,13 @@
   .settings-btn:disabled { opacity: 0.5; cursor: default; }
   .settings-feedback { font-size: 12px; font-family: var(--mono); margin-top: 10px; min-height: 18px; }
   .settings-sub { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; }
+
+  /* ── iOS PWA standalone mode — ensure bottom nav always shows ── */
+  @media (display-mode: standalone) {
+    .bottom-tab-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 700; padding-bottom: env(safe-area-inset-bottom); }
+    .container { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+    .menu-btn { display: none; }
+  }
+  body.pwa-mode .bottom-tab-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 700; padding-bottom: env(safe-area-inset-bottom); }
+  body.pwa-mode .container { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  body.pwa-mode .menu-btn { display: none; }

@@ -610,15 +610,17 @@ export function renderAllCards(){
 // ── Heatmap HTML builder (shared by Insights and standalone view) ──────────
 function buildHeatmapHTML(){
   const CARD_KEYS=getVisibleCardKeys();
+  const isMobile=window.innerWidth<=600;
   let html='';
-  html+=`<p style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin:0 0 10px">drag rows to reorder</p>`;
-  const CELL_W=42,CELL_H=36,LABEL_W=88;
-  const minW=LABEL_W+(CELL_W+3)*12;
-  html+=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><div style="min-width:${minW}px">`;
+  if(!isMobile) html+=`<p style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin:0 0 10px">drag rows to reorder</p>`;
+  const CELL_W=isMobile?22:42,CELL_H=isMobile?26:36,LABEL_W=isMobile?48:88;
+  const GAP=3,totalW=LABEL_W+(CELL_W+GAP)*12;
+  const wrapStyle=isMobile?`width:100%;box-sizing:border-box`:`overflow-x:auto;-webkit-overflow-scrolling:touch`;
+  html+=`<div style="${wrapStyle}"><div style="min-width:${totalW}px">`;
   // header row
-  html+=`<div style="display:flex;align-items:center;gap:3px;margin-bottom:3px">`;
+  html+=`<div style="display:flex;align-items:center;gap:${GAP}px;margin-bottom:3px">`;
   html+=`<div style="width:${LABEL_W}px;flex-shrink:0"></div>`;
-  for(let m=0;m<12;m++) html+=`<div style="width:${CELL_W}px;flex-shrink:0;text-align:center;font-size:10px;font-family:var(--mono);color:var(--text-tertiary);padding:4px 0">${MONTHS[m]}</div>`;
+  for(let m=0;m<12;m++) html+=`<div style="width:${CELL_W}px;flex-shrink:0;text-align:center;font-size:${isMobile?8:10}px;font-family:var(--mono);color:var(--text-tertiary);padding:4px 0">${isMobile?MONTHS[m].slice(0,1):MONTHS[m]}</div>`;
   html+=`</div>`;
   CARD_KEYS.forEach(cardKey=>{
     const card=CARDS[cardKey];
@@ -632,7 +634,7 @@ function buildHeatmapHTML(){
       } else if(cadence==='quarterly'){
         [[2,0],[5,1],[8,2],[11,3]].forEach(([displayM,q])=>{ const pk=`${CY}-q${q}`; s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)) return; addAmt(displayM,b,pk); }); });
       } else if(cadence==='cal-semi-annual'){
-        [[5,0],[11,1]].forEach(([displayM,h])=>{ const pk=`${CY}-h${h}`; s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)||b.halfStart!==undefined&&h<b.halfStart) return; addAmt(displayM,b,pk); }); });
+        [[5,0],[11,1]].forEach(([displayM,h])=>{ const pk=`${CY}-h${h}`; s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)||(b.halfStart!==undefined&&h<b.halfStart)||(b.halfEnd!==undefined&&h>b.halfEnd)) return; addAmt(displayM,b,pk); }); });
       } else if(cadence==='semi-annual'){
         const pkH1=`cy-${fy}-${fm}-h1`,pkH2=`cy-${fy}-${fm}-h2`;
         s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)) return; addAmt(5,b,pkH1); addAmt(11,b,pkH2); });
@@ -647,17 +649,24 @@ function buildHeatmapHTML(){
         s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)) return; addAmt(11,b,pk); });
       }
     });
-    // each card is a single draggable row div
-    html+=`<div data-drag-card="${cardKey}" draggable="true" style="display:flex;align-items:center;gap:3px;margin-bottom:3px;cursor:grab">`;
-    html+=`<div style="width:${LABEL_W}px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding-right:4px"><span class="drag-handle" style="font-size:14px;opacity:0.35;flex-shrink:0">⠿</span><span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${CARD_LABELS[cardKey]}</span></div>`;
+    // each card is a row (draggable on desktop only)
+    const rowAttrs=isMobile?'':`data-drag-card="${cardKey}" draggable="true"`;
+    const rowCursor=isMobile?'':'cursor:grab;';
+    html+=`<div ${rowAttrs} style="display:flex;align-items:center;gap:${GAP}px;margin-bottom:3px;${rowCursor}">`;
+    const labelFontSize=isMobile?8:10;
+    if(isMobile){
+      html+=`<div style="width:${LABEL_W}px;flex-shrink:0;padding-right:2px;overflow:hidden"><span style="font-size:${labelFontSize}px;font-family:var(--mono);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${CARD_LABELS[cardKey].split(' ')[0]}</span></div>`;
+    } else {
+      html+=`<div style="width:${LABEL_W}px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding-right:4px"><span class="drag-handle" style="font-size:14px;opacity:0.35;flex-shrink:0">⠿</span><span style="font-size:${labelFontSize}px;font-family:var(--mono);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${CARD_LABELS[cardKey]}</span></div>`;
+    }
     for(let m=0;m<12;m++){
       const isFut=m>CM,{total,claimed}=monthData[m];
-      if(isFut){ html+=`<div style="width:${CELL_W}px;flex-shrink:0;height:${CELL_H}px;border-radius:5px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">–</div>`; continue; }
-      if(total===0){ html+=`<div style="width:${CELL_W}px;flex-shrink:0;height:${CELL_H}px;border-radius:5px"></div>`; continue; }
+      if(isFut){ html+=`<div style="width:${CELL_W}px;flex-shrink:0;height:${CELL_H}px;border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:${labelFontSize}px;color:var(--text-tertiary)">–</div>`; continue; }
+      if(total===0){ html+=`<div style="width:${CELL_W}px;flex-shrink:0;height:${CELL_H}px;border-radius:4px"></div>`; continue; }
       const rate=claimed/total,pct=Math.round(rate*100);
       const bg=rate===0?'var(--border-light)':rate<0.5?'rgba(220,60,60,0.6)':rate<0.9?'rgba(210,160,0,0.5)':rate<1?'rgba(210,160,0,0.85)':'#2a9b6a';
       const fg=rate>=1?'#fff':rate>0&&rate<0.5?'#fff':'var(--text)';
-      html+=`<div style="width:${CELL_W}px;flex-shrink:0;height:${CELL_H}px;border-radius:5px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:${fg}" title="${MONTHS[m]}: $${claimed}/$${total} claimed">${pct}%</div>`;
+      html+=`<div style="width:${CELL_W}px;flex-shrink:0;height:${CELL_H}px;border-radius:4px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${labelFontSize}px;font-family:var(--mono);color:${fg}">${pct}%</div>`;
     }
     html+=`</div>`;
   });
