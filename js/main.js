@@ -475,7 +475,9 @@ function updateYearSelector(show){
   const ys=document.getElementById('yearSelector');
   ys.classList.toggle('hidden',!show);
   const cardYearStart=(state.activePrimary==='card-year')?getCardYearStartLocal(state.activeCard,CY).year:CY;
-  const years=[cardYearStart-1,cardYearStart];
+  const openedYear=CARDS[state.activeCard]?.openedYear;
+  const prevYear=cardYearStart-1;
+  const years=(openedYear&&prevYear<openedYear)?[cardYearStart]:[prevYear,cardYearStart];
   if(state.activePrimary==='card-year'&&!years.includes(state.selectedYear)) state.selectedYear=cardYearStart;
   ys.innerHTML=years.map(y=>`<button class="year-btn${y===state.selectedYear?' active':''}" data-year="${y}">${y}</button>`).join('');
 }

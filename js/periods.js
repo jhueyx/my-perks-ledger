@@ -32,12 +32,14 @@ export function getCardYearPeriods(cardKey,cadence){
   }
   if(cadence==='cal-annual'){
     const {year:fy}=getCardYearStart(cardKey);
+    const openedYear=CARDS[cardKey].openedYear;
     const out=[];
-    if(fy<CY) out.push({m:0,y:fy,pk:`${fy}-annual`,lbl:`${fy}`,calM:0,calY:fy});
-    out.push({m:0,y:CY,pk:`${CY}-annual`,lbl:`${CY}`,calM:0,calY:CY});
+    if(fy<CY&&(!openedYear||fy>=openedYear)) out.push({m:0,y:fy,pk:`${fy}-annual`,lbl:`${fy}`,calM:0,calY:fy});
+    if(!openedYear||CY>=openedYear) out.push({m:0,y:CY,pk:`${CY}-annual`,lbl:`${CY}`,calM:0,calY:CY});
     return out;
   }
   if(cadence==='cal-semi-annual'){
+    const openedYear=CARDS[cardKey].openedYear;
     const months=getCardYearMonths(cardKey);
     const seen=new Set(),out=[];
     months.forEach(mo=>{
@@ -45,7 +47,9 @@ export function getCardYearPeriods(cardKey,cadence){
       if(!seen.has(pk)){
         seen.add(pk);
         const isH1=mo.m<6;
-        out.push({m:isH1?0:6,y:mo.y,pk,lbl:isH1?`Jan–Jun ${mo.y}`:`Jul–Dec ${mo.y}`,calM:isH1?0:6,calY:mo.y,endM:isH1?5:11,endY:mo.y});
+        const endY=mo.y,endM=isH1?5:11;
+        if(openedYear&&endY<openedYear) return;
+        out.push({m:isH1?0:6,y:mo.y,pk,lbl:isH1?`Jan–Jun ${mo.y}`:`Jul–Dec ${mo.y}`,calM:isH1?0:6,calY:mo.y,endM,endY});
       }
     });
     return out;
