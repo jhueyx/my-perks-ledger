@@ -1470,8 +1470,16 @@
 
   @media (max-width: 600px) {
     .container { padding: 12px 12px 72px; }
-    .card-selector { gap: 6px; margin-bottom: 8px; }
-    .card-selector .card-btn { flex: 0 0 130px; }
+    .card-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+      overflow: visible;
+      padding: 4px 0 8px;
+      cursor: default;
+    }
+    .card-selector .card-btn { flex: none; width: 100%; }
     .card-visual { border-radius: 8px; }
     .card-btn { border-radius: 8px; }
     .active-ring { border-radius: 11px !important; }
