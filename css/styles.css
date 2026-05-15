@@ -609,6 +609,7 @@
     transition: opacity 0.2s;
   }
   .nav-secondary.hidden { display: none; }
+  .nav-primary.hidden { display: none; }
   .stab {
     flex: 1;
     padding: 7px 6px;

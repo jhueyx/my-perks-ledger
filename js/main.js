@@ -566,6 +566,7 @@ function setActiveView(primary){
     document.querySelectorAll('.nav-primary-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.drawer-item').forEach(b=>b.classList.toggle('active',b.dataset.primary===primary));
   }
+  document.getElementById('navPrimary').classList.toggle('hidden', primary==='more');
   updateSecondaryNav(primary);
   updateBottomTabBar(primary);
   if(primary==='settings'){ renderSettings(); return; }
