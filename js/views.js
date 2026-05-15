@@ -855,8 +855,10 @@ export function renderStreaks(){
   if(!allStreaks.length){ html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">No streaks yet — start claiming your monthly benefits!</div>`; }
   else {
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">`;
+    let rank=1;
     allStreaks.forEach((s,i)=>{
-      const medal=i===0?'1st':i===1?'2nd':i===2?'3rd':'';
+      if(i>0&&allStreaks[i-1].streak!==s.streak) rank=i+1;
+      const medal=rank===1?'1st':rank===2?'2nd':rank===3?'3rd':'';
       html+=`<div class="streak-row"><div><span>${medal?`<span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">${medal}</span> `:''}<span style="color:var(--text);font-weight:500">${s.name}</span></span><span class="streak-card-tag">${s.card}</span></div><div class="streak-count">${s.streak} mo</div></div>`;
     });
     html+=`</div>`;
