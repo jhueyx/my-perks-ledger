@@ -1,6 +1,6 @@
 import { CARDS, MONTHS, MONTHS_FULL, CARD_LABELS, CARD_CLS, BENEFIT_CATEGORIES, POINTS_MULTIPLIERS } from './cards.js';
 import { state, CY, CM, escapeHtml } from './state.js';
-import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, isGloballySnoozed, isMonthSnoozed, getSnoozedUntil, getCardFeeMonth, getCardFeeDay } from './storage.js';
+import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, isGloballySnoozed, isMonthSnoozed, getSnoozedUntil, getCardFeeMonth, getCardFeeDay, countSkipped, clearAllSkipped } from './storage.js';
 import {
   getCardYearStart, getCardYearPeriods, getYTDPeriods, isPFuture, isPCurrent, isYTDCurrent,
   getCurrentPK, getCurrentLabel, getBAmount, getFee, isBExpired, isBNotAvailable,
@@ -821,8 +821,13 @@ export function renderTrends(){
 export function renderPriorityQueue(){
   const items=buildPriorityQueue();
   const eomDays=daysUntilEOM();
+  const skippedCount=countSkipped();
   let html=`<div class="banner"><strong>Use it now</strong> — ranked by urgency × value</div>`;
-  if(!items.length){ html+=`<div style="text-align:center;padding:32px;color:var(--green);font-size:14px">All current benefits claimed!</div>`; set(html); return; }
+  if(!items.length){
+    html+=`<div style="text-align:center;padding:32px;color:var(--green);font-size:14px">All current benefits claimed!</div>`;
+    if(skippedCount>0) html+=`<div style="text-align:center;margin-top:8px"><button onclick="clearAllSkipped()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;color:var(--text-secondary);cursor:pointer">Show ${skippedCount} dismissed</button></div>`;
+    set(html); return;
+  }
   if(eomDays<=5) html+=`<div class="eom-warning">Only ${eomDays} day${eomDays===1?'':'s'} left — monthly benefits reset soon!</div>`;
   html+=`<div style="margin-bottom:8px;font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">${items.length} unclaimed benefits · sorted by urgency</div>`;
   items.forEach((item,i)=>{
@@ -834,6 +839,7 @@ export function renderPriorityQueue(){
       <button onclick="skipBenefit('${item.cardKey}','${item.benefitId}','${item.pk}')" title="Dismiss" style="margin-left:10px;background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:16px;padding:4px;line-height:1;opacity:0.5" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.5'">×</button>
     </div>`;
   });
+  if(skippedCount>0) html+=`<div style="text-align:center;margin-top:16px"><button onclick="clearAllSkipped()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;color:var(--text-secondary);cursor:pointer">Show ${skippedCount} dismissed</button></div>`;
   set(html);
 }
 

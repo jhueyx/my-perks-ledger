@@ -20,7 +20,7 @@ A personal credit card perks and benefits tracker. Track monthly credits, annual
 - **Multi-year Trends** — fee-relative bar chart showing captured vs fee across years
 - **Annual Recap** — total captured, biggest miss, card streaks
 - **Keep / Cancel** — data-driven renewal recommendation per card
-- **Priority Queue** — unclaimed benefits ranked by urgency × value; taps directly to that card
+- **Priority Queue** — unclaimed benefits ranked by urgency × value; taps directly to that card; dismiss individual items with ×; shake phone or tap Undo to restore the last dismissal; "Show N dismissed" button resets all at once
 - **Compare Cards** — side-by-side captured / projected / missed metrics
 - **Streaks** — consecutive months claimed for each monthly benefit
 - **Heatmap** — benefit claim density view by month
@@ -112,7 +112,7 @@ Snoozed benefits are excluded from: card-year captured, monthly available, year-
 |-------|------|
 | Frontend | Vanilla JS ES modules / HTML / CSS — no framework, no build step |
 | Auth + Sync | [Supabase](https://supabase.com) (email/password auth, RLS, cloud data sync) |
-| Hosting | GitHub Pages with custom domain (`CNAME: perks.hueyventures.org`) |
+| Hosting | Vercel with custom domain (`perks.hueyventures.org`) |
 | Fonts | Inter + JetBrains Mono (Google Fonts) |
 
 ## Module structure

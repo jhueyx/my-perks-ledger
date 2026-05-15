@@ -6,7 +6,7 @@ import {
   loadPartial, savePartial, setPartialUsed,
   loadNotes, saveNotes, getNoteKey,
   loadCredited, saveCredited, toggleCredited,
-  loadSkipped, saveSkipped, isSkipped, skipBenefit,
+  loadSkipped, saveSkipped, isSkipped, skipBenefit, unskipBenefit, clearAllSkipped, countSkipped,
   getFeeOverrides, saveFeeOverridesData, getCardFeeMonth, getCardFeeDay,
   setSnoozedBenefit, isGloballySnoozed
 } from './storage.js';
@@ -624,17 +624,61 @@ function showUndo(cardKey,id,pk,action){
   state._undoStack={cardKey,id,pk,action};
   const toast=document.getElementById('undoToast');
   const msg=document.getElementById('undoMsg');
-  msg.textContent=action==='used'?'✓ Marked as used':'Unmarked';
+  if(action==='skipped') msg.textContent='Dismissed';
+  else msg.textContent=action==='used'?'✓ Marked as used':'Unmarked';
   toast.classList.add('show');
   haptic('light');
-  state._undoTimer=setTimeout(()=>{ toast.classList.remove('show'); state._undoStack=null; },3000);
+  state._undoTimer=setTimeout(()=>{ toast.classList.remove('show'); state._undoStack=null; },4000);
+}
+
+function executeUndo(){
+  if(!state._undoStack) return;
+  const {cardKey,id,pk,action}=state._undoStack;
+  if(action==='skipped') unskipBenefit(cardKey,id,pk);
+  else toggle(cardKey,id,pk);
+  document.getElementById('undoToast').classList.remove('show');
+  state._undoStack=null;
+  clearTimeout(state._undoTimer);
+  haptic('medium');
+  render();
 }
 
 document.addEventListener('perks:benefit-toggled',e=>{
   showUndo(e.detail.cardKey,e.detail.id,e.detail.pk,e.detail.action);
 });
+document.addEventListener('perks:benefit-skipped',e=>{
+  showUndo(e.detail.cardKey,e.detail.id,e.detail.pk,'skipped');
+});
 document.addEventListener('perks:rerender',()=>{ if(state.activeView!=='settings') render(); });
 document.addEventListener('perks:benefit-toggled',()=>{ setTimeout(checkProfitConfetti,200); });
+
+// ── Shake to undo ─────────────────────────────────────────────────────────
+(function initShake(){
+  let lastAcc=0,shakeTime=0;
+  const THRESHOLD=20,COOLDOWN=1000;
+  function onMotion(e){
+    const acc=e.accelerationIncludingGravity;
+    if(!acc) return;
+    const mag=Math.abs(acc.x)+Math.abs(acc.y)+Math.abs(acc.z);
+    const now=Date.now();
+    if(mag>THRESHOLD&&now-shakeTime>COOLDOWN&&state._undoStack){
+      shakeTime=now;
+      executeUndo();
+    }
+    lastAcc=mag;
+  }
+  if(typeof DeviceMotionEvent!=='undefined'){
+    if(typeof DeviceMotionEvent.requestPermission==='function'){
+      // iOS 13+ — hook in after a user gesture (the first interaction on the page)
+      document.addEventListener('click',function grantMotion(){
+        DeviceMotionEvent.requestPermission().then(r=>{ if(r==='granted') window.addEventListener('devicemotion',onMotion); }).catch(()=>{});
+        document.removeEventListener('click',grantMotion);
+      },{once:true});
+    } else {
+      window.addEventListener('devicemotion',onMotion);
+    }
+  }
+})();
 
 // ── Event listeners ───────────────────────────────────────────────────────
 document.getElementById('authBtn').addEventListener('click',handleAuth);
@@ -642,16 +686,7 @@ document.getElementById('authEmail').addEventListener('keydown',e=>{ if(e.key===
 document.getElementById('authPassword').addEventListener('keydown',e=>{ if(e.key==='Enter') handleAuth(); });
 document.getElementById('authConfirm').addEventListener('keydown',e=>{ if(e.key==='Enter') handleAuth(); });
 
-document.getElementById('undoBtn').addEventListener('click',()=>{
-  if(!state._undoStack) return;
-  const {cardKey,id,pk}=state._undoStack;
-  toggle(cardKey,id,pk);
-  document.getElementById('undoToast').classList.remove('show');
-  state._undoStack=null;
-  clearTimeout(state._undoTimer);
-  haptic('medium');
-  render();
-});
+document.getElementById('undoBtn').addEventListener('click',()=>{ executeUndo(); });
 
 document.getElementById('noteSave').addEventListener('click',()=>{
   const notes=loadNotes();
@@ -1091,6 +1126,7 @@ window.openFeeDateModal=openFeeDateModal;
 window.closeFeeDateModal=closeFeeDateModal;
 window.goToCardPeriod=goToCardPeriod;
 window.skipBenefit=skipBenefit;
+window.clearAllSkipped=clearAllSkipped;
 window.requestNotifications=requestNotifications;
 window.setSelectedYear=(y)=>{ state.selectedYear=y; };
 window.openNoteModal=openNoteModal;

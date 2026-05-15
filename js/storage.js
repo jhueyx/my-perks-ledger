@@ -138,8 +138,22 @@ export function skipBenefit(cardKey,id,pk){
   d[`${cardKey}__${id}__${pk}`]=true;
   saveSkipped(d);
   scheduleSave();
+  document.dispatchEvent(new CustomEvent('perks:benefit-skipped',{detail:{cardKey,id,pk}}));
   document.dispatchEvent(new CustomEvent('perks:rerender'));
 }
+export function unskipBenefit(cardKey,id,pk){
+  const d=loadSkipped();
+  delete d[`${cardKey}__${id}__${pk}`];
+  saveSkipped(d);
+  scheduleSave();
+  document.dispatchEvent(new CustomEvent('perks:rerender'));
+}
+export function clearAllSkipped(){
+  saveSkipped({});
+  scheduleSave();
+  document.dispatchEvent(new CustomEvent('perks:rerender'));
+}
+export function countSkipped(){ return Object.keys(loadSkipped()).length; }
 
 // ── Benefit snooze ────────────────────────────────────────────────────────
 // Stores { 'cardKey__benefitId': {from:'YYYY-MM',until:'YYYY-MM'} }
