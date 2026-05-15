@@ -320,14 +320,25 @@ function buildPriorityQueue(){
           urgencyLabel=eomDays<=7?'Expires soon':'This month';
           urgencyCls=eomDays<=7?'urgency-fire':'urgency-soon';
           tier=3;
-        } else if(s.cadence==='quarterly'||s.cadence==='cal-semi-annual'||s.cadence==='semi-annual'){
-          const daysInQ=s.cadence==='quarterly'?92:182;
-          const dayOfQ=s.cadence==='quarterly'?(CM%3)*30+new Date().getDate():((CM%6)*30+new Date().getDate());
-          urgency=20+(dayOfQ/daysInQ)*40;
-          urgencyLabel='This period';
+        } else if(s.cadence==='quarterly'){
+          const dayOfQ=(CM%3)*30+new Date().getDate();
+          urgency=20+(dayOfQ/92)*40;
+          urgencyLabel='This quarter';
           urgencyCls=urgency>50?'urgency-soon':'urgency-ok';
           tier=2;
-        } else { urgency=10; tier=1; }
+        } else if(s.cadence==='cal-semi-annual'||s.cadence==='semi-annual'){
+          const dayOfH=(CM%6)*30+new Date().getDate();
+          urgency=20+(dayOfH/182)*40;
+          urgencyLabel='This half';
+          urgencyCls=urgency>50?'urgency-soon':'urgency-ok';
+          tier=2;
+        } else if(s.cadence==='annual'){
+          urgency=10; urgencyLabel='This card year'; tier=1;
+        } else if(s.cadence==='cal-annual'){
+          urgency=10; urgencyLabel='This calendar year'; tier=1;
+        } else if(s.cadence==='feb-annual'){
+          urgency=10; urgencyLabel='This travel year'; tier=1;
+        } else { urgency=10; urgencyLabel='This period'; tier=1; }
         const score=tier*1000+urgency*Math.log(amt+1);
         items.push({cardKey,benefitId:b.id,pk,name:b.name,card:CARD_LABELS[cardKey],amt,urgency,urgencyLabel,urgencyCls,score,cadence:s.cadence});
       });
