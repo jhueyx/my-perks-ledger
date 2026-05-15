@@ -275,6 +275,7 @@ function renderSettings(){
   const email=escapeHtml(user?.email||'');
   state._mcSelected=new Set(state.userCards||['csr','gold','platinum']);
   if(state._settingsCardsCollapsed===undefined) state._settingsCardsCollapsed=true;
+  if(state._settingsSecurityCollapsed===undefined) state._settingsSecurityCollapsed=true;
   document.getElementById('main').innerHTML=`
     <div class="settings-page">
       <div class="settings-page-header">Settings</div>
@@ -294,17 +295,22 @@ function renderSettings(){
       </div>
 
       <div class="settings-section">
-        <div class="settings-section-title">Security</div>
-        <div class="settings-field">
-          <label class="settings-label">New password</label>
-          <input class="settings-input" id="settingsNewPwd" type="password" placeholder="At least 6 characters" autocomplete="new-password"/>
+        <div class="settings-section-title" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="toggleSettingsSecurity()">
+          Security
+          <span id="settingsSecurityChevron" style="font-size:12px;color:var(--text-tertiary);transition:transform 0.2s;transform:${state._settingsSecurityCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▾</span>
         </div>
-        <div class="settings-field">
-          <label class="settings-label">Confirm new password</label>
-          <input class="settings-input" id="settingsConfirmPwd" type="password" placeholder="Confirm new password" autocomplete="new-password"/>
+        <div id="settingsSecurityBody" style="display:${state._settingsSecurityCollapsed?'none':'block'}">
+          <div class="settings-field">
+            <label class="settings-label">New password</label>
+            <input class="settings-input" id="settingsNewPwd" type="password" placeholder="At least 6 characters" autocomplete="new-password"/>
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">Confirm new password</label>
+            <input class="settings-input" id="settingsConfirmPwd" type="password" placeholder="Confirm new password" autocomplete="new-password"/>
+          </div>
+          <button class="settings-btn settings-btn-primary" onclick="saveSettingsPassword()">Change Password</button>
+          <div class="settings-feedback" id="settingsPwdMsg"></div>
         </div>
-        <button class="settings-btn settings-btn-primary" onclick="saveSettingsPassword()">Change Password</button>
-        <div class="settings-feedback" id="settingsPwdMsg"></div>
       </div>
 
       <div class="settings-section">
@@ -381,6 +387,13 @@ window.toggleSettingsCards=function(){
   if(body) body.style.display=state._settingsCardsCollapsed?'none':'block';
   if(chev) chev.style.transform=state._settingsCardsCollapsed?'rotate(-90deg)':'rotate(0deg)';
   if(!state._settingsCardsCollapsed) renderCPGrid('settingsCardGrid','settingsCardSearch',state._mcSelected);
+};
+window.toggleSettingsSecurity=function(){
+  state._settingsSecurityCollapsed=!state._settingsSecurityCollapsed;
+  const body=document.getElementById('settingsSecurityBody');
+  const chev=document.getElementById('settingsSecurityChevron');
+  if(body) body.style.display=state._settingsSecurityCollapsed?'none':'block';
+  if(chev) chev.style.transform=state._settingsSecurityCollapsed?'rotate(-90deg)':'rotate(0deg)';
 };
 
 // ── Card selector ─────────────────────────────────────────────────────────
@@ -542,6 +555,7 @@ function setActiveView(primary){
   else if(primary==='keep-card') state.activeView='keep-card';
   else if(primary==='trends') state.activeView='trends';
   else if(primary==='settings') state.activeView='settings';
+  else if(primary==='more') state.activeView='more';
   else if(primary==='my-cards'){ openMyCards(); return; }
 
   const topViews=['all-cards','this-period','card-year','ytd'];
@@ -555,6 +569,7 @@ function setActiveView(primary){
   updateSecondaryNav(primary);
   updateBottomTabBar(primary);
   if(primary==='settings'){ renderSettings(); return; }
+  if(primary==='more'){ renderMore(); return; }
   render();
 }
 
@@ -570,17 +585,21 @@ function closeDrawer(){
 }
 function _preventBodyScroll(e){ if(!e.target.closest('#bottomSheet')) e.preventDefault(); }
 function openMenuSheet(){
+  document.documentElement.style.overflow='hidden';
   document.body.addEventListener('touchmove',_preventBodyScroll,{passive:false});
   document.getElementById('bottomSheet').classList.add('open');
   document.getElementById('bottomSheetOverlay').classList.add('open');
 }
 function closeMenuSheet(){
+  document.documentElement.style.overflow='';
   document.body.removeEventListener('touchmove',_preventBodyScroll);
   document.getElementById('bottomSheet').classList.remove('open');
   document.getElementById('bottomSheetOverlay').classList.remove('open');
 }
 function updateBottomTabBar(primary){
   document.querySelectorAll('.bottom-tab[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===primary));
+  const menuBtn=document.getElementById('bottomMenuBtn');
+  if(menuBtn) menuBtn.classList.toggle('active',primary==='more');
 }
 
 // ── Note modal ────────────────────────────────────────────────────────────
@@ -776,15 +795,7 @@ document.getElementById('drawerClose').addEventListener('click',closeDrawer);
 document.getElementById('drawerOverlay').addEventListener('click',closeDrawer);
 
 // ── Bottom tab bar + menu sheet ───────────────────────────────────────────
-let _menuTapTime=0;
-document.getElementById('bottomMenuBtn').addEventListener('click',()=>{
-  const now=Date.now();
-  const isDouble=now-_menuTapTime<350;
-  _menuTapTime=isDouble?0:now;
-  if(isDouble){ closeMenuSheet(); setActiveView('all-cards'); return; }
-  const sheet=document.getElementById('bottomSheet');
-  if(sheet.classList.contains('open')) closeMenuSheet(); else openMenuSheet();
-});
+document.getElementById('bottomMenuBtn').addEventListener('click',()=>setActiveView('more'));
 document.getElementById('bottomSheetOverlay').addEventListener('click',closeMenuSheet);
 document.getElementById('bottomTabBar').querySelectorAll('.bottom-tab[data-bottom]').forEach(btn=>{
   btn.addEventListener('click',()=>{ closeMenuSheet(); setActiveView(btn.dataset.bottom); });
@@ -1019,24 +1030,54 @@ document.addEventListener('keydown',e=>{
   });
 })();
 
+// ── Drawer icon map (module scope for reuse in renderMore) ────────────────
+const _DRAWER_ICONS={
+  'priority':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="5" x2="8" y2="8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="11" r="0.8" fill="currentColor"/></svg>`,
+  'insights':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 0 1 4 4c0 1.6-.9 3-2.2 3.7V11H6.2V9.7A4 4 0 0 1 4 6a4 4 0 0 1 4-4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="6.2" y1="12.5" x2="9.8" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="6.8" y1="14" x2="9.2" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'keep-card':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="4" width="13" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 8.5L7 10l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'compare':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="5.5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="3.5" width="5.5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  'roi':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="9" width="2.5" height="5" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="6" y="6" width="2.5" height="8" rx="0.75" fill="currentColor" opacity="0.85"/><rect x="10" y="3" width="2.5" height="11" rx="0.75" fill="currentColor"/><line x1="1.5" y1="14.5" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  'heatmap':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.3"/><rect x="6.5" y="2" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="11" y="2" width="3" height="3" rx="0.75" fill="currentColor"/><rect x="2" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="6.5" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.4"/><rect x="11" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.85"/><rect x="2" y="11" width="3" height="3" rx="0.75" fill="currentColor"/><rect x="6.5" y="11" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.5"/><rect x="11" y="11" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.25"/></svg>`,
+  'streaks':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9 2C9 2 10.5 4.5 9.5 6.5C11 5.5 11.5 3.5 11.5 3.5C12.5 5 13 7 12 9C11 11.5 8.5 13 6.5 13C4 13 2.5 11 2.5 9C2.5 6.5 4.5 5 4.5 5C4.5 7 6 7.5 6 7.5C5.5 5.5 7 2 9 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+  'history-log':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><polyline points="8,5 8,8.5 10.5,10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'recap':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L9.5 6h4L10 8.5l1.5 4.5L8 10.5 4.5 13 6 8.5 2.5 6h4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+  'trends':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,13 6,9 9,11 13,5 14,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
+};
+
+// ── More page ─────────────────────────────────────────────────────────────
+function renderMore(){
+  const items=[
+    {view:'priority',label:'Use It Now'},
+    {view:'insights',label:'Insights'},
+    {view:'keep-card',label:'Should I Keep This Card?'},
+    {view:'compare',label:'Compare Cards'},
+    {view:'roi',label:'ROI Scores'},
+    {view:'trends',label:'Multi-year Trends'},
+    {view:'heatmap',label:'Missed Money Heatmap'},
+    {view:'streaks',label:'Streaks'},
+    {view:'history-log',label:'Benefit History'},
+    {view:'recap',label:'Annual Recap'},
+    {view:'settings',label:'Settings'},
+  ];
+  let rows='';
+  items.forEach(item=>{
+    const icon=_DRAWER_ICONS[item.view]||'';
+    rows+=`<button class="more-nav-row" onclick="setActiveView('${item.view}')">
+      <span class="more-nav-icon">${icon}</span>
+      <span class="more-nav-label">${item.label}</span>
+      <span class="more-nav-chevron">›</span>
+    </button>`;
+  });
+  document.getElementById('main').innerHTML=`<div class="settings-page"><div class="settings-page-header">More</div><div class="more-nav-list">${rows}</div></div>`;
+}
+
 // ── Drawer icons + home button IIFE ──────────────────────────────────────
 (function(){
   const title=document.querySelector('.app-title');
   if(title){ title.style.cursor='pointer'; title.addEventListener('click',()=>setActiveView('all-cards')); }
 
-  const drawerIconMap={
-    'priority':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="5" x2="8" y2="8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="11" r="0.8" fill="currentColor"/></svg>`,
-    'insights':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 0 1 4 4c0 1.6-.9 3-2.2 3.7V11H6.2V9.7A4 4 0 0 1 4 6a4 4 0 0 1 4-4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="6.2" y1="12.5" x2="9.8" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="6.8" y1="14" x2="9.2" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-    'keep-card':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="4" width="13" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 8.5L7 10l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    'compare':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="5.5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="3.5" width="5.5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>`,
-    'roi':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="9" width="2.5" height="5" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="6" y="6" width="2.5" height="8" rx="0.75" fill="currentColor" opacity="0.85"/><rect x="10" y="3" width="2.5" height="11" rx="0.75" fill="currentColor"/><line x1="1.5" y1="14.5" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
-    'heatmap':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.3"/><rect x="6.5" y="2" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="11" y="2" width="3" height="3" rx="0.75" fill="currentColor"/><rect x="2" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="6.5" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.4"/><rect x="11" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.85"/><rect x="2" y="11" width="3" height="3" rx="0.75" fill="currentColor"/><rect x="6.5" y="11" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.5"/><rect x="11" y="11" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.25"/></svg>`,
-    'streaks':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9 2C9 2 10.5 4.5 9.5 6.5C11 5.5 11.5 3.5 11.5 3.5C12.5 5 13 7 12 9C11 11.5 8.5 13 6.5 13C4 13 2.5 11 2.5 9C2.5 6.5 4.5 5 4.5 5C4.5 7 6 7.5 6 7.5C5.5 5.5 7 2 9 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
-    'history-log':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><polyline points="8,5 8,8.5 10.5,10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    'recap':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L9.5 6h4L10 8.5l1.5 4.5L8 10.5 4.5 13 6 8.5 2.5 6h4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
-    'trends':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,13 6,9 9,11 13,5 14,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
-  };
+  const drawerIconMap=_DRAWER_ICONS;
   Object.entries(drawerIconMap).forEach(([primary,svg])=>{
     [`.drawer-item[data-primary="${primary}"]`,`.drawer-item[data-sheet="${primary}"]`].forEach(sel=>{
       const btn=document.querySelector(sel);

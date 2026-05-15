@@ -1,4 +1,4 @@
-import { CARDS, MONTHS, MONTHS_FULL, CARD_LABELS, CARD_CLS, BENEFIT_CATEGORIES, POINTS_MULTIPLIERS } from './cards.js';
+import { CARDS, MONTHS, MONTHS_FULL, CARD_LABELS, CARD_SHORT_LABELS, CARD_CLS, BENEFIT_CATEGORIES, POINTS_MULTIPLIERS } from './cards.js';
 import { state, CY, CM, escapeHtml } from './state.js';
 import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, isGloballySnoozed, isMonthSnoozed, getSnoozedUntil, getCardFeeMonth, getCardFeeDay, countSkipped, clearAllSkipped } from './storage.js';
 import {
@@ -657,7 +657,7 @@ function buildHeatmapHTML(){
     html+=`<div ${rowAttrs} style="display:flex;align-items:center;gap:${GAP}px;margin-bottom:3px;${rowCursor}">`;
     const labelFontSize=isMobile?8:10;
     if(isMobile){
-      html+=`<div style="width:${LABEL_W}px;flex-shrink:0;padding-right:2px;overflow:hidden"><span style="font-size:${labelFontSize}px;font-family:var(--mono);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${CARD_LABELS[cardKey].split(' ')[0]}</span></div>`;
+      html+=`<div style="width:${LABEL_W}px;flex-shrink:0;padding-right:2px;overflow:hidden"><span style="font-size:${labelFontSize}px;font-family:var(--mono);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${CARD_SHORT_LABELS[cardKey]||CARD_LABELS[cardKey].split(' ')[0]}</span></div>`;
     } else {
       html+=`<div style="width:${LABEL_W}px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding-right:4px"><span class="drag-handle" style="font-size:14px;opacity:0.35;flex-shrink:0">⠿</span><span style="font-size:${labelFontSize}px;font-family:var(--mono);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${CARD_LABELS[cardKey]}</span></div>`;
     }
