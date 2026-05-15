@@ -789,7 +789,7 @@ document.getElementById('bottomMenuBtn').addEventListener('click',()=>{
   const now=Date.now();
   const isDouble=now-_menuTapTime<350;
   _menuTapTime=isDouble?0:now;
-  if(isDouble){ closeMenuSheet(); setActiveView('priority'); return; }
+  if(isDouble){ closeMenuSheet(); setActiveView('all-cards'); return; }
   const sheet=document.getElementById('bottomSheet');
   if(sheet.classList.contains('open')) closeMenuSheet(); else openMenuSheet();
 });
