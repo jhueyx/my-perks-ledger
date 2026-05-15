@@ -1775,19 +1775,19 @@
 
   /* ── More page grid ── */
   .more-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 0;
+    display: flex; flex-direction: column; gap: 8px; padding: 4px 0;
   }
   .more-pill {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 7px; padding: 16px 8px;
+    display: flex; flex-direction: row; align-items: center;
+    gap: 12px; padding: 13px 16px;
     border-radius: var(--radius); border: 1px solid var(--border);
     background: var(--surface); cursor: pointer;
-    font-size: 12px; font-weight: 500; color: var(--text-secondary);
-    font-family: var(--font); text-align: center; line-height: 1.2;
+    font-size: 13px; font-weight: 500; color: var(--text-secondary);
+    font-family: var(--font); text-align: left; line-height: 1.2;
     transition: all 0.15s;
   }
   .more-pill:active { background: var(--gold); color: #fff; border-color: var(--gold); }
-  .more-pill-icon { display: flex; align-items: center; justify-content: center; }
+  .more-pill-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
   /* ── iOS PWA standalone mode — ensure bottom nav always shows ── */
   @media (display-mode: standalone) {
