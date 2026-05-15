@@ -23,11 +23,9 @@ export const CARDS={
       {id:'p_resy',name:'Resy Dining Credit',desc:'At eligible U.S. Resy restaurants',amount:100,startsFrom:2025},
       {id:'p_lulu',name:'Lululemon Credit',desc:'U.S. stores or lululemon.com',amount:75,startsFrom:2025},
     ]},
-    {label:'Semi-annual (card-year)',cadence:'semi-annual',benefits:[
-      {id:'p_hotel',name:'Hotel Credit',desc:'Fine Hotels + Resorts or Hotel Collection, 2-night min',amount:300},
-    ]},
     {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
       {id:'p_saks',name:'Saks Fifth Avenue',desc:'At Saks stores or saks.com — resets Jan & Jul. Ends Jun 2026.',amount:50,expiresAfter:{y:2026,h:0}},
+      {id:'p_hotel',name:'Hotel Credit',desc:'Fine Hotels + Resorts or Hotel Collection, 2-night min — resets Jan & Jul',amount:300},
     ]},
     {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
       {id:'p_uberone',name:'Uber One Membership Credit',desc:'One-time credit for annual Uber One membership',amount:96,startsFrom:2025},

@@ -527,7 +527,7 @@ function updateSecondaryNav(primary){
 
 function setActiveView(primary){
   state.activePrimary=primary;
-  if(primary==='all-cards') state.activeView='all-cards';
+  if(primary==='all-cards'){ state.activeView='all-cards'; state.selectedYear=CY; }
   else if(primary==='this-period') state.activeView='current';
   else if(primary==='card-year') state.activeView=state.activeSecondary['card-year']||'history';
   else if(primary==='ytd') state.activeView=state.activeSecondary['ytd']||'ytd-history';
@@ -568,18 +568,14 @@ function closeDrawer(){
   document.getElementById('navExtras').classList.remove('open');
   document.getElementById('drawerOverlay').classList.remove('open');
 }
-let _sheetScrollY=0;
+function _preventBodyScroll(e){ if(!e.target.closest('#bottomSheet')) e.preventDefault(); }
 function openMenuSheet(){
-  _sheetScrollY=window.scrollY;
-  document.body.style.top=`-${_sheetScrollY}px`;
-  document.body.classList.add('scroll-locked');
+  document.body.addEventListener('touchmove',_preventBodyScroll,{passive:false});
   document.getElementById('bottomSheet').classList.add('open');
   document.getElementById('bottomSheetOverlay').classList.add('open');
 }
 function closeMenuSheet(){
-  document.body.classList.remove('scroll-locked');
-  document.body.style.top='';
-  window.scrollTo(0,_sheetScrollY);
+  document.body.removeEventListener('touchmove',_preventBodyScroll);
   document.getElementById('bottomSheet').classList.remove('open');
   document.getElementById('bottomSheetOverlay').classList.remove('open');
 }

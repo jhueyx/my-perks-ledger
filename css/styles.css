@@ -1772,14 +1772,6 @@
   .settings-feedback { font-size: 12px; font-family: var(--mono); margin-top: 10px; min-height: 18px; }
   .settings-sub { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; }
 
-  /* ── Scroll lock when bottom sheet is open (iOS-safe) ── */
-  body.scroll-locked {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    width: 100%;
-    overflow: hidden;
-  }
-
   /* ── iOS PWA standalone mode — ensure bottom nav always shows ── */
   @media (display-mode: standalone) {
     .bottom-tab-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 700; padding-bottom: env(safe-area-inset-bottom); }
