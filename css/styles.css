@@ -1535,9 +1535,10 @@
       flex-direction: column;
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      max-height: 55vh;
-      background: var(--bg);
+      max-height: 88vh;
+      background: var(--surface);
       border-radius: 18px 18px 0 0;
+      border-top: 1px solid var(--border);
       z-index: 650;
       transform: translateY(100%);
       transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);

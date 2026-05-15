@@ -703,11 +703,16 @@ document.addEventListener('perks:benefit-toggled',()=>{ setTimeout(checkProfitCo
   }
   if(typeof DeviceMotionEvent!=='undefined'){
     if(typeof DeviceMotionEvent.requestPermission==='function'){
-      // iOS 13+ — hook in after a user gesture (the first interaction on the page)
-      document.addEventListener('click',function grantMotion(){
-        DeviceMotionEvent.requestPermission().then(r=>{ if(r==='granted') window.addEventListener('devicemotion',onMotion); }).catch(()=>{});
-        document.removeEventListener('click',grantMotion);
-      },{once:true});
+      if(localStorage.getItem('perks-motion')==='granted'){
+        window.addEventListener('devicemotion',onMotion);
+      } else if(localStorage.getItem('perks-motion')!=='denied'){
+        document.addEventListener('click',function grantMotion(){
+          DeviceMotionEvent.requestPermission().then(r=>{
+            localStorage.setItem('perks-motion',r);
+            if(r==='granted') window.addEventListener('devicemotion',onMotion);
+          }).catch(()=>{});
+        },{once:true});
+      }
     } else {
       window.addEventListener('devicemotion',onMotion);
     }
