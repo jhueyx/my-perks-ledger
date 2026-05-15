@@ -365,10 +365,11 @@ export function renderCurrent(){
   let html=buildCountdownStrip(state.activeCard);
   html+=buildEOMWarning(state.activeCard);
   html+=buildBreakevenBar(state.activeCard);
-  html+=metricsHTML('Monthly available',`$${totalNow.toFixed(0)}`,'Monthly claimed',`$${usedNow.toFixed(0)}`,'Card-yr captured',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
-  if(totalNow>0) html+=progressHTML(pct,'',`${MONTHS_FULL[CM]}: $${usedNow.toFixed(0)} of $${totalNow.toFixed(0)} monthly credits claimed`);
-  html+=`<div class="period-note">Active periods for <strong>${MONTHS_FULL[CM]} ${CY}</strong> — check off as you use each benefit.</div>`;
+  html+=metricsHTML('This month',`$${totalNow.toFixed(0)}`,'Claimed',`$${usedNow.toFixed(0)}`,'This card year',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
+  if(totalNow>0) html+=progressHTML(pct,'',`${MONTHS_FULL[CM]} ${CY}: $${usedNow.toFixed(0)} of $${totalNow.toFixed(0)} claimed`);
+  html+=`<div class="period-note">Use it now — <strong>${MONTHS_FULL[CM]} ${CY}</strong></div>`;
 
+  const CADENCE_THIS={'monthly':'This month','quarterly':'This quarter','semi-annual':'This half','cal-semi-annual':'This half','annual':'This card year','cal-annual':'This year','feb-annual':'This year'};
   card.sections.forEach(s=>{
     const pk=getCurrentPK(state.activeCard,s.cadence);
     const lbl=getCurrentLabel(state.activeCard,s.cadence);
@@ -381,8 +382,9 @@ export function renderCurrent(){
     const isCollapsed=state._collapsedCurrentSections.has(sectionKey);
     const indicator=allClaimed?`<span style="color:var(--green);font-size:12px">✓</span>`:`<span style="font-size:13px;color:var(--text-tertiary);display:inline-block;transform:rotate(${isCollapsed?'-90deg':'0deg'});transition:transform 0.2s">▾</span>`;
     const countBadge=allClaimed?`<span style="font-size:10px;font-family:var(--mono);color:var(--green);background:rgba(42,155,106,0.1);padding:1px 7px;border-radius:100px">${claimedCount}/${visibleBenefits.length} ✓</span>`:`<span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);background:var(--border-light);padding:1px 7px;border-radius:100px">${claimedCount}/${visibleBenefits.length}</span>`;
+    const sectionTitle=CADENCE_THIS[s.cadence]||s.label;
     html+=`<div class="section-header collapsible-header" data-section-key="${sectionKey}" style="cursor:pointer;user-select:none">
-      <div style="display:flex;align-items:center;gap:8px">${indicator}<span class="section-title" style="color:${allClaimed?'var(--text-tertiary)':''}">${s.label}</span>${countBadge}</div>
+      <div style="display:flex;align-items:center;gap:8px">${indicator}<span class="section-title" style="color:${allClaimed?'var(--text-tertiary)':''}">${sectionTitle}</span>${countBadge}</div>
       <span class="section-period">${lbl}</span>
     </div>`;
     if(!isCollapsed){
