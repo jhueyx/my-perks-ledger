@@ -20,7 +20,7 @@ export const CARDS={
       {id:'p_walmart',name:'Walmart+ Credit',desc:'Covers monthly Walmart+ membership',amount:12.95},
     ]},
     {label:'Quarterly',cadence:'quarterly',benefits:[
-      {id:'p_resy',name:'Resy Dining Credit',desc:'At eligible U.S. Resy restaurants',amount:100,startsFrom:2026},
+      {id:'p_resy',name:'Resy Dining Credit',desc:'At eligible U.S. Resy restaurants',amount:100,startsFrom:2025},
       {id:'p_lulu',name:'Lululemon Credit',desc:'U.S. stores or lululemon.com',amount:75,startsFrom:2025},
     ]},
     {label:'Semi-annual (card-year)',cadence:'semi-annual',benefits:[
@@ -30,7 +30,7 @@ export const CARDS={
       {id:'p_saks',name:'Saks Fifth Avenue',desc:'At Saks stores or saks.com — resets Jan & Jul. Ends Jun 2026.',amount:50,expiresAfter:{y:2026,h:0}},
     ]},
     {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
-      {id:'p_uberone',name:'Uber One Membership Credit',desc:'One-time credit for annual Uber One membership',amount:96,startsFrom:2026},
+      {id:'p_uberone',name:'Uber One Membership Credit',desc:'One-time credit for annual Uber One membership',amount:96,startsFrom:2025},
       {id:'p_airline',name:'Airline Fee Credit',desc:'Incidental fees with one selected airline',amount:200,partial:true},
       {id:'p_equinox',name:'Equinox Credit',desc:'Equinox club or app membership',amount:300,partial:true},
       {id:'p_oura',name:'Oura Ring Credit',desc:'Hardware only via OURAring.com',amount:200,startsFrom:2025},
