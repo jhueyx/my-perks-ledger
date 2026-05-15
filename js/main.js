@@ -783,7 +783,7 @@ document.getElementById('bottomMenuBtn').addEventListener('click',()=>{
 });
 document.getElementById('bottomSheetOverlay').addEventListener('click',closeMenuSheet);
 document.getElementById('bottomTabBar').querySelectorAll('.bottom-tab[data-bottom]').forEach(btn=>{
-  btn.addEventListener('click',()=>{ setActiveView(btn.dataset.bottom); });
+  btn.addEventListener('click',()=>{ closeMenuSheet(); setActiveView(btn.dataset.bottom); });
 });
 document.getElementById('bottomSheetItems').querySelectorAll('.drawer-item[data-sheet]').forEach(btn=>{
   btn.addEventListener('click',()=>{ closeMenuSheet(); setActiveView(btn.dataset.sheet); });
