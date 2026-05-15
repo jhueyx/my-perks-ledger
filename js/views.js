@@ -407,7 +407,7 @@ export function renderCurrent(){
         const partialHTML=b.partial&&used?buildPartialBar(state.activeCard,b.id,pk,effectiveAmt):'';
         const creditedHTML=used?`<div style="margin-top:4px;font-size:10px;font-family:var(--mono)"><span style="color:${credited?'var(--green)':'var(--text-tertiary)'};cursor:pointer" data-credit-id="${b.id}" data-credit-pk="${pk}">${credited?'✓ Credit posted':'○ Credit pending'}</span></div>`:'';
         const snoozedBadge=snoozed?`<span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-top:3px;display:block">⏸ snoozed until ${snoozedUntil} · <span style="cursor:pointer;text-decoration:underline" data-unsnooze="${b.id}" data-unsnooze-card="${state.activeCard}">resume</span></span>`:'';
-        const snoozeBtn=!snoozed?`<button class="snooze-btn" data-snooze-id="${b.id}" data-snooze-card="${state.activeCard}" data-snooze-name="${b.name}" title="Snooze — skip from calculations until a date" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:var(--text-tertiary);opacity:0;transition:opacity 0.15s;line-height:1" aria-label="Snooze benefit">⏸</button>`:'';
+        const snoozeBtn=!snoozed?`<button class="snooze-btn" data-snooze-id="${b.id}" data-snooze-card="${state.activeCard}" data-snooze-name="${b.name}" title="Snooze this benefit — hide from all calculations until a chosen month" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 5px;color:var(--text-tertiary);opacity:0.25;transition:opacity 0.15s;line-height:1;border-radius:3px;flex-shrink:0" aria-label="Snooze benefit">⏸</button>`:'';
         html+=`<div class="benefit-row${used?' used':''}${snoozed?' snoozed-row':''}" style="${snoozed?'opacity:0.45;':''}">
           <div style="flex:1">
             <div class="benefit-name">${b.name}${catTag}${streakBadge}${expiryBadge}</div>
@@ -636,7 +636,7 @@ export function renderROI(){
     const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
     const projected=getProjectedCapture(cardKey);
     const elapsed=getCardYearMonthsElapsed(cardKey);
-    const grade=getROIGrade(captured,fee,cardKey);
+    const grade=getROIGrade(fee,cardKey);
     const effectiveFee=fee-captured;
     const projRatio=fee>0?projected/fee:0;
     const gradeDesc={A:`On pace to capture $${projected.toFixed(0)} — covering the $${fee} fee`,B:`Projecting $${projected.toFixed(0)} by year end — close to the $${fee} fee`,C:`Projecting $${projected.toFixed(0)} — need to use more benefits`,D:`Only ${Math.round(projRatio*100)}% of fee covered at current pace`}[grade];
@@ -674,7 +674,7 @@ export function renderInsights(){
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
     const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
-    const grade=getROIGrade(captured,fee,cardKey);
+    const grade=getROIGrade(fee,cardKey);
     const projected=getProjectedCapture(cardKey);
     const ratio=fee>0?Math.round(projected/fee*100):0;
     html+=`<div class="comparison-card ${CARD_CLS[cardKey]}"><div class="comp-card-name">${CARD_LABELS[cardKey]}</div><div class="roi-grade ${grade}" style="font-size:36px">${grade}</div><div class="roi-label">${ratio}% of fee covered</div></div>`;

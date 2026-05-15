@@ -238,7 +238,7 @@ export function getProjectedCapture(cardKey){
   const projectedRepeating=monthsRemaining>0?(repeating/monthsElapsed)*monthsRemaining:0;
   return oneTime+repeating+projectedRepeating;
 }
-export function getROIGrade(captured,fee,cardKey){
+export function getROIGrade(fee,cardKey){
   const projected=getProjectedCapture(cardKey);
   const ratio=fee>0?projected/fee:0;
   if(ratio>=1.0) return 'A';
