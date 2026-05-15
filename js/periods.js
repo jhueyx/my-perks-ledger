@@ -65,7 +65,7 @@ export function getCardYearPeriods(cardKey,cadence){
     if(months[6]) out.push({m:months[6].m,y:months[6].y,pk:`cy-${fy}-${fm}-h2`,lbl:'H2',calM:months[6].m,calY:months[6].y,endM:months[11].m,endY:months[11].y});
   } else {
     const {year:fy,month:fm}=getCardYearStart(cardKey);
-    out.push({m:months[0].m,y:months[0].y,pk:`cy-${fy}-${fm}-annual`,lbl:`${MONTHS[months[0].m]} ${months[0].y}–${MONTHS[months[11].m]} ${months[11].y}`,calM:months[0].m,calY:months[0].y});
+    out.push({m:months[0].m,y:months[0].y,pk:`cy-${fy}-${fm}-annual`,lbl:`${MONTHS[months[0].m]} ${months[0].y}–${MONTHS[months[11].m]} ${months[11].y}`,calM:months[0].m,calY:months[0].y,endM:months[11].m,endY:months[11].y});
   }
   return out;
 }
@@ -134,7 +134,10 @@ export function isBExpired(b,p){
   return pAbs>expAbs;
 }
 export function isBNotAvailable(b,viewYear,p){
-  if(b.startsFrom&&viewYear<b.startsFrom) return true;
+  if(b.startsFrom){
+    const checkYear=p?(p.endY!==undefined?p.endY:p.calY):viewYear;
+    if(checkYear<b.startsFrom) return true;
+  }
   if(b.halfStart!==undefined&&p!==undefined&&Math.floor(p.calM/6)<b.halfStart) return true;
   return false;
 }

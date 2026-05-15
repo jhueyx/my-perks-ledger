@@ -109,6 +109,10 @@ function updateDrawerGreeting(){
   const emailEl=document.getElementById('drawerUserEmail');
   if(greetEl) greetEl.textContent=name?`Hi, ${name}`:'';
   if(emailEl) emailEl.textContent=user.email||'';
+  const sg=document.getElementById('sheetGreeting');
+  const se=document.getElementById('sheetUserEmail');
+  if(sg) sg.textContent=name?`Hi, ${name}`:'';
+  if(se) se.textContent=user.email||'';
 }
 
 async function onSignedIn(user,isNew){
@@ -531,6 +535,7 @@ function setActiveView(primary){
     document.querySelectorAll('.drawer-item').forEach(b=>b.classList.toggle('active',b.dataset.primary===primary));
   }
   updateSecondaryNav(primary);
+  updateBottomTabBar(primary);
   if(primary==='settings'){ renderSettings(); return; }
   render();
 }
@@ -544,6 +549,17 @@ function openDrawer(){
 function closeDrawer(){
   document.getElementById('navExtras').classList.remove('open');
   document.getElementById('drawerOverlay').classList.remove('open');
+}
+function openMenuSheet(){
+  document.getElementById('bottomSheet').classList.add('open');
+  document.getElementById('bottomSheetOverlay').classList.add('open');
+}
+function closeMenuSheet(){
+  document.getElementById('bottomSheet').classList.remove('open');
+  document.getElementById('bottomSheetOverlay').classList.remove('open');
+}
+function updateBottomTabBar(primary){
+  document.querySelectorAll('.bottom-tab[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===primary));
 }
 
 // ── Note modal ────────────────────────────────────────────────────────────
@@ -732,6 +748,17 @@ document.getElementById('cardSheetOverlay').addEventListener('click',closeCardSh
 document.getElementById('menuBtn').addEventListener('click',openDrawer);
 document.getElementById('drawerClose').addEventListener('click',closeDrawer);
 document.getElementById('drawerOverlay').addEventListener('click',closeDrawer);
+
+// ── Bottom tab bar + menu sheet ───────────────────────────────────────────
+document.getElementById('bottomMenuBtn').addEventListener('click',openMenuSheet);
+document.getElementById('bottomSheetOverlay').addEventListener('click',closeMenuSheet);
+document.getElementById('sheetSignOut').addEventListener('click',()=>{ closeMenuSheet(); signOut(); });
+document.getElementById('bottomTabBar').querySelectorAll('.bottom-tab[data-bottom]').forEach(btn=>{
+  btn.addEventListener('click',()=>{ setActiveView(btn.dataset.bottom); });
+});
+document.getElementById('bottomSheetItems').querySelectorAll('.drawer-item[data-sheet]').forEach(btn=>{
+  btn.addEventListener('click',()=>{ closeMenuSheet(); setActiveView(btn.dataset.sheet); });
+});
 
 document.getElementById('navPrimary').querySelectorAll('.nav-primary-btn').forEach(btn=>{
   btn.addEventListener('click',e=>{
@@ -972,10 +999,12 @@ document.addEventListener('keydown',e=>{
     'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
   };
   Object.entries(drawerIconMap).forEach(([primary,svg])=>{
-    const btn=document.querySelector(`.drawer-item[data-primary="${primary}"]`);
-    if(!btn) return;
-    const icon=btn.querySelector('.drawer-icon');
-    if(icon) icon.innerHTML=svg;
+    [`.drawer-item[data-primary="${primary}"]`,`.drawer-item[data-sheet="${primary}"]`].forEach(sel=>{
+      const btn=document.querySelector(sel);
+      if(!btn) return;
+      const icon=btn.querySelector('.drawer-icon');
+      if(icon) icon.innerHTML=svg;
+    });
   });
 
   const menuBtn=document.getElementById('menuBtn');

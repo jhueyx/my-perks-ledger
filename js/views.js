@@ -475,13 +475,13 @@ export function renderHistBase(getPsFn,isCurFn,bannerHTML){
   let html=bannerHTML+`<div class="legend"><span class="legend-item"><span class="dot dot-used" style="width:13px;height:13px"></span>Used</span><span class="legend-item"><span class="dot dot-missed" style="width:13px;height:13px"></span>Missed</span><span class="legend-item"><span class="dot dot-current" style="width:13px;height:13px"></span>Current</span><span class="legend-item"><span class="dot dot-future" style="width:13px;height:13px"></span>Future</span></div><div class="period-note">Click any past or current dot to toggle used / missed.</div>`;
   card.sections.forEach(s=>{
     const ps=getPsFn(s.cadence);
-    const visibleBenefits=s.benefits.filter(b=>!isBNotAvailable(b,state.selectedYear)&&!isGloballySnoozed(state.activeCard,b.id));
+    const visibleBenefits=s.benefits.filter(b=>!isGloballySnoozed(state.activeCard,b.id)&&ps.some(p=>!isBExpired(b,p)&&!isBNotAvailable(b,0,p)));
     if(!visibleBenefits.length) return;
     html+=`<div class="section-header"><span class="section-title">${s.label} benefits</span></div>`;
     visibleBenefits.forEach(b=>{
       html+=`<div class="hist-row"><div><div class="hist-name">${b.name}</div><div class="hist-sub">${b.decAmount?`$${b.amount}/mo · $${b.decAmount} Dec`:`$${b.amount}/${s.cadence==='semi-annual'||s.cadence==='cal-semi-annual'?'half':s.cadence==='monthly'?'mo':s.cadence==='quarterly'?'qtr':'yr'}`}</div></div><div class="dots-row">`;
       ps.forEach(p=>{
-        if(isBExpired(b,p)) return;
+        if(isBExpired(b,p)||isBNotAvailable(b,0,p)) return;
         const fut=isPFuture(p),cur=isCurFn(s.cadence,p),used=isUsed(state.activeCard,b.id,p.pk);
         const cls=fut?'dot-future':used?'dot-used':cur?'dot-current':'dot-missed';
         const clickable=!fut;
@@ -515,8 +515,7 @@ export function renderSummBase(getPsFn,isCurFn,bannerHTML,label){
   card.sections.forEach(s=>{
     s.benefits.forEach(b=>{
       const ps=getPsFn(s.cadence);
-      if(isBNotAvailable(b,state.selectedYear)) return;
-      if(isBExpired(b,{calY:state.selectedYear,calM:11,m:11})) return;
+      if(!ps.some(p=>!isBExpired(b,p)&&!isBNotAvailable(b,0,p))) return;
       const snoozed=isGloballySnoozed(state.activeCard,b.id);
       const snoozedUntil=getSnoozedUntil(state.activeCard,b.id);
       const cadLbl=s.cadence==='semi-annual'||s.cadence==='cal-semi-annual'?'half':s.cadence==='monthly'?'mo':s.cadence==='quarterly'?'qtr':'yr';
@@ -528,7 +527,7 @@ export function renderSummBase(getPsFn,isCurFn,bannerHTML,label){
       }
       let bc=0,bm=0,bl=0;
       ps.forEach(p=>{
-        if(isBExpired(b,p)) return;
+        if(isBExpired(b,p)||isBNotAvailable(b,0,p)) return;
         const fut=isPFuture(p),cur=isCurFn(s.cadence,p),used=isUsed(state.activeCard,b.id,p.pk),amt=getBAmount(b,p);
         if(used) bc+=amt; else if(!fut&&!cur) bm+=amt; else bl+=amt;
       });
@@ -858,7 +857,7 @@ export function renderStreaks(){
     allStreaks.forEach((s,i)=>{
       if(i>0&&allStreaks[i-1].streak!==s.streak) rank=i+1;
       const medal=ordinal(rank);
-      html+=`<div class="streak-row"><div><span><span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">${medal}</span> <span style="color:var(--text);font-weight:500">${s.name}</span></span><span class="streak-card-tag">${s.card}</span></div><div class="streak-count">${s.streak} mo</div></div>`;
+      html+=`<div class="streak-row"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);width:28px;flex-shrink:0">${medal}</span><span style="color:var(--text);font-weight:500">${s.name}</span></div><div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-top:2px;padding-left:34px">${s.card}</div></div><div class="streak-count" style="white-space:nowrap;padding-left:12px">${s.streak} mo</div></div>`;
     });
     html+=`</div>`;
   }
@@ -930,6 +929,7 @@ export function renderRecap(){
   let totalCaptured=0,totalMissed=0,totalFees=0;
   let bestCard={key:'',captured:0},worstCard={key:'',missed:0};
   let biggestMiss={name:'',amt:0,card:''};
+  let topBenefit={name:'',amt:0,card:''};
   let longestStreak={name:'',streak:0,card:''},longestStreakCount=0;
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,year);
@@ -947,9 +947,10 @@ export function renderRecap(){
       s.benefits.forEach(b=>{
         if(isBNotAvailable(b,year)) return;
         const periods=getYTDPeriods(s.cadence);
-        let bMissed=0;
-        periods.forEach(p=>{ if(!isPFuture(p)&&!isYTDCurrent(s.cadence,p)&&!isUsed(cardKey,b.id,p.pk)) bMissed+=getBAmount(b,p); });
+        let bMissed=0,bCaptured=0;
+        periods.forEach(p=>{ if(isPFuture(p)) return; const amt=getBAmount(b,p); if(isUsed(cardKey,b.id,p.pk)) bCaptured+=amt; else if(!isYTDCurrent(s.cadence,p)) bMissed+=amt; });
         if(bMissed>biggestMiss.amt) biggestMiss={name:b.name,amt:bMissed,card:CARD_LABELS[cardKey]};
+        if(bCaptured>topBenefit.amt) topBenefit={name:b.name,amt:bCaptured,card:CARD_LABELS[cardKey]};
       });
     });
     state.selectedYear=savedYear2;
@@ -976,11 +977,12 @@ export function renderRecap(){
     <div class="recap-grid">
       <div class="recap-stat"><div class="recap-stat-val ${feeCoverageRate>=100?'green':feeCoverageRate>=80?'gold':''}">${feeCoverageRate}%</div><div class="recap-stat-label">Fee coverage</div></div>
       <div class="recap-stat"><div class="recap-stat-val">$${totalFees}</div><div class="recap-stat-label">Total fees paid</div></div>
-      <div class="recap-stat"><div class="recap-stat-val ${effectiveFees<=0?'green':''}">${effectiveFees<=0?'+$'+Math.abs(effectiveFees).toFixed(0):'$'+effectiveFees.toFixed(0)}</div><div class="recap-stat-label">${effectiveFees<=0?'Net profit':'Effective fees'}</div></div>
+      <div class="recap-stat" style="grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;text-align:left;padding:12px 18px"><div class="recap-stat-label">${effectiveFees<=0?'Net profit':'Effective fees'}</div><div class="recap-stat-val ${effectiveFees<=0?'green':''}">${effectiveFees<=0?'+$'+Math.abs(effectiveFees).toFixed(0):'$'+effectiveFees.toFixed(0)}</div></div>
     </div>`;
   if(bestCard.key) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">#1</div><div><div class="recap-highlight-label">Best card</div><div class="recap-highlight-val">${CARD_LABELS[bestCard.key]} — $${bestCard.captured.toFixed(0)} captured</div></div></div>`;
-  if(biggestMiss.name) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">!</div><div><div class="recap-highlight-label">Biggest miss</div><div class="recap-highlight-val">${biggestMiss.name} — $${biggestMiss.amt.toFixed(0)} left on table</div></div></div>`;
-  if(longestStreak.streak>=2&&longestStreakCount===1) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">${longestStreak.streak}mo</div><div><div class="recap-highlight-label">Best streak</div><div class="recap-highlight-val">${longestStreak.name} — ${longestStreak.streak} months in a row</div></div></div>`;
+  if(topBenefit.name&&topBenefit.amt>0) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">★</div><div><div class="recap-highlight-label">Top benefit</div><div class="recap-highlight-val">${topBenefit.name} — $${topBenefit.amt.toFixed(0)} captured · ${topBenefit.card}</div></div></div>`;
+  if(biggestMiss.name) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">!</div><div><div class="recap-highlight-label">Biggest miss</div><div class="recap-highlight-val">${biggestMiss.name} — $${biggestMiss.amt.toFixed(0)} left on table · ${biggestMiss.card}</div></div></div>`;
+  if(longestStreak.streak>=2&&longestStreakCount===1) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">${longestStreak.streak}mo</div><div><div class="recap-highlight-label">Best streak</div><div class="recap-highlight-val">${longestStreak.name} — ${longestStreak.streak} months in a row · ${longestStreak.card}</div></div></div>`;
   set(html);
 }
 

@@ -390,7 +390,56 @@
   <div id="main"></div>
 </div>
 
-<!-- Bottom tab bar for extras -->
+<!-- Bottom menu sheet (mobile) -->
+<div class="bottom-sheet-overlay" id="bottomSheetOverlay"></div>
+<div class="bottom-sheet" id="bottomSheet">
+  <div class="bottom-sheet-handle"></div>
+  <div class="drawer-items" id="bottomSheetItems">
+    <div style="font-size:9px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;padding:4px 12px 8px">Quick Actions</div>
+    <button class="drawer-item" data-sheet="priority"><span class="drawer-icon"></span>Use It Now</button>
+    <div style="font-size:9px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;padding:12px 12px 8px">Analytics</div>
+    <button class="drawer-item" data-sheet="insights"><span class="drawer-icon"></span>Insights</button>
+    <button class="drawer-item" data-sheet="keep-card"><span class="drawer-icon"></span>Should I Keep This Card?</button>
+    <button class="drawer-item" data-sheet="compare"><span class="drawer-icon"></span>Compare Cards</button>
+    <button class="drawer-item" data-sheet="roi"><span class="drawer-icon"></span>ROI Scores</button>
+    <button class="drawer-item" data-sheet="trends"><span class="drawer-icon"></span>Multi-year Trends</button>
+    <button class="drawer-item" data-sheet="heatmap"><span class="drawer-icon"></span>Missed Money Heatmap</button>
+    <div style="font-size:9px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;padding:12px 12px 8px">History &amp; Export</div>
+    <button class="drawer-item" data-sheet="streaks"><span class="drawer-icon"></span>Streaks</button>
+    <button class="drawer-item" data-sheet="history-log"><span class="drawer-icon"></span>Benefit History</button>
+    <button class="drawer-item" data-sheet="recap"><span class="drawer-icon"></span>Annual Recap</button>
+    <button class="drawer-item" data-sheet="settings"><span class="drawer-icon"></span>Settings</button>
+  </div>
+  <div style="padding:12px 16px;border-top:1px solid var(--border-light)">
+    <button class="drawer-item" id="sheetSignOut" style="width:100%;color:var(--red)"><span class="drawer-icon"></span>Sign Out</button>
+    <div style="font-size:13px;font-weight:600;color:var(--text);padding:0 12px;font-family:var(--font);margin-top:8px" id="sheetGreeting"></div>
+    <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-top:2px;padding:0 12px" id="sheetUserEmail"></div>
+  </div>
+</div>
+
+<!-- Bottom tab bar (mobile only) -->
+<nav class="bottom-tab-bar" id="bottomTabBar">
+  <button class="bottom-tab" id="bottomMenuBtn">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <span class="bottom-tab-label">Menu</span>
+  </button>
+  <button class="bottom-tab" data-bottom="trends">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+    <span class="bottom-tab-label">Trends</span>
+  </button>
+  <button class="bottom-tab bottom-tab-center" data-bottom="insights">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21h6"/><path d="M12 3a6 6 0 0 1 6 6c0 2.2-1.2 4.1-3 5.2V17H9v-2.8A6 6 0 0 1 6 9a6 6 0 0 1 6-6z"/></svg>
+    <span class="bottom-tab-label">Insights</span>
+  </button>
+  <button class="bottom-tab" data-bottom="streaks">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    <span class="bottom-tab-label">Streaks</span>
+  </button>
+  <button class="bottom-tab" data-bottom="settings">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span class="bottom-tab-label">Settings</span>
+  </button>
+</nav>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module" src="js/main.js?v=20260514i"></script>
