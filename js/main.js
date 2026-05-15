@@ -571,18 +571,14 @@ function closeDrawer(){
 let _sheetScrollY=0;
 function openMenuSheet(){
   _sheetScrollY=window.scrollY;
-  document.body.style.position='fixed';
   document.body.style.top=`-${_sheetScrollY}px`;
-  document.body.style.left='0';
-  document.body.style.right='0';
+  document.body.classList.add('scroll-locked');
   document.getElementById('bottomSheet').classList.add('open');
   document.getElementById('bottomSheetOverlay').classList.add('open');
 }
 function closeMenuSheet(){
-  document.body.style.position='';
+  document.body.classList.remove('scroll-locked');
   document.body.style.top='';
-  document.body.style.left='';
-  document.body.style.right='';
   window.scrollTo(0,_sheetScrollY);
   document.getElementById('bottomSheet').classList.remove('open');
   document.getElementById('bottomSheetOverlay').classList.remove('open');
@@ -873,8 +869,14 @@ document.getElementById('main').addEventListener('click',e=>{
   if(secHeader&&secHeader.dataset.sectionKey){
     if(e.target.closest('.check-btn,.benefit-note,.add-note,.partial-input')) return;
     const key=secHeader.dataset.sectionKey;
-    if(state._collapsedCurrentSections.has(key)) state._collapsedCurrentSections.delete(key);
-    else state._collapsedCurrentSections.add(key);
+    const allClaimed=secHeader.dataset.allClaimed==='true';
+    if(allClaimed){
+      if(state._userExpandedSections.has(key)) state._userExpandedSections.delete(key);
+      else state._userExpandedSections.add(key);
+    } else {
+      if(state._collapsedCurrentSections.has(key)) state._collapsedCurrentSections.delete(key);
+      else state._collapsedCurrentSections.add(key);
+    }
     haptic('light');
     renderCurrent();
     return;

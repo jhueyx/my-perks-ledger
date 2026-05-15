@@ -30,6 +30,7 @@ export const state = {
   _authTab: 'login',
   _collapsedSections: new Set(['cal-semi-annual','semi-annual','feb-annual','cal-annual','annual']),
   _collapsedCurrentSections: new Set(['semi-annual','cal-semi-annual','feb-annual','cal-annual','annual'].flatMap(c=>['csr','gold','platinum'].map(k=>`current-${k}-${c}`))),
+  _userExpandedSections: new Set(),
   _cpSelected: new Set(),
   _mcSelected: new Set(),
   _undoStack: null,

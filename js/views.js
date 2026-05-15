@@ -415,11 +415,13 @@ export function renderCurrent(){
     const allClaimed=visibleBenefits.every(b=>isUsed(state.activeCard,b.id,pk));
     const claimedCount=visibleBenefits.filter(b=>isUsed(state.activeCard,b.id,pk)).length;
     const sectionKey=`current-${state.activeCard}-${s.cadence}`;
-    const isCollapsed=state._collapsedCurrentSections.has(sectionKey);
-    const indicator=allClaimed?`<span style="color:var(--green);font-size:12px">✓</span>`:`<span style="font-size:13px;color:var(--text-tertiary);display:inline-block;transform:rotate(${isCollapsed?'-90deg':'0deg'});transition:transform 0.2s">▾</span>`;
+    if(!allClaimed) state._userExpandedSections.delete(sectionKey);
+    const isAutoCollapsed=allClaimed&&!state._userExpandedSections.has(sectionKey);
+    const isCollapsed=isAutoCollapsed||state._collapsedCurrentSections.has(sectionKey);
+    const indicator=allClaimed&&isCollapsed?`<span style="color:var(--green);font-size:12px">✓</span>`:allClaimed?`<span style="color:var(--green);font-size:12px">✓</span>`:`<span style="font-size:13px;color:var(--text-tertiary);display:inline-block;transform:rotate(${isCollapsed?'-90deg':'0deg'});transition:transform 0.2s">▾</span>`;
     const countBadge=allClaimed?`<span style="font-size:10px;font-family:var(--mono);color:var(--green);background:rgba(42,155,106,0.1);padding:1px 7px;border-radius:100px">${claimedCount}/${visibleBenefits.length} ✓</span>`:`<span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);background:var(--border-light);padding:1px 7px;border-radius:100px">${claimedCount}/${visibleBenefits.length}</span>`;
     const sectionTitle=isMonthly&&isHistory?`${MONTHS_FULL[viewM]} ${viewY}`:(CADENCE_THIS[s.cadence]||s.label);
-    html+=`<div class="section-header collapsible-header" data-section-key="${sectionKey}" style="cursor:pointer;user-select:none">
+    html+=`<div class="section-header collapsible-header" data-section-key="${sectionKey}" data-all-claimed="${allClaimed}" style="cursor:pointer;user-select:none">
       <div style="display:flex;align-items:center;gap:8px">${indicator}<span class="section-title" style="color:${allClaimed?'var(--text-tertiary)':''}">${sectionTitle}</span>${countBadge}</div>
       <span class="section-period">${lbl}</span>
     </div>`;
