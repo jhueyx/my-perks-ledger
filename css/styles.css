@@ -1446,11 +1446,14 @@
   @media (min-width: 768px) {
     .metrics { grid-template-columns: repeat(4, 1fr); }
     .card-selector { gap: 16px; margin-bottom: 12px; }
-    .card-selector .card-btn { width: 150px; }
+    .card-selector .card-btn { width: 190px; }
     .nav-primary { gap: 10px; }
     .nav-primary-btn { padding: 12px 16px; font-size: 13px; }
     .nav-primary-btn .nav-icon { margin-bottom: 4px; }
     .comparison-grid { grid-template-columns: repeat(3,1fr); }
+  }
+  @media (min-width: 1024px) {
+    .card-selector .card-btn { width: 220px; }
   }
 
   @media (max-width: 600px) {
@@ -1519,9 +1522,19 @@
   .modal-btn:hover { opacity: 0.85; }
 
   .comparison-grid { display: grid; gap: 12px; margin-bottom: 20px; }
+  .drag-handle {
+    font-size: 14px; color: var(--text-tertiary); opacity: 0.3;
+    cursor: grab; line-height: 1; user-select: none;
+    transition: opacity 0.15s;
+  }
+  [data-drag-card]:hover .drag-handle { opacity: 0.7; }
+  [data-drag-card].drag-over { outline: 2px dashed var(--gold); outline-offset: 2px; }
+  [data-drag-card][draggable="true"] { cursor: grab; }
+
   .comparison-card {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 16px; text-align: center;
+    transition: outline 0.1s;
   }
   .comparison-card.gold { border-top: 3px solid var(--gold); }
   .comparison-card.platinum { border-top: 3px solid var(--plat); }

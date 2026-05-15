@@ -404,8 +404,10 @@ function initCardSelector(){
       const c=btn.dataset.card;
       btn.classList.add(`active-${c}`);
       state.activeCard=c;
+      stopCarousel();
+      btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
       setActiveView('this-period');
-      setTimeout(initCardFlip,50);
+      setTimeout(()=>{ initCardFlip(); },50);
     });
     btn.addEventListener('dragstart',e=>{ dragSrc=btn; btn.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
     btn.addEventListener('dragend',()=>{ btn.classList.remove('dragging'); btns().forEach(b=>b.classList.remove('drag-over')); dragSrc=null; });
@@ -466,7 +468,7 @@ function closeCardSheet(){
   document.getElementById('cardSheetOverlay').classList.remove('open');
   document.getElementById('cardSheet').classList.remove('open');
 }
-function initCardFlip(){ /* no-op — flip replaced by bottom sheet */ }
+function initCardFlip(){ startCarousel(); }
 
 // ── Navigation ────────────────────────────────────────────────────────────
 function updateYearSelector(show){
@@ -778,7 +780,7 @@ document.getElementById('main').addEventListener('click',e=>{
     e.stopPropagation();
     const benefitId=unsnoozeLink.dataset.unsnooze;
     const cardKey=unsnoozeLink.dataset.unsnoozeCard||state.activeCard;
-    setSnoozedBenefit(cardKey,benefitId,null);
+    setSnoozedBenefit(cardKey,benefitId,null,null);
     render();
     return;
   }
@@ -798,6 +800,46 @@ document.getElementById('main').addEventListener('click',e=>{
     if(chevron) chevron.style.transform=`rotate(${nowCollapsed?'0deg':'-90deg'})`;
     return;
   }
+});
+
+// ── ROI/Trends card drag-to-reorder ──────────────────────────────────────
+let _dragCardSrc=null;
+document.getElementById('main').addEventListener('dragstart',e=>{
+  const card=e.target.closest('[data-drag-card]');
+  if(!card) return;
+  _dragCardSrc=card.dataset.dragCard;
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>card.style.opacity='0.4',0);
+});
+document.getElementById('main').addEventListener('dragend',e=>{
+  const card=e.target.closest('[data-drag-card]');
+  if(card) card.style.opacity='';
+  document.querySelectorAll('[data-drag-card].drag-over').forEach(el=>el.classList.remove('drag-over'));
+  _dragCardSrc=null;
+});
+document.getElementById('main').addEventListener('dragover',e=>{
+  const card=e.target.closest('[data-drag-card]');
+  if(!card||card.dataset.dragCard===_dragCardSrc) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('[data-drag-card].drag-over').forEach(el=>{ if(el!==card) el.classList.remove('drag-over'); });
+  card.classList.add('drag-over');
+});
+document.getElementById('main').addEventListener('dragleave',e=>{
+  const card=e.target.closest('[data-drag-card]');
+  if(card&&!card.contains(e.relatedTarget)) card.classList.remove('drag-over');
+});
+document.getElementById('main').addEventListener('drop',e=>{
+  const card=e.target.closest('[data-drag-card]');
+  if(!card||!_dragCardSrc||card.dataset.dragCard===_dragCardSrc) return;
+  e.preventDefault();
+  card.classList.remove('drag-over');
+  const keys=getVisibleCardKeys();
+  const si=keys.indexOf(_dragCardSrc),ti=keys.indexOf(card.dataset.dragCard);
+  if(si<0||ti<0) return;
+  keys.splice(si,1); keys.splice(ti,0,_dragCardSrc);
+  localStorage.setItem('perks-card-order',JSON.stringify(keys));
+  render();
 });
 
 // ── Swipe gestures ────────────────────────────────────────────────────────
@@ -927,9 +969,10 @@ function openSnoozeModal(cardKey, benefitId, benefitName){
   const isGE=benefitId.endsWith('_ge');
   document.getElementById('snoozeGEPreset').style.display=isGE?'':'none';
   const now=new Date();
-  const minYYYYMM=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  document.getElementById('snoozeMonthInput').value=minYYYYMM;
-  document.getElementById('snoozeMonthInput').min=minYYYYMM;
+  const curYYYYMM=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('snoozeFromInput').value=curYYYYMM;
+  document.getElementById('snoozeMonthInput').value=curYYYYMM;
+  document.getElementById('snoozeMonthInput').min=curYYYYMM;
   if(isGE){
     const yr4=now.getFullYear()+4;
     const m4=String(now.getMonth()+1).padStart(2,'0');
@@ -941,9 +984,10 @@ function openSnoozeModal(cardKey, benefitId, benefitName){
 function closeSnoozeModal(){ document.getElementById('snoozeModal').classList.add('hidden'); state._snoozeCtx=null; }
 function saveSnooze(){
   if(!state._snoozeCtx) return;
-  const val=document.getElementById('snoozeMonthInput').value;
-  if(!val) return;
-  setSnoozedBenefit(state._snoozeCtx.cardKey,state._snoozeCtx.benefitId,val);
+  const from=document.getElementById('snoozeFromInput').value;
+  const until=document.getElementById('snoozeMonthInput').value;
+  if(!until) return;
+  setSnoozedBenefit(state._snoozeCtx.cardKey,state._snoozeCtx.benefitId,from||until,until);
   closeSnoozeModal();
   render();
 }
@@ -952,7 +996,7 @@ document.getElementById('snoozeCancel').addEventListener('click',closeSnoozeModa
 document.getElementById('snoozeModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeSnoozeModal(); });
 document.getElementById('snooze4yrBtn').addEventListener('click',()=>{
   const until=document.getElementById('snooze4yrBtn').dataset.until;
-  if(until) document.getElementById('snoozeMonthInput').value=until;
+  if(until){ document.getElementById('snoozeMonthInput').value=until; }
 });
 
 // ── Confetti ──────────────────────────────────────────────────────────────
@@ -1007,10 +1051,33 @@ function checkProfitConfetti(){
   }catch(e){}
 }
 
+// ── Home tab card carousel (desktop) ─────────────────────────────────────
+let _carouselId=null,_carouselDir=1,_carouselPaused=false;
+function startCarousel(){
+  const sel=document.getElementById('cardSelector');
+  if(!sel||window.innerWidth<768) return;
+  if(_carouselId) cancelAnimationFrame(_carouselId);
+  function tick(){
+    if(!_carouselPaused){
+      sel.scrollLeft+=_carouselDir*0.4;
+      const max=sel.scrollWidth-sel.clientWidth;
+      if(sel.scrollLeft>=max-2) _carouselDir=-1;
+      else if(sel.scrollLeft<=2) _carouselDir=1;
+    }
+    _carouselId=requestAnimationFrame(tick);
+  }
+  tick();
+}
+function stopCarousel(){ if(_carouselId){ cancelAnimationFrame(_carouselId); _carouselId=null; } }
+
 // ── Hide all card buttons until user profile loads ────────────────────────
 document.querySelectorAll('.card-btn[data-card]').forEach(btn=>btn.style.display='none');
 initCardSelector();
 window.addEventListener('resize',sizeCardSelector);
+const _carouselSel=document.getElementById('cardSelector');
+_carouselSel.addEventListener('mouseenter',()=>{ _carouselPaused=true; });
+_carouselSel.addEventListener('mouseleave',()=>{ _carouselPaused=false; });
+_carouselSel.addEventListener('touchstart',()=>{ stopCarousel(); },{passive:true});
 
 // ── Service worker ────────────────────────────────────────────────────────
 if('serviceWorker' in navigator&&location.hostname!=='www.claudeusercontent.com'){

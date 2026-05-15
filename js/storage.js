@@ -141,24 +141,35 @@ export function skipBenefit(cardKey,id,pk){
 }
 
 // ── Benefit snooze ────────────────────────────────────────────────────────
-// Stores { 'cardKey__benefitId': 'YYYY-MM' } — exclude from calcs until that month (inclusive)
+// Stores { 'cardKey__benefitId': {from:'YYYY-MM',until:'YYYY-MM'} }
+// Legacy string format (just 'until') is auto-upgraded on read.
 const SNOOZED_KEY='perks-snoozed';
 export function loadSnoozed(){ try{ return JSON.parse(localStorage.getItem(SNOOZED_KEY)||'{}'); }catch(e){ return {}; } }
 export function saveSnoozed(d){ localStorage.setItem(SNOOZED_KEY,JSON.stringify(d)); }
-export function getSnoozedUntil(cardKey,benefitId){ return loadSnoozed()[`${cardKey}__${benefitId}`]||null; }
+function parseSnoozed(raw){ if(!raw) return null; if(typeof raw==='string') return {from:'2000-01',until:raw}; return raw; }
+export function getSnoozedUntil(cardKey,benefitId){ return parseSnoozed(loadSnoozed()[`${cardKey}__${benefitId}`])?.until||null; }
+export function getSnoozedFrom(cardKey,benefitId){ return parseSnoozed(loadSnoozed()[`${cardKey}__${benefitId}`])?.from||null; }
 export function isGloballySnoozed(cardKey,benefitId){
-  const until=getSnoozedUntil(cardKey,benefitId);
-  if(!until) return false;
-  // Import CY/CM at call time via closure won't work in module scope; compare via date string
-  const now=new Date();
-  const [uy,um]=until.split('-').map(Number);
-  // snoozed while current year-month <= until year-month
-  return now.getFullYear()<uy||(now.getFullYear()===uy&&now.getMonth()+1<=um);
+  const p=parseSnoozed(loadSnoozed()[`${cardKey}__${benefitId}`]);
+  if(!p) return false;
+  const now=new Date(), nowAbs=now.getFullYear()*12+now.getMonth()+1;
+  const [uy,um]=p.until.split('-').map(Number);
+  const [fy,fm]=p.from.split('-').map(Number);
+  return nowAbs>=fy*12+fm && nowAbs<=uy*12+um;
 }
-export function setSnoozedBenefit(cardKey,benefitId,untilYYYYMM){
+export function isMonthSnoozed(cardKey,benefitId,calY,calM0){
+  // calM0 is 0-indexed (0=Jan)
+  const p=parseSnoozed(loadSnoozed()[`${cardKey}__${benefitId}`]);
+  if(!p) return false;
+  const mAbs=calY*12+(calM0+1);
+  const [uy,um]=p.until.split('-').map(Number);
+  const [fy,fm]=p.from.split('-').map(Number);
+  return mAbs>=fy*12+fm && mAbs<=uy*12+um;
+}
+export function setSnoozedBenefit(cardKey,benefitId,fromYYYYMM,untilYYYYMM){
   const d=loadSnoozed();
   const k=`${cardKey}__${benefitId}`;
-  if(untilYYYYMM===null) delete d[k]; else d[k]=untilYYYYMM;
+  if(untilYYYYMM==null) delete d[k]; else d[k]={from:fromYYYYMM,until:untilYYYYMM};
   saveSnoozed(d);
   scheduleSave();
 }

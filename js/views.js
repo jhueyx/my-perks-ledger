@@ -1,6 +1,6 @@
 import { CARDS, MONTHS, MONTHS_FULL, CARD_LABELS, CARD_CLS, BENEFIT_CATEGORIES, POINTS_MULTIPLIERS } from './cards.js';
 import { state, CY, CM, escapeHtml } from './state.js';
-import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, isGloballySnoozed, getSnoozedUntil, getCardFeeMonth, getCardFeeDay } from './storage.js';
+import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, isGloballySnoozed, isMonthSnoozed, getSnoozedUntil, getCardFeeMonth, getCardFeeDay } from './storage.js';
 import {
   getCardYearStart, getCardYearPeriods, getYTDPeriods, isPFuture, isPCurrent, isYTDCurrent,
   getCurrentPK, getCurrentLabel, getBAmount, getFee, isBExpired, isBNotAvailable,
@@ -11,7 +11,17 @@ import {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 export function getVisibleCardKeys(){
-  return (state.userCards&&state.userCards.length?state.userCards:['csr','gold','platinum','cap1_venture_x']).filter(c=>!!CARDS[c]);
+  const base=(state.userCards&&state.userCards.length?state.userCards:['csr','gold','platinum','cap1_venture_x']).filter(c=>!!CARDS[c]);
+  try{
+    const saved=JSON.parse(localStorage.getItem('perks-card-order')||'[]');
+    if(saved.length){
+      const set=new Set(base);
+      const ordered=saved.filter(k=>set.has(k));
+      const rest=base.filter(k=>!saved.includes(k));
+      return [...ordered,...rest];
+    }
+  }catch(e){}
+  return base;
 }
 
 export function set(html){
@@ -587,7 +597,7 @@ export function renderHeatmap(){
     const monthData=Array.from({length:12},()=>({total:0,claimed:0}));
     card.sections.forEach(s=>{
       const cadence=s.cadence||'monthly';
-      const addAmt=(displayM,b,pk)=>{ if(isGloballySnoozed(cardKey,b.id)) return; const amt=b.amount||0; monthData[displayM].total+=amt; if(isUsed(cardKey,b.id,pk)) monthData[displayM].claimed+=amt; };
+      const addAmt=(displayM,b,pk)=>{ if(isMonthSnoozed(cardKey,b.id,CY,displayM)) return; const amt=b.amount||0; monthData[displayM].total+=amt; if(isUsed(cardKey,b.id,pk)) monthData[displayM].claimed+=amt; };
       if(cadence==='monthly'){
         for(let m=0;m<12;m++){ const pk=`${CY}-m${m}`; s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:m,m})) return; addAmt(m,b,pk); }); }
       } else if(cadence==='quarterly'){
@@ -634,6 +644,7 @@ export function renderHeatmap(){
 export function renderROI(){
   const CARD_KEYS=getVisibleCardKeys();
   let html=`<div class="banner"><strong>Card ROI scores</strong> — graded on annual fee coverage</div>`;
+  html+=`<p style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin:0 0 10px">drag cards to reorder</p>`;
   html+=`<div class="comparison-grid">`;
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
@@ -644,7 +655,8 @@ export function renderROI(){
     const effectiveFee=fee-captured;
     const projRatio=fee>0?projected/fee:0;
     const gradeDesc={A:`On pace to capture $${projected.toFixed(0)} — covering the $${fee} fee`,B:`Projecting $${projected.toFixed(0)} by year end — close to the $${fee} fee`,C:`Projecting $${projected.toFixed(0)} — need to use more benefits`,D:`Only ${Math.round(projRatio*100)}% of fee covered at current pace`}[grade];
-    html+=`<div class="comparison-card ${CARD_CLS[cardKey]}">
+    html+=`<div class="comparison-card ${CARD_CLS[cardKey]}" data-drag-card="${cardKey}" draggable="true">
+      <div class="drag-handle">⠿</div>
       <div class="comp-card-name">${CARD_LABELS[cardKey]}</div>
       <div class="roi-grade ${grade}">${grade}</div>
       <div class="roi-label">${effectiveFee<=0?'$'+Math.abs(effectiveFee).toFixed(0)+' profit so far':'$'+captured.toFixed(0)+' of $'+fee+' captured'}</div>
@@ -730,9 +742,10 @@ export function renderTrends(){
     });
     return total;
   }
+  html+=`<p style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin:0 0 10px">drag cards to reorder</p>`;
   CARD_KEYS.forEach(cardKey=>{
-    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px">`;
-    html+=`<div style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">${CARD_LABELS[cardKey]}</div>`;
+    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:grab" data-drag-card="${cardKey}" draggable="true">`;
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="drag-handle" style="font-size:16px">⠿</span><span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em">${CARD_LABELS[cardKey]}</span></div>`;
     const vals=years.map(y=>({y,captured:capturedForYear(cardKey,y),fee:getFee(cardKey,y)}));
     vals.forEach(({y,captured,fee})=>{
       const barPct=Math.min(100,Math.round(captured/fee*100));
