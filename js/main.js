@@ -568,15 +568,24 @@ function closeDrawer(){
   document.getElementById('navExtras').classList.remove('open');
   document.getElementById('drawerOverlay').classList.remove('open');
 }
+let _sheetScrollY=0;
 function openMenuSheet(){
+  _sheetScrollY=window.scrollY;
+  document.body.style.position='fixed';
+  document.body.style.top=`-${_sheetScrollY}px`;
+  document.body.style.left='0';
+  document.body.style.right='0';
   document.getElementById('bottomSheet').classList.add('open');
   document.getElementById('bottomSheetOverlay').classList.add('open');
-  document.body.style.overflow='hidden';
 }
 function closeMenuSheet(){
+  document.body.style.position='';
+  document.body.style.top='';
+  document.body.style.left='';
+  document.body.style.right='';
+  window.scrollTo(0,_sheetScrollY);
   document.getElementById('bottomSheet').classList.remove('open');
   document.getElementById('bottomSheetOverlay').classList.remove('open');
-  document.body.style.overflow='';
 }
 function updateBottomTabBar(primary){
   document.querySelectorAll('.bottom-tab[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===primary));
