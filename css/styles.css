@@ -1773,20 +1773,21 @@
   .settings-feedback { font-size: 12px; font-family: var(--mono); margin-top: 10px; min-height: 18px; }
   .settings-sub { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; }
 
-  /* ── More page nav list ── */
-  .more-nav-list { display: flex; flex-direction: column; }
-  .more-nav-row {
-    display: flex; align-items: center; gap: 14px;
-    width: 100%; padding: 14px 4px;
-    background: none; border: none; border-bottom: 1px solid var(--border-light);
-    color: var(--text); font-size: 15px; font-family: var(--font);
-    cursor: pointer; text-align: left;
+  /* ── More page grid ── */
+  .more-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 0;
   }
-  .more-nav-row:first-child { border-top: 1px solid var(--border-light); }
-  .more-nav-row:active { background: var(--border-light); }
-  .more-nav-icon { display: flex; align-items: center; color: var(--text-secondary); flex-shrink: 0; }
-  .more-nav-label { flex: 1; }
-  .more-nav-chevron { font-size: 18px; color: var(--text-tertiary); line-height: 1; }
+  .more-pill {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 7px; padding: 16px 8px;
+    border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--text-secondary);
+    font-family: var(--font); text-align: center; line-height: 1.2;
+    transition: all 0.15s;
+  }
+  .more-pill:active { background: var(--gold); color: #fff; border-color: var(--gold); }
+  .more-pill-icon { display: flex; align-items: center; justify-content: center; }
 
   /* ── iOS PWA standalone mode — ensure bottom nav always shows ── */
   @media (display-mode: standalone) {

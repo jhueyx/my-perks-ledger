@@ -1050,26 +1050,23 @@ function renderMore(){
   const items=[
     {view:'priority',label:'Use It Now'},
     {view:'insights',label:'Insights'},
-    {view:'keep-card',label:'Should I Keep This Card?'},
+    {view:'keep-card',label:'Keep This Card?'},
     {view:'compare',label:'Compare Cards'},
     {view:'roi',label:'ROI Scores'},
-    {view:'trends',label:'Multi-year Trends'},
-    {view:'heatmap',label:'Missed Money Heatmap'},
+    {view:'trends',label:'Trends'},
+    {view:'heatmap',label:'Heatmap'},
     {view:'streaks',label:'Streaks'},
-    {view:'history-log',label:'Benefit History'},
+    {view:'history-log',label:'History'},
     {view:'recap',label:'Annual Recap'},
     {view:'settings',label:'Settings'},
   ];
-  let rows='';
+  let html='<div class="more-grid">';
   items.forEach(item=>{
     const icon=_DRAWER_ICONS[item.view]||'';
-    rows+=`<button class="more-nav-row" onclick="setActiveView('${item.view}')">
-      <span class="more-nav-icon">${icon}</span>
-      <span class="more-nav-label">${item.label}</span>
-      <span class="more-nav-chevron">›</span>
-    </button>`;
+    html+=`<button class="more-pill" onclick="setActiveView('${item.view}')"><span class="more-pill-icon">${icon}</span><span>${item.label}</span></button>`;
   });
-  document.getElementById('main').innerHTML=`<div class="settings-page"><div class="settings-page-header">More</div><div class="more-nav-list">${rows}</div></div>`;
+  html+='</div>';
+  document.getElementById('main').innerHTML=html;
 }
 
 // ── Drawer icons + home button IIFE ──────────────────────────────────────
