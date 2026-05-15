@@ -615,10 +615,10 @@ export function renderAllCards(){
   set(html);
 }
 
-// ── Render: heatmap ────────────────────────────────────────────────────────
-export function renderHeatmap(){
+// ── Heatmap HTML builder (shared by Insights and standalone view) ──────────
+function buildHeatmapHTML(){
   const CARD_KEYS=getVisibleCardKeys();
-  let html=`<div class="banner"><strong>Missed money heatmap</strong> — benefit capture rate by card</div>`;
+  let html='';
   html+=`<p style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin:0 0 10px">drag rows to reorder</p>`;
   const CELL_W=42,CELL_H=36,LABEL_W=88;
   const minW=LABEL_W+(CELL_W+3)*12;
@@ -677,6 +677,13 @@ export function renderHeatmap(){
     <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(210,160,0,0.75);vertical-align:middle;margin-right:4px"></span>90–99%</span>
     <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--green);vertical-align:middle;margin-right:4px"></span>100%</span>
   </div>`;
+  return html;
+}
+
+// ── Render: heatmap ────────────────────────────────────────────────────────
+export function renderHeatmap(){
+  let html=`<div class="banner"><strong>Missed money heatmap</strong> — benefit capture rate by card</div>`;
+  html+=buildHeatmapHTML();
   set(html);
 }
 
@@ -743,8 +750,8 @@ export function renderInsights(){
     html+=`<div class="comparison-card ${CARD_CLS[cardKey]}"><div class="comp-card-name">${CARD_LABELS[cardKey]}</div><div class="roi-grade ${grade}" style="font-size:36px">${grade}</div><div class="roi-label">${ratio}% of fee covered</div></div>`;
   });
   html+=`</div>`;
-  html+=`<div class="section-header"><span class="section-title">Missed money heatmap</span><span class="section-period" style="cursor:pointer;color:var(--gold)" onclick="setActiveView('heatmap')">View →</span></div>`;
-  html+=`<div style="font-size:12px;color:var(--text-secondary);padding:8px 0">See which months you consistently miss benefits across your selected cards.</div>`;
+  html+=`<div class="section-header" style="margin-top:16px"><span class="section-title">Missed money heatmap</span></div>`;
+  html+=buildHeatmapHTML();
   set(html);
 }
 
