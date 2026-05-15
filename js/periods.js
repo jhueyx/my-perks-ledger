@@ -192,7 +192,7 @@ export function maxCardYearValue(cardKey){
   const card=CARDS[cardKey]; let t=0;
   card.sections.forEach(s=>{
     const n=s.cadence==='monthly'?12:s.cadence==='quarterly'?4:s.cadence==='cal-semi-annual'||s.cadence==='semi-annual'?2:1;
-    s.benefits.forEach(b=>{ if(!isBNotAvailable(b,CY)) t+=b.amount*n; });
+    s.benefits.forEach(b=>{ if(!isBNotAvailable(b,CY)&&!isGloballySnoozed(cardKey,b.id)) t+=b.amount*n; });
   });
   return t;
 }

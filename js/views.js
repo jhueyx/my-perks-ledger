@@ -70,7 +70,7 @@ export function checkAllClaimed(cardKey){
   card.sections.forEach(s=>{
     const pk=getCurrentPK(cardKey,s.cadence);
     s.benefits.forEach(b=>{
-      if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)) return;
+      if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)||isGloballySnoozed(cardKey,b.id)) return;
       if(!isUsed(cardKey,b.id,pk)) allDone=false;
     });
   });
@@ -522,7 +522,7 @@ export function renderAllCards(){
     CARDS[cardKey].sections.forEach(s=>{
       const pk=getCurrentPK(cardKey,s.cadence);
       s.benefits.forEach(b=>{
-        if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)) return;
+        if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)||isGloballySnoozed(cardKey,b.id)) return;
         byPeriodTotal[s.cadence]=(byPeriodTotal[s.cadence]||0)+1;
         const used=isUsed(cardKey,b.id,pk);
         if(!used){
@@ -585,7 +585,7 @@ export function renderHeatmap(){
     const monthData=Array.from({length:12},()=>({total:0,claimed:0}));
     card.sections.forEach(s=>{
       const cadence=s.cadence||'monthly';
-      const addAmt=(displayM,b,pk)=>{ const amt=b.amount||0; monthData[displayM].total+=amt; if(isUsed(cardKey,b.id,pk)) monthData[displayM].claimed+=amt; };
+      const addAmt=(displayM,b,pk)=>{ if(isGloballySnoozed(cardKey,b.id)) return; const amt=b.amount||0; monthData[displayM].total+=amt; if(isUsed(cardKey,b.id,pk)) monthData[displayM].claimed+=amt; };
       if(cadence==='monthly'){
         for(let m=0;m<12;m++){ const pk=`${CY}-m${m}`; s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:m,m})) return; addAmt(m,b,pk); }); }
       } else if(cadence==='quarterly'){
