@@ -127,6 +127,25 @@
   <div id="cardSheetBody"></div>
 </div>
 
+<!-- Snooze modal -->
+<div class="modal-overlay hidden" id="snoozeModal">
+  <div class="modal">
+    <div class="modal-title">Snooze benefit</div>
+    <div class="modal-sub" id="snoozeModalTitle"></div>
+    <div style="margin:16px 0">
+      <label style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);display:block;margin-bottom:6px">HIDE FROM CALCULATIONS UNTIL</label>
+      <input id="snoozeMonthInput" type="month" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box;color-scheme:dark">
+      <div id="snoozeGEPreset" style="display:none;margin-top:10px">
+        <button id="snooze4yrBtn" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-secondary);font-size:12px;font-family:var(--mono);cursor:pointer">⏸ Snooze for 4 years (next eligibility)</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="snoozeCancel">Cancel</button>
+      <button class="modal-btn primary" id="snoozeSave">Snooze</button>
+    </div>
+  </div>
+</div>
+
 <!-- Undo toast -->
 <div class="undo-toast" id="undoToast">
   <span id="undoMsg">Marked as used</span>

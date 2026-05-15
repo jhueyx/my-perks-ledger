@@ -25,10 +25,10 @@ export async function syncFromSupabase(){
       const localTs=localStorage.getItem(STORAGE_KEY+'-ts-'+state.currentUser.id);
       if(localTs&&data.updated_at&&new Date(data.updated_at)<=new Date(localTs)) return;
       const raw=data.data;
-      const remoteExtras={_customAmounts:raw._customAmounts||{},_partial:raw._partial||{},_notes:raw._notes||{},_credited:raw._credited||{},_skipped:raw._skipped||{},_feeOverrides:raw._feeOverrides||{}};
+      const remoteExtras={_customAmounts:raw._customAmounts||{},_partial:raw._partial||{},_notes:raw._notes||{},_credited:raw._credited||{},_skipped:raw._skipped||{},_feeOverrides:raw._feeOverrides||{},_snoozed:raw._snoozed||{}};
       const benefitData={...raw};
       delete benefitData._customAmounts; delete benefitData._partial; delete benefitData._notes; delete benefitData._credited; delete benefitData._skipped; delete benefitData._feeOverrides;
-      const localExtras={_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped(),_feeOverrides:getFeeOverrides()};
+      const localExtras={_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped(),_feeOverrides:getFeeOverrides(),_snoozed:loadSnoozed()};
       const changed=JSON.stringify(benefitData)!==JSON.stringify(state.DATA)||JSON.stringify(remoteExtras)!==JSON.stringify(localExtras);
       if(changed){
         state.DATA=Object.assign(freshDATA(),benefitData);
@@ -40,6 +40,7 @@ export async function syncFromSupabase(){
         saveCredited(remoteExtras._credited);
         saveSkipped(remoteExtras._skipped);
         if(Object.keys(remoteExtras._feeOverrides).length) saveFeeOverridesData(remoteExtras._feeOverrides);
+        if(Object.keys(remoteExtras._snoozed).length) saveSnoozed(remoteExtras._snoozed);
         document.dispatchEvent(new CustomEvent('perks:rerender'));
       }
     }
@@ -56,7 +57,7 @@ export async function saveToStorage(){
     localStorage.setItem(STORAGE_KEY+'-ts-'+state.currentUser.id,ts);
   }catch(e){}
   try{
-    const payload={...state.DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped(),_feeOverrides:getFeeOverrides()};
+    const payload={...state.DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped(),_feeOverrides:getFeeOverrides(),_snoozed:loadSnoozed()};
     const {data:updated,error:upErr}=await sb.from('tracker_data').update({data:payload,updated_at:ts}).eq('user_id',state.currentUser.id).select('user_id');
     if(upErr) throw upErr;
     if(!updated||updated.length===0){
@@ -137,6 +138,29 @@ export function skipBenefit(cardKey,id,pk){
   saveSkipped(d);
   scheduleSave();
   document.dispatchEvent(new CustomEvent('perks:rerender'));
+}
+
+// ── Benefit snooze ────────────────────────────────────────────────────────
+// Stores { 'cardKey__benefitId': 'YYYY-MM' } — exclude from calcs until that month (inclusive)
+const SNOOZED_KEY='perks-snoozed';
+export function loadSnoozed(){ try{ return JSON.parse(localStorage.getItem(SNOOZED_KEY)||'{}'); }catch(e){ return {}; } }
+export function saveSnoozed(d){ localStorage.setItem(SNOOZED_KEY,JSON.stringify(d)); }
+export function getSnoozedUntil(cardKey,benefitId){ return loadSnoozed()[`${cardKey}__${benefitId}`]||null; }
+export function isGloballySnoozed(cardKey,benefitId){
+  const until=getSnoozedUntil(cardKey,benefitId);
+  if(!until) return false;
+  // Import CY/CM at call time via closure won't work in module scope; compare via date string
+  const now=new Date();
+  const [uy,um]=until.split('-').map(Number);
+  // snoozed while current year-month <= until year-month
+  return now.getFullYear()<uy||(now.getFullYear()===uy&&now.getMonth()+1<=um);
+}
+export function setSnoozedBenefit(cardKey,benefitId,untilYYYYMM){
+  const d=loadSnoozed();
+  const k=`${cardKey}__${benefitId}`;
+  if(untilYYYYMM===null) delete d[k]; else d[k]=untilYYYYMM;
+  saveSnoozed(d);
+  scheduleSave();
 }
 
 // ── Fee date overrides ─────────────────────────────────────────────────────

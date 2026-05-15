@@ -1,6 +1,6 @@
 import { CARDS, MONTHS, MONTHS_FULL, CARD_LABELS, CARD_CLS, BENEFIT_CATEGORIES, POINTS_MULTIPLIERS, CAT_COLORS } from './cards.js';
 import { state, CY, CM, escapeHtml } from './state.js';
-import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, getCardFeeMonth, getCardFeeDay } from './storage.js';
+import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, isGloballySnoozed, getSnoozedUntil, getCardFeeMonth, getCardFeeDay } from './storage.js';
 import {
   getCardYearStart, getCardYearPeriods, getYTDPeriods, isPFuture, isPCurrent, isYTDCurrent,
   getCurrentPK, getCurrentLabel, getBAmount, getFee, isBExpired, isBNotAvailable,
@@ -150,8 +150,7 @@ function buildDonut(captured,missed,remaining,size=100){
 
 // ── Projection bar ─────────────────────────────────────────────────────────
 function buildProjection(cardKey){
-  const {month:fm}=getCardYearStart(cardKey,CY);
-  const monthsElapsed=Math.max(1,CM>=fm?CM-fm+1:12-(fm-CM));
+  const monthsElapsed=getCardYearMonthsElapsed(cardKey);
   const monthsRemaining=12-monthsElapsed;
   const {repeating,oneTime}=calcCapturedByType(cardKey);
   const projectedRepeating=monthsRemaining>0?(repeating/monthsElapsed)*monthsRemaining:0;
@@ -227,7 +226,7 @@ function buildAllCardsSummary(){
       const pk=getCurrentPK(cardKey,s.cadence);
       const p={calY:CY,calM:CM,m:CM};
       s.benefits.forEach(b=>{
-        if(isBExpired(b,p)||isBNotAvailable(b,CY)) return;
+        if(isBExpired(b,p)||isBNotAvailable(b,CY)||isGloballySnoozed(cardKey,b.id)) return;
         const amt=getBAmount(b,{m:CM});
         totalAvail+=amt;
         if(isUsed(cardKey,b.id,pk)) totalClaimed+=amt;
@@ -276,7 +275,7 @@ function buildCategoryBreakdown(){
     CARDS[cardKey].sections.forEach(s=>{
       const pk=getCurrentPK(cardKey,s.cadence);
       s.benefits.forEach(b=>{
-        if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:CM,m:CM})) return;
+        if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:CM,m:CM})||isGloballySnoozed(cardKey,b.id)) return;
         if(!isUsed(cardKey,b.id,pk)) return;
         const cat=BENEFIT_CATEGORIES[b.id]||'other';
         cats[cat]+=getBAmount(b,{m:CM});
@@ -308,6 +307,7 @@ function buildPriorityQueue(){
         if(isBExpired(b,p)||isBNotAvailable(b,CY)) return;
         if(isUsed(cardKey,b.id,pk)) return;
         if(isSkipped(cardKey,b.id,pk)) return;
+        if(isGloballySnoozed(cardKey,b.id)) return;
         const amt=getBAmount(b,{m:CM});
         let urgency=0,urgencyLabel='Anytime',urgencyCls='urgency-ok',tier=1;
         if(s.cadence==='monthly'){
@@ -338,7 +338,7 @@ export function buildCardBack(cardKey){
   card.sections.forEach(s=>{
     const pk=getCurrentPK(cardKey,s.cadence);
     s.benefits.forEach(b=>{
-      if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:CM,m:CM})) return;
+      if(isBNotAvailable(b,CY)||isBExpired(b,{calY:CY,calM:CM,m:CM})||isGloballySnoozed(cardKey,b.id)) return;
       benefits.push({name:b.name,amt:getBAmount(b,{m:CM}),used:isUsed(cardKey,b.id,pk)});
     });
   });
@@ -362,7 +362,7 @@ export function buildCardBack(cardKey){
 export function renderCurrent(){
   const card=CARDS[state.activeCard];
   let totalNow=0,usedNow=0;
-  card.sections.forEach(s=>{ if(s.cadence!=='monthly') return; const pk=getCurrentPK(state.activeCard,s.cadence); s.benefits.forEach(b=>{ if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)) return; totalNow+=getBAmount(b,{m:CM}); if(isUsed(state.activeCard,b.id,pk)) usedNow+=getBAmount(b,{m:CM}); }); });
+  card.sections.forEach(s=>{ if(s.cadence!=='monthly') return; const pk=getCurrentPK(state.activeCard,s.cadence); s.benefits.forEach(b=>{ if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)||isGloballySnoozed(state.activeCard,b.id)) return; totalNow+=getBAmount(b,{m:CM}); if(isUsed(state.activeCard,b.id,pk)) usedNow+=getBAmount(b,{m:CM}); }); });
   const pct=totalNow>0?Math.round(usedNow/totalNow*100):0;
   const {captured}=calcStats(state.activeCard,c=>getCardYearPeriods(state.activeCard,c),isPCurrent);
   const effectiveFee=getFee(state.activeCard,CY)-captured;
@@ -394,6 +394,8 @@ export function renderCurrent(){
       visibleBenefits.forEach(b=>{
         const used=isUsed(state.activeCard,b.id,pk);
         const credited=isCredited(state.activeCard,b.id,pk);
+        const snoozed=isGloballySnoozed(state.activeCard,b.id);
+        const snoozedUntil=getSnoozedUntil(state.activeCard,b.id);
         const streak=s.cadence==='monthly'?getStreak(state.activeCard,b.id):0;
         const streakBadge=streak>=2?`<span class="streak-badge">${streak} mo streak</span>`:'';
         const expiryBadge=getExpiryBadge(b)+getBenefitExpiryLabel(b);
@@ -404,13 +406,15 @@ export function renderCurrent(){
         const noteHTML=note?`<div class="benefit-note" data-id="${b.id}" data-pk="${pk}" data-name="${b.name}"><span class="note-dot"></span>${escapeHtml(note)}</div>`:`<div class="add-note" data-id="${b.id}" data-pk="${pk}" data-name="${b.name}">+ add note</div>`;
         const partialHTML=b.partial&&used?buildPartialBar(state.activeCard,b.id,pk,effectiveAmt):'';
         const creditedHTML=used?`<div style="margin-top:4px;font-size:10px;font-family:var(--mono)"><span style="color:${credited?'var(--green)':'var(--text-tertiary)'};cursor:pointer" data-credit-id="${b.id}" data-credit-pk="${pk}">${credited?'✓ Credit posted':'○ Credit pending'}</span></div>`:'';
-        html+=`<div class="benefit-row${used?' used':''}">
+        const snoozedBadge=snoozed?`<span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-top:3px;display:block">⏸ snoozed until ${snoozedUntil} · <span style="cursor:pointer;text-decoration:underline" data-unsnooze="${b.id}" data-unsnooze-card="${state.activeCard}">resume</span></span>`:'';
+        const snoozeBtn=!snoozed?`<button class="snooze-btn" data-snooze-id="${b.id}" data-snooze-card="${state.activeCard}" data-snooze-name="${b.name}" title="Snooze — skip from calculations until a date" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:var(--text-tertiary);opacity:0;transition:opacity 0.15s;line-height:1" aria-label="Snooze benefit">⏸</button>`:'';
+        html+=`<div class="benefit-row${used?' used':''}${snoozed?' snoozed-row':''}" style="${snoozed?'opacity:0.45;':''}">
           <div style="flex:1">
             <div class="benefit-name">${b.name}${catTag}${streakBadge}${expiryBadge}</div>
             <div class="benefit-desc">${b.desc}</div>
-            ${noteHTML}${partialHTML}${creditedHTML}
+            ${snoozedBadge}${!snoozed?noteHTML:''}${partialHTML}${creditedHTML}
           </div>
-          <div class="benefit-amt">${dispAmt}</div>
+          <div style="display:flex;align-items:center;gap:4px">${snoozeBtn}<div class="benefit-amt">${dispAmt}</div></div>
           <button class="check-btn${used?' checked':''}" data-id="${b.id}" data-pk="${pk}"></button>
         </div>`;
       });

@@ -734,6 +734,7 @@
     transition: all 0.15s;
   }
   .benefit-row:hover { border-color: var(--border); }
+  .benefit-row:hover .snooze-btn { opacity: 1 !important; }
   .benefit-row.used { opacity: 0.45; }
   .benefit-row.used .benefit-name { text-decoration: line-through; }
   .benefit-name { font-size: 13px; font-weight: 500; color: var(--text); }

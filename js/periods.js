@@ -1,6 +1,6 @@
 import { CARDS, MONTHS, MONTHS_FULL } from './cards.js';
 import { state, CY, CM, CD } from './state.js';
-import { isUsed, getCardFeeMonth, getCardFeeDay } from './storage.js';
+import { isUsed, getCardFeeMonth, getCardFeeDay, isGloballySnoozed } from './storage.js';
 
 // ── Period helpers ────────────────────────────────────────────────────────
 export function getCardYearStart(c,forYear){
@@ -136,7 +136,7 @@ export function isBNotAvailable(b,viewYear){
 
 export function calcStats(cardKey,getPsFn,isCurFn){
   const card=CARDS[cardKey]; let captured=0,missed=0,total=0;
-  card.sections.forEach(s=>{ const ps=getPsFn(s.cadence); ps.forEach(p=>{ const fut=isPFuture(p),cur=isCurFn(s.cadence,p); s.benefits.forEach(b=>{ if(isBExpired(b,p)||isBNotAvailable(b,state.selectedYear)) return; const amt=getBAmount(b,p); total+=amt; const used=isUsed(cardKey,b.id,p.pk); if(used) captured+=amt; else if(!fut&&!cur) missed+=amt; }); }); });
+  card.sections.forEach(s=>{ const ps=getPsFn(s.cadence); ps.forEach(p=>{ const fut=isPFuture(p),cur=isCurFn(s.cadence,p); s.benefits.forEach(b=>{ if(isBExpired(b,p)||isBNotAvailable(b,state.selectedYear)||isGloballySnoozed(cardKey,b.id)) return; const amt=getBAmount(b,p); total+=amt; const used=isUsed(cardKey,b.id,p.pk); if(used) captured+=amt; else if(!fut&&!cur) missed+=amt; }); }); });
   return {captured,missed,total};
 }
 
@@ -215,7 +215,7 @@ export function calcCapturedByType(cardKey){
         if(pAbs<cyStartAbs||pAbs>cyEndAbs) return;
       }
       s.benefits.forEach(b=>{
-        if(isBExpired(b,p)||isBNotAvailable(b,CY)) return;
+        if(isBExpired(b,p)||isBNotAvailable(b,CY)||isGloballySnoozed(cardKey,b.id)) return;
         if(!isUsed(cardKey,b.id,p.pk)) return;
         const amt=getBAmount(b,p);
         if(isRepeating) repeating+=amt;
@@ -226,12 +226,13 @@ export function calcCapturedByType(cardKey){
   return {repeating,oneTime};
 }
 export function getCardYearMonthsElapsed(cardKey){
-  const {month:fm}=getCardYearStart(cardKey,CY);
-  return Math.max(1,CM>=fm?CM-fm+1:12-(fm-CM));
+  const {year:cyYear,month:fm}=getCardYearStart(cardKey,CY);
+  const cyStartAbs=cyYear*12+fm;
+  const currentAbs=CY*12+CM;
+  return Math.max(1,Math.min(12,currentAbs-cyStartAbs+1));
 }
 export function getProjectedCapture(cardKey){
-  const {month:fm}=getCardYearStart(cardKey,CY);
-  const monthsElapsed=Math.max(1,CM>=fm?CM-fm+1:12-(fm-CM));
+  const monthsElapsed=getCardYearMonthsElapsed(cardKey);
   const monthsRemaining=12-monthsElapsed;
   const {repeating,oneTime}=calcCapturedByType(cardKey);
   const projectedRepeating=monthsRemaining>0?(repeating/monthsElapsed)*monthsRemaining:0;

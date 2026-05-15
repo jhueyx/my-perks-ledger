@@ -7,9 +7,11 @@ import {
   loadNotes, saveNotes, getNoteKey,
   loadCredited, saveCredited, toggleCredited,
   loadSkipped, saveSkipped, isSkipped, skipBenefit,
-  getFeeOverrides, saveFeeOverridesData, getCardFeeMonth, getCardFeeDay
+  getFeeOverrides, saveFeeOverridesData, getCardFeeMonth, getCardFeeDay,
+  setSnoozedBenefit, isGloballySnoozed
 } from './storage.js';
 import { render, getVisibleCardKeys, renderCurrent, renderInsights, renderPriorityQueue, renderRecap, haptic, checkAllClaimed, animateCounters } from './views.js';
+import { calcStats, getCardYearPeriods, isPCurrent, getFee } from './periods.js';
 
 // ── Splash: show login only if no cached session ──────────────────────────
 try {
@@ -617,6 +619,7 @@ document.addEventListener('perks:benefit-toggled',e=>{
   showUndo(e.detail.cardKey,e.detail.id,e.detail.pk,e.detail.action);
 });
 document.addEventListener('perks:rerender',()=>{ if(state.activeView!=='settings') render(); });
+document.addEventListener('perks:benefit-toggled',()=>{ setTimeout(checkProfitConfetti,200); });
 
 // ── Event listeners ───────────────────────────────────────────────────────
 document.getElementById('authBtn').addEventListener('click',handleAuth);
@@ -738,6 +741,24 @@ document.getElementById('main').addEventListener('click',e=>{
     else state._collapsedCurrentSections.add(key);
     haptic('light');
     renderCurrent();
+    return;
+  }
+  const snoozeBtn=e.target.closest('[data-snooze-id]');
+  if(snoozeBtn){
+    e.stopPropagation();
+    const benefitId=snoozeBtn.dataset.snoozeId;
+    const cardKey=snoozeBtn.dataset.snoozeCard;
+    const benefitName=snoozeBtn.dataset.snoozeName||benefitId;
+    openSnoozeModal(cardKey,benefitId,benefitName);
+    return;
+  }
+  const unsnoozeLink=e.target.closest('[data-unsnooze]');
+  if(unsnoozeLink){
+    e.stopPropagation();
+    const benefitId=unsnoozeLink.dataset.unsnooze;
+    const cardKey=unsnoozeLink.dataset.unsnoozeCard||state.activeCard;
+    setSnoozedBenefit(cardKey,benefitId,null);
+    render();
     return;
   }
   const cadHeader=e.target.closest('.collapsible-header[data-cadence]');
@@ -878,6 +899,93 @@ document.addEventListener('keydown',e=>{
   }
 })();
 
+// ── Snooze modal ──────────────────────────────────────────────────────────
+function openSnoozeModal(cardKey, benefitId, benefitName){
+  state._snoozeCtx={cardKey,benefitId};
+  document.getElementById('snoozeModalTitle').textContent=benefitName;
+  const isGE=benefitId.endsWith('_ge');
+  document.getElementById('snoozeGEPreset').style.display=isGE?'':'none';
+  const now=new Date();
+  const minYYYYMM=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('snoozeMonthInput').value=minYYYYMM;
+  document.getElementById('snoozeMonthInput').min=minYYYYMM;
+  if(isGE){
+    const yr4=now.getFullYear()+4;
+    const m4=String(now.getMonth()+1).padStart(2,'0');
+    document.getElementById('snooze4yrBtn').dataset.until=`${yr4}-${m4}`;
+    document.getElementById('snooze4yrBtn').textContent=`⏸ Snooze 4 years — eligible again ${yr4}`;
+  }
+  document.getElementById('snoozeModal').classList.remove('hidden');
+}
+function closeSnoozeModal(){ document.getElementById('snoozeModal').classList.add('hidden'); state._snoozeCtx=null; }
+function saveSnooze(){
+  if(!state._snoozeCtx) return;
+  const val=document.getElementById('snoozeMonthInput').value;
+  if(!val) return;
+  setSnoozedBenefit(state._snoozeCtx.cardKey,state._snoozeCtx.benefitId,val);
+  closeSnoozeModal();
+  render();
+}
+document.getElementById('snoozeSave').addEventListener('click',saveSnooze);
+document.getElementById('snoozeCancel').addEventListener('click',closeSnoozeModal);
+document.getElementById('snoozeModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeSnoozeModal(); });
+document.getElementById('snooze4yrBtn').addEventListener('click',()=>{
+  const until=document.getElementById('snooze4yrBtn').dataset.until;
+  if(until) document.getElementById('snoozeMonthInput').value=until;
+});
+
+// ── Confetti ──────────────────────────────────────────────────────────────
+const confettiCanvas=document.getElementById('confettiCanvas');
+let _confettiRunning=false;
+function launchConfetti(){
+  if(/Mobi|Android/i.test(navigator.userAgent)) return;
+  if(_confettiRunning) return;
+  _confettiRunning=true;
+  const ctx=confettiCanvas.getContext('2d');
+  confettiCanvas.width=window.innerWidth;
+  confettiCanvas.height=window.innerHeight;
+  confettiCanvas.style.cssText='position:fixed;top:0;left:0;pointer-events:none;z-index:9999';
+  const colors=['#4caf7d','#f0b429','#3b82f6','#e03030','#a78bfa','#fb923c'];
+  const pieces=Array.from({length:120},()=>({
+    x:Math.random()*confettiCanvas.width,
+    y:Math.random()*-confettiCanvas.height-10,
+    r:Math.random()*6+3,
+    d:Math.random()*4+2,
+    color:colors[Math.floor(Math.random()*colors.length)],
+    tilt:Math.random()*10-5,
+    tiltSpd:Math.random()*0.08-0.04,
+    rot:Math.random()*360,
+  }));
+  let frame=0;
+  function step(){
+    if(frame++>220){ ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); _confettiRunning=false; return; }
+    ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    pieces.forEach(p=>{
+      p.y+=p.d; p.tilt+=p.tiltSpd; p.rot+=2;
+      if(p.y>confettiCanvas.height){ p.y=-10; p.x=Math.random()*confettiCanvas.width; }
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.color; ctx.globalAlpha=Math.max(0,(220-frame)/80);
+      ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6);
+      ctx.restore();
+    });
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+let _wasInProfit=false;
+function checkProfitConfetti(){
+  if(/Mobi|Android/i.test(navigator.userAgent)) return;
+  try{
+    const keys=getVisibleCardKeys();
+    const anyProfit=keys.some(ck=>{
+      const {captured}=calcStats(ck,c=>getCardYearPeriods(ck,c),isPCurrent);
+      return getFee(ck,CY)-captured<=0;
+    });
+    if(anyProfit&&!_wasInProfit){ launchConfetti(); }
+    _wasInProfit=anyProfit;
+  }catch(e){}
+}
+
 // ── Hide all card buttons until user profile loads ────────────────────────
 document.querySelectorAll('.card-btn[data-card]').forEach(btn=>btn.style.display='none');
 initCardSelector();
@@ -925,3 +1033,6 @@ window.filterSettingsCards=filterSettingsCards;
 window.scheduleMonthlyReminder=scheduleMonthlyReminder;
 window.isSkipped=isSkipped;
 window.renderRecap=renderRecap;
+window.setSnoozedBenefit=setSnoozedBenefit;
+window.openSnoozeModal=openSnoozeModal;
+window.closeSnoozeModal=closeSnoozeModal;
