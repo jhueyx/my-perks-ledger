@@ -13,7 +13,7 @@ export const CARDS={
       {id:'g_hotel',name:'Hotel Collection Credit',desc:'$100 on eligible charges, 2-night min via AMEX Travel',amount:100,partial:true,startsFrom:2025},
     ]},
   ]},
-  platinum:{name:'AMEX Platinum',fee:895,historicalFees:{2025:695},feeMonth:8,feeDay:17,sections:[
+  platinum:{name:'AMEX Platinum',fee:895,historicalFees:{2025:695},feeMonth:8,feeDay:17,openedYear:2025,sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
       {id:'p_uber',name:'Uber Cash',desc:'$15/mo · $35 in December',amount:15,decAmount:35},
       {id:'p_digital',name:'Digital Entertainment',desc:'Disney+, Hulu, ESPN+, Peacock, Paramount+, NYT, WSJ, YouTube',amount:25},

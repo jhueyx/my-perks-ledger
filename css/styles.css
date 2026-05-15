@@ -1448,7 +1448,7 @@
 
   @media (min-width: 768px) {
     .metrics { grid-template-columns: repeat(4, 1fr); }
-    .card-selector { gap: 16px; margin-bottom: 12px; }
+    .card-selector { gap: 16px; margin-bottom: 12px; max-width: 480px; }
     .card-selector .card-btn { width: 190px; }
     .nav-primary { gap: 10px; }
     .nav-primary-btn { padding: 12px 16px; font-size: 13px; }
@@ -1456,6 +1456,7 @@
     .comparison-grid { grid-template-columns: repeat(3,1fr); }
   }
   @media (min-width: 1024px) {
+    .card-selector { max-width: 560px; }
     .card-selector .card-btn { width: 220px; }
   }
 

@@ -744,8 +744,9 @@ export function renderTrends(){
   const yearRange=years.length>1?`${years[0]}–${years[years.length-1]}`:`${years[0]}`;
   let html=`<div class="banner"><strong>Multi-year trends</strong> — ${yearRange} comparison</div>`;
   function capturedForYear(cardKey,y){
-    let total=0;
     const card=CARDS[cardKey];
+    if(card.openedYear&&y<card.openedYear) return 0;
+    let total=0;
     const lastMonth=y<CY?11:CM;
     card.sections.forEach(s=>{
       const periods=[];
@@ -773,7 +774,11 @@ export function renderTrends(){
       }
       s.benefits.forEach(b=>{
         if(isBNotAvailable(b,y)) return;
-        periods.forEach(p=>{ if(isBExpired(b,p)) return; if(isUsed(cardKey,b.id,p.pk)) total+=getBAmount(b,p); });
+        periods.forEach(p=>{
+          if(isBExpired(b,p)) return;
+          if(isUsed(cardKey,b.id,p.pk)) total+=getBAmount(b,p);
+          else if(b.partial){ const partial=getPartialUsed(cardKey,b.id,p.pk); if(partial>0) total+=partial; }
+        });
       });
     });
     return total;
@@ -845,6 +850,7 @@ export function renderStreaks(){
 export function renderComparison(){
   const CARD_KEYS=getVisibleCardKeys();
   let html=`<div class="banner"><strong>All cards compared</strong> — current card-year performance</div>`;
+  html+=`<p style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin:0 0 10px">drag cards to reorder</p>`;
   html+=`<div class="comparison-grid">`;
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
@@ -854,8 +860,8 @@ export function renderComparison(){
     const elapsed=getCardYearMonthsElapsed(cardKey);
     const projectedFee=fee-projected;
     const days=daysUntilFee(cardKey);
-    html+=`<div class="comparison-card ${CARD_CLS[cardKey]}">
-      <div class="comp-card-name">${CARD_LABELS[cardKey]}</div>
+    html+=`<div class="comparison-card ${CARD_CLS[cardKey]}" data-drag-card="${cardKey}" draggable="true">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span class="drag-handle" style="font-size:14px">⠿</span><div class="comp-card-name" style="margin:0">${CARD_LABELS[cardKey]}</div></div>
       <div class="comp-metric"><div class="comp-metric-val green">$${captured.toFixed(0)}</div><div class="comp-metric-label">captured (mo ${elapsed})</div></div>
       <div class="comp-metric"><div class="comp-metric-val ${projectedFee<=0?'green':''}">$${projected.toFixed(0)}</div><div class="comp-metric-label">projected year-end</div></div>
       <div class="comp-divider"></div>
@@ -873,21 +879,23 @@ export function renderComparison(){
 export function renderKeepCard(){
   const CARD_KEYS=getVisibleCardKeys();
   let html=`<div class="banner"><strong>Should I keep this card?</strong> — renewal verdict based on fee coverage</div>`;
+  html+=`<p style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin:0 0 10px">drag cards to reorder</p>`;
   CARD_KEYS.forEach(cardKey=>{
     const fee=getFee(cardKey,CY);
     const {repeating,oneTime}=calcCapturedByType(cardKey);
     const captured=repeating+oneTime;
     const projected=getProjectedCapture(cardKey);
-    const currentRatio=fee>0?captured/fee:0;
+    const gap=fee-projected;
     let verdict,cls,reason,action;
     if(captured>=fee){ verdict='✓ Keep it'; cls='keep'; reason=`You've already captured $${captured.toFixed(0)} — covering the $${fee} fee with $${(captured-fee).toFixed(0)} profit.`; action='Renewal is clearly worth it.'; }
     else if(projected>=fee){ verdict='✓ Keep it'; cls='keep'; reason=`You've captured $${captured.toFixed(0)} so far. At this rate you'll hit $${projected.toFixed(0)} by card year end — covering the $${fee} fee.`; action='On track to break even. Renewal recommended.'; }
-    else if(projected>=fee*0.9){ verdict='Reconsider'; cls='reconsider'; reason=`Projecting $${projected.toFixed(0)} by year end vs $${fee} fee. You'll be $${(fee-projected).toFixed(0)} short of breaking even.`; action='Try to use more benefits before renewal.'; }
-    else { verdict='✗ Downgrade or Cancel'; cls='cancel'; reason=`Only ${Math.round(currentRatio*100)}% of the $${fee} fee covered so far. Projecting $${projected.toFixed(0)} — well short of the fee.`; action='Consider downgrading or cancelling before renewal.'; }
+    else if(gap<=250){ verdict='✓ Keep it'; cls='keep'; reason=`Projecting $${projected.toFixed(0)} by year end vs $${fee} fee. You'll be $${gap.toFixed(0)} short of breaking even.`; action='Within $250 of break-even — worth keeping.'; }
+    else if(gap<=500){ verdict='⚠ Reconsider'; cls='reconsider'; reason=`Projecting $${projected.toFixed(0)} by year end vs $${fee} fee. You'll be $${gap.toFixed(0)} short.`; action='Try to use more benefits before renewal.'; }
+    else { verdict='✗ Downgrade or Cancel'; cls='cancel'; reason=`Projecting $${projected.toFixed(0)} by year end — $${gap.toFixed(0)} short of the $${fee} fee.`; action='Consider downgrading or cancelling before renewal.'; }
     const days=daysUntilFee(cardKey);
     const fm2=getCardFeeMonth(cardKey),fd=getCardFeeDay(cardKey);
-    html+=`<div style="margin-bottom:12px">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">${CARD_LABELS[cardKey]}</div>
+    html+=`<div style="margin-bottom:12px" data-drag-card="${cardKey}" draggable="true">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span class="drag-handle" style="font-size:14px">⠿</span><span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em">${CARD_LABELS[cardKey]}</span></div>
       <div class="keep-card-result ${cls}"><div class="keep-verdict ${cls}">${verdict}</div><div class="keep-reason">${reason}<br><strong>${action}</strong></div>
       <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-top:8px">$${captured.toFixed(0)} captured · $${projected.toFixed(0)} projected · $${fee} fee<br>Next fee: ${MONTHS[fm2]} ${fd} · ${days} days away</div>
       </div>
