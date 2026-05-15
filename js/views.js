@@ -309,7 +309,7 @@ function buildPriorityQueue(){
       const pk=getCurrentPK(cardKey,s.cadence);
       const p={calY:CY,calM:CM,m:CM};
       s.benefits.forEach(b=>{
-        if(isBExpired(b,p)||isBNotAvailable(b,CY)) return;
+        if(isBExpired(b,p)||isBNotAvailable(b,CY,p)) return;
         if(isUsed(cardKey,b.id,pk)) return;
         if(isSkipped(cardKey,b.id,pk)) return;
         if(isGloballySnoozed(cardKey,b.id)) return;
@@ -409,7 +409,7 @@ export function renderCurrent(){
     const lbl=isMonthly?`${MONTHS_FULL[viewM]} ${viewY}`:getCurrentLabel(state.activeCard,s.cadence);
     const pY=isMonthly?viewY:CY,pM=isMonthly?viewM:CM;
     const currentP={calY:pY,calM:pM,m:pM};
-    const visibleBenefits=s.benefits.filter(b=>!isBExpired(b,currentP)&&!isBNotAvailable(b,pY));
+    const visibleBenefits=s.benefits.filter(b=>!isBExpired(b,currentP)&&!isBNotAvailable(b,pY,currentP));
     if(!visibleBenefits.length) return;
     if(isHistory&&!isMonthly) return; // in history mode, only show monthly section
     const allClaimed=visibleBenefits.every(b=>isUsed(state.activeCard,b.id,pk));
@@ -633,7 +633,7 @@ function buildHeatmapHTML(){
       } else if(cadence==='quarterly'){
         [[2,0],[5,1],[8,2],[11,3]].forEach(([displayM,q])=>{ const pk=`${CY}-q${q}`; s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)) return; addAmt(displayM,b,pk); }); });
       } else if(cadence==='cal-semi-annual'){
-        [[5,0],[11,1]].forEach(([displayM,h])=>{ const pk=`${CY}-h${h}`; s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)) return; addAmt(displayM,b,pk); }); });
+        [[5,0],[11,1]].forEach(([displayM,h])=>{ const pk=`${CY}-h${h}`; s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)||b.halfStart!==undefined&&h<b.halfStart) return; addAmt(displayM,b,pk); }); });
       } else if(cadence==='semi-annual'){
         const pkH1=`cy-${fy}-${fm}-h1`,pkH2=`cy-${fy}-${fm}-h2`;
         s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)) return; addAmt(5,b,pkH1); addAmt(11,b,pkH2); });

@@ -133,14 +133,15 @@ export function isBExpired(b,p){
   const pAbs=p.calY*12+p.calM;
   return pAbs>expAbs;
 }
-export function isBNotAvailable(b,viewYear){
+export function isBNotAvailable(b,viewYear,p){
   if(b.startsFrom&&viewYear<b.startsFrom) return true;
+  if(b.halfStart!==undefined&&p!==undefined&&Math.floor(p.calM/6)<b.halfStart) return true;
   return false;
 }
 
 export function calcStats(cardKey,getPsFn,isCurFn){
   const card=CARDS[cardKey]; let captured=0,missed=0,total=0;
-  card.sections.forEach(s=>{ const ps=getPsFn(s.cadence); ps.forEach(p=>{ const fut=isPFuture(p),cur=isCurFn(s.cadence,p); s.benefits.forEach(b=>{ if(isBExpired(b,p)||isBNotAvailable(b,state.selectedYear)||isGloballySnoozed(cardKey,b.id)) return; const amt=getBAmount(b,p); total+=amt; const used=isUsed(cardKey,b.id,p.pk); if(used) captured+=amt; else if(!fut&&!cur) missed+=amt; }); }); });
+  card.sections.forEach(s=>{ const ps=getPsFn(s.cadence); ps.forEach(p=>{ const fut=isPFuture(p),cur=isCurFn(s.cadence,p); s.benefits.forEach(b=>{ if(isBExpired(b,p)||isBNotAvailable(b,state.selectedYear,p)||isGloballySnoozed(cardKey,b.id)) return; const amt=getBAmount(b,p); total+=amt; const used=isUsed(cardKey,b.id,p.pk); if(used) captured+=amt; else if(!fut&&!cur) missed+=amt; }); }); });
   return {captured,missed,total};
 }
 
@@ -196,7 +197,7 @@ export function maxCardYearValue(cardKey){
   const card=CARDS[cardKey]; let t=0;
   card.sections.forEach(s=>{
     const n=s.cadence==='monthly'?12:s.cadence==='quarterly'?4:s.cadence==='cal-semi-annual'||s.cadence==='semi-annual'?2:1;
-    s.benefits.forEach(b=>{ if(!isBNotAvailable(b,CY)&&!isGloballySnoozed(cardKey,b.id)) t+=b.amount*n; });
+    s.benefits.forEach(b=>{ if(isGloballySnoozed(cardKey,b.id)||isBNotAvailable(b,CY)) return; t+=b.amount*(b.halfStart!==undefined?1:n); });
   });
   return t;
 }
@@ -219,7 +220,7 @@ export function calcCapturedByType(cardKey){
         if(pAbs<cyStartAbs||pAbs>cyEndAbs) return;
       }
       s.benefits.forEach(b=>{
-        if(isBExpired(b,p)||isBNotAvailable(b,CY)||isGloballySnoozed(cardKey,b.id)) return;
+        if(isBExpired(b,p)||isBNotAvailable(b,CY,p)||isGloballySnoozed(cardKey,b.id)) return;
         if(!isUsed(cardKey,b.id,p.pk)) return;
         const amt=getBAmount(b,p);
         if(isRepeating) repeating+=amt;

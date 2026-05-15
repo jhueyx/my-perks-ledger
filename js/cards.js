@@ -57,13 +57,13 @@ export const CARDS={
     {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
       {id:'c_dining',name:'Exclusive Tables Dining Credit',desc:'Via OpenTable Sapphire Reserve Exclusive Tables',amount:150,startsFrom:2025},
       {id:'c_stub',name:'StubHub / Viagogo Credit',desc:'Concert and event tickets',amount:150,startsFrom:2025},
+      {id:'c_edit2',name:'The Edit Hotel Credit (H2)',desc:'Prepaid 2-night+ stay via Chase Travel The Edit — available Jul–Dec only',amount:250,startsFrom:2026,halfStart:1},
     ]},
     {label:'Travel credit (Feb–Jan)',cadence:'feb-annual',benefits:[
       {id:'c_travel',name:'Travel Credit',desc:'Any travel purchase — automatic. Resets each February.',amount:300,partial:true},
     ]},
     {label:'Annual',cadence:'annual',benefits:[
-      {id:'c_edit1',name:'The Edit Hotel Credit (1 of 2)',desc:'Prepaid 2-night+ stay via Chase Travel The Edit',amount:250,startsFrom:2026},
-      {id:'c_edit2',name:'The Edit Hotel Credit (2 of 2)',desc:'Prepaid 2-night+ stay via Chase Travel The Edit',amount:250,startsFrom:2026},
+      {id:'c_edit1',name:'The Edit Hotel Credit (H1)',desc:'Prepaid 2-night+ stay via Chase Travel The Edit — available Jan–Jun',amount:250,startsFrom:2026},
       {id:'c_selecthotel',name:'Select Hotel Credit (2026 only)',desc:'IHG, Montage, Pendry, Omni, Virgin, Minor, Pan Pacific',amount:250,startsFrom:2026},
       {id:'c_apple',name:'Apple TV+ & Apple Music',desc:'Complimentary annual subscriptions — activate once via Chase (through Jun 2027)',amount:240,startsFrom:2026},
       {id:'c_ge',name:'Global Entry / TSA PreCheck / NEXUS',desc:'Statement credit every 4 years',amount:120},
