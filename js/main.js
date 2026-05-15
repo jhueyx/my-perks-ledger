@@ -1052,17 +1052,17 @@ function checkProfitConfetti(){
 }
 
 // ── Home tab card carousel (desktop) ─────────────────────────────────────
-let _carouselId=null,_carouselDir=1,_carouselPaused=false;
+let _carouselId=null,_carouselPaused=false;
 function startCarousel(){
   const sel=document.getElementById('cardSelector');
   if(!sel||window.innerWidth<768) return;
+  const max=sel.scrollWidth-sel.clientWidth;
+  if(max<10) return;
   if(_carouselId) cancelAnimationFrame(_carouselId);
   function tick(){
     if(!_carouselPaused){
-      sel.scrollLeft+=_carouselDir*0.4;
-      const max=sel.scrollWidth-sel.clientWidth;
-      if(sel.scrollLeft>=max-2) _carouselDir=-1;
-      else if(sel.scrollLeft<=2) _carouselDir=1;
+      sel.scrollLeft+=0.5;
+      if(sel.scrollLeft>=max) sel.scrollLeft=0;
     }
     _carouselId=requestAnimationFrame(tick);
   }
@@ -1078,6 +1078,11 @@ const _carouselSel=document.getElementById('cardSelector');
 _carouselSel.addEventListener('mouseenter',()=>{ _carouselPaused=true; });
 _carouselSel.addEventListener('mouseleave',()=>{ _carouselPaused=false; });
 _carouselSel.addEventListener('touchstart',()=>{ stopCarousel(); },{passive:true});
+// mouse drag scroll
+let _mDragActive=false,_mDragX=0,_mDragSL=0;
+_carouselSel.addEventListener('mousedown',e=>{ if(e.button!==0) return; _mDragActive=true; _mDragX=e.pageX; _mDragSL=_carouselSel.scrollLeft; stopCarousel(); e.preventDefault(); });
+window.addEventListener('mousemove',e=>{ if(!_mDragActive) return; _carouselSel.scrollLeft=_mDragSL-(_mDragX-e.pageX); });
+window.addEventListener('mouseup',()=>{ if(_mDragActive){ _mDragActive=false; startCarousel(); } });
 
 // ── Service worker ────────────────────────────────────────────────────────
 if('serviceWorker' in navigator&&location.hostname!=='www.claudeusercontent.com'){
@@ -1124,3 +1129,4 @@ window.renderRecap=renderRecap;
 window.setSnoozedBenefit=setSnoozedBenefit;
 window.openSnoozeModal=openSnoozeModal;
 window.closeSnoozeModal=closeSnoozeModal;
+window.setPeriodOffset=(offset)=>{ state._periodOffset=offset; renderCurrent(); };

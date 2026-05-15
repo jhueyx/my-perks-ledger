@@ -375,11 +375,14 @@
     overflow-y: visible;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
     gap: 10px;
-    padding: 4px 4px 12px;
+    padding: 4px 16px 14px 4px;
     margin-bottom: 8px;
     scrollbar-width: none;
+    cursor: grab;
   }
+  .card-selector:active { cursor: grabbing; }
   .card-selector::-webkit-scrollbar { display: none; }
   .card-selector .card-btn {
     flex: 0 0 130px;

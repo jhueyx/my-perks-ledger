@@ -366,33 +366,55 @@ export function buildCardBack(cardKey){
 // ── Render: this period ────────────────────────────────────────────────────
 export function renderCurrent(){
   const card=CARDS[state.activeCard];
+  const offset=state._periodOffset||0;
+  const absMonth=CY*12+CM+offset;
+  const viewY=Math.floor(absMonth/12);
+  const viewM=absMonth%12;
+  const isHistory=offset<0;
+  const monthPK=`${viewY}-m${viewM}`;
+
   let totalNow=0,usedNow=0;
-  card.sections.forEach(s=>{ if(s.cadence!=='monthly') return; const pk=getCurrentPK(state.activeCard,s.cadence); s.benefits.forEach(b=>{ if(isBExpired(b,{calY:CY,calM:CM,m:CM})||isBNotAvailable(b,CY)||isGloballySnoozed(state.activeCard,b.id)) return; totalNow+=getBAmount(b,{m:CM}); if(isUsed(state.activeCard,b.id,pk)) usedNow+=getBAmount(b,{m:CM}); }); });
+  card.sections.forEach(s=>{ if(s.cadence!=='monthly') return; s.benefits.forEach(b=>{ if(isBExpired(b,{calY:viewY,calM:viewM,m:viewM})||isBNotAvailable(b,viewY)||isGloballySnoozed(state.activeCard,b.id)) return; totalNow+=getBAmount(b,{m:viewM}); if(isUsed(state.activeCard,b.id,monthPK)) usedNow+=getBAmount(b,{m:viewM}); }); });
   const pct=totalNow>0?Math.round(usedNow/totalNow*100):0;
   const {captured}=calcStats(state.activeCard,c=>getCardYearPeriods(state.activeCard,c),isPCurrent);
   const effectiveFee=getFee(state.activeCard,CY)-captured;
 
-  let html=buildCountdownStrip(state.activeCard);
-  html+=buildEOMWarning(state.activeCard);
-  html+=buildBreakevenBar(state.activeCard);
-  html+=metricsHTML('This month',`$${totalNow.toFixed(0)}`,'Claimed',`$${usedNow.toFixed(0)}`,'This card year',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
-  if(totalNow>0) html+=progressHTML(pct,'',`${MONTHS_FULL[CM]} ${CY}: $${usedNow.toFixed(0)} of $${totalNow.toFixed(0)} claimed`);
-  html+=`<div class="period-note">Use it now — <strong>${MONTHS_FULL[CM]} ${CY}</strong></div>`;
+  // month nav bar
+  const prevAbsM=absMonth-1;
+  const prevY=Math.floor(prevAbsM/12),prevM=prevAbsM%12;
+  let html=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <button onclick="window.setPeriodOffset(${offset-1})" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-family:var(--mono);cursor:pointer;color:var(--text)">← ${MONTHS[prevM]} ${prevY}</button>
+    ${isHistory?`<button onclick="window.setPeriodOffset(0)" style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-family:var(--mono);cursor:pointer;font-weight:600">Back to current</button>`:'<span style="flex:1"></span>'}
+    ${isHistory&&offset<-1?`<button onclick="window.setPeriodOffset(${offset+1})" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-family:var(--mono);cursor:pointer;color:var(--text)">${MONTHS[CM]} ${CY} →</button>`:''}
+  </div>`;
+  if(isHistory) html+=`<div style="background:rgba(200,146,42,0.12);border:1px solid rgba(200,146,42,0.3);border-radius:8px;padding:8px 12px;font-size:12px;font-family:var(--mono);color:var(--gold);margin-bottom:10px">Viewing history: <strong>${MONTHS_FULL[viewM]} ${viewY}</strong></div>`;
+
+  if(!isHistory){
+    html+=buildCountdownStrip(state.activeCard);
+    html+=buildEOMWarning(state.activeCard);
+    html+=buildBreakevenBar(state.activeCard);
+  }
+  html+=metricsHTML(isHistory?`${MONTHS_FULL[viewM]}`:'This month',`$${totalNow.toFixed(0)}`,'Claimed',`$${usedNow.toFixed(0)}`,'This card year',`$${captured.toFixed(0)}`,'Effective fee',`${effectiveFee<=0?'<span style="color:var(--green)">$'+Math.abs(effectiveFee).toFixed(0)+' profit!</span>':'$'+effectiveFee.toFixed(0)}`);
+  if(totalNow>0) html+=progressHTML(pct,'',`${MONTHS_FULL[viewM]} ${viewY}: $${usedNow.toFixed(0)} of $${totalNow.toFixed(0)} claimed`);
+  if(!isHistory) html+=`<div class="period-note">Use it now — <strong>${MONTHS_FULL[CM]} ${CY}</strong></div>`;
 
   const CADENCE_THIS={'monthly':'This month','quarterly':'This quarter','semi-annual':'This half','cal-semi-annual':'This half','annual':'This card year','cal-annual':'This year','feb-annual':'This year'};
   card.sections.forEach(s=>{
-    const pk=getCurrentPK(state.activeCard,s.cadence);
-    const lbl=getCurrentLabel(state.activeCard,s.cadence);
-    const currentP={calY:CY,calM:CM,m:CM};
-    const visibleBenefits=s.benefits.filter(b=>!isBExpired(b,currentP)&&!isBNotAvailable(b,CY));
+    const isMonthly=s.cadence==='monthly';
+    const pk=isMonthly?monthPK:getCurrentPK(state.activeCard,s.cadence);
+    const lbl=isMonthly?`${MONTHS_FULL[viewM]} ${viewY}`:getCurrentLabel(state.activeCard,s.cadence);
+    const pY=isMonthly?viewY:CY,pM=isMonthly?viewM:CM;
+    const currentP={calY:pY,calM:pM,m:pM};
+    const visibleBenefits=s.benefits.filter(b=>!isBExpired(b,currentP)&&!isBNotAvailable(b,pY));
     if(!visibleBenefits.length) return;
+    if(isHistory&&!isMonthly) return; // in history mode, only show monthly section
     const allClaimed=visibleBenefits.every(b=>isUsed(state.activeCard,b.id,pk));
     const claimedCount=visibleBenefits.filter(b=>isUsed(state.activeCard,b.id,pk)).length;
     const sectionKey=`current-${state.activeCard}-${s.cadence}`;
     const isCollapsed=state._collapsedCurrentSections.has(sectionKey);
     const indicator=allClaimed?`<span style="color:var(--green);font-size:12px">✓</span>`:`<span style="font-size:13px;color:var(--text-tertiary);display:inline-block;transform:rotate(${isCollapsed?'-90deg':'0deg'});transition:transform 0.2s">▾</span>`;
     const countBadge=allClaimed?`<span style="font-size:10px;font-family:var(--mono);color:var(--green);background:rgba(42,155,106,0.1);padding:1px 7px;border-radius:100px">${claimedCount}/${visibleBenefits.length} ✓</span>`:`<span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);background:var(--border-light);padding:1px 7px;border-radius:100px">${claimedCount}/${visibleBenefits.length}</span>`;
-    const sectionTitle=CADENCE_THIS[s.cadence]||s.label;
+    const sectionTitle=isMonthly&&isHistory?`${MONTHS_FULL[viewM]} ${viewY}`:(CADENCE_THIS[s.cadence]||s.label);
     html+=`<div class="section-header collapsible-header" data-section-key="${sectionKey}" style="cursor:pointer;user-select:none">
       <div style="display:flex;align-items:center;gap:8px">${indicator}<span class="section-title" style="color:${allClaimed?'var(--text-tertiary)':''}">${sectionTitle}</span>${countBadge}</div>
       <span class="section-period">${lbl}</span>
@@ -407,7 +429,7 @@ export function renderCurrent(){
         const streakBadge=streak>=2?`<span class="streak-badge">${streak} mo streak</span>`:'';
         const expiryBadge=getExpiryBadge(b)+getBenefitExpiryLabel(b);
         const catTag='';
-        const effectiveAmt=getEffectiveAmount(state.activeCard,b.id,getBAmount(b,{m:CM}));
+        const effectiveAmt=getEffectiveAmount(state.activeCard,b.id,getBAmount(b,{m:viewM}));
         const dispAmt=b.note&&b.amount===0?b.note:`$${effectiveAmt}`;
         const note=getNote(state.activeCard,b.id,pk);
         const noteHTML=note?`<div class="benefit-note" data-id="${b.id}" data-pk="${pk}" data-name="${b.name}"><span class="note-dot"></span>${escapeHtml(note)}</div>`:`<div class="add-note" data-id="${b.id}" data-pk="${pk}" data-name="${b.name}">+ add note</div>`;
@@ -586,11 +608,15 @@ export function renderAllCards(){
 export function renderHeatmap(){
   const CARD_KEYS=getVisibleCardKeys();
   let html=`<div class="banner"><strong>Missed money heatmap</strong> — benefit capture rate by card</div>`;
-  const CELL_W=42,CELL_H=36,COLS=13;
-  html+=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">`;
-  html+=`<div style="display:grid;grid-template-columns:80px repeat(12,${CELL_W}px);gap:3px;min-width:${80+COLS*CELL_W+COLS*3}px">`;
-  html+=`<div></div>`;
-  for(let m=0;m<12;m++) html+=`<div style="text-align:center;font-size:10px;font-family:var(--mono);color:var(--text-tertiary);padding:4px 0">${MONTHS[m]}</div>`;
+  html+=`<p style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin:0 0 10px">drag rows to reorder</p>`;
+  const CELL_W=42,CELL_H=36,LABEL_W=88;
+  const minW=LABEL_W+(CELL_W+3)*12;
+  html+=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><div style="min-width:${minW}px">`;
+  // header row
+  html+=`<div style="display:flex;align-items:center;gap:3px;margin-bottom:3px">`;
+  html+=`<div style="width:${LABEL_W}px;flex-shrink:0"></div>`;
+  for(let m=0;m<12;m++) html+=`<div style="width:${CELL_W}px;flex-shrink:0;text-align:center;font-size:10px;font-family:var(--mono);color:var(--text-tertiary);padding:4px 0">${MONTHS[m]}</div>`;
+  html+=`</div>`;
   CARD_KEYS.forEach(cardKey=>{
     const card=CARDS[cardKey];
     const {year:fy,month:fm}=getCardYearStart(cardKey,CY);
@@ -618,16 +644,19 @@ export function renderHeatmap(){
         s.benefits.forEach(b=>{ if(isBNotAvailable(b,CY)) return; addAmt(11,b,pk); });
       }
     });
-    html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);display:flex;align-items:center;padding-right:6px">${CARD_LABELS[cardKey]}</div>`;
+    // each card is a single draggable row div
+    html+=`<div data-drag-card="${cardKey}" draggable="true" style="display:flex;align-items:center;gap:3px;margin-bottom:3px;cursor:grab">`;
+    html+=`<div style="width:${LABEL_W}px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding-right:4px"><span class="drag-handle" style="font-size:14px;opacity:0.35;flex-shrink:0">⠿</span><span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${CARD_LABELS[cardKey]}</span></div>`;
     for(let m=0;m<12;m++){
       const isFut=m>CM,{total,claimed}=monthData[m];
-      if(isFut){ html+=`<div style="height:${CELL_H}px;border-radius:5px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">–</div>`; continue; }
-      if(total===0){ html+=`<div style="height:${CELL_H}px;border-radius:5px"></div>`; continue; }
+      if(isFut){ html+=`<div style="width:${CELL_W}px;flex-shrink:0;height:${CELL_H}px;border-radius:5px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary)">–</div>`; continue; }
+      if(total===0){ html+=`<div style="width:${CELL_W}px;flex-shrink:0;height:${CELL_H}px;border-radius:5px"></div>`; continue; }
       const rate=claimed/total,pct=Math.round(rate*100);
       const bg=rate===0?'var(--border-light)':rate<0.5?'rgba(220,60,60,0.6)':rate<0.9?'rgba(210,160,0,0.5)':rate<1?'rgba(210,160,0,0.85)':'#2a9b6a';
       const fg=rate>=1?'#fff':rate>0&&rate<0.5?'#fff':'var(--text)';
-      html+=`<div style="height:${CELL_H}px;border-radius:5px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:${fg}" title="${MONTHS[m]}: $${claimed}/$${total} claimed">${pct}%</div>`;
+      html+=`<div style="width:${CELL_W}px;flex-shrink:0;height:${CELL_H}px;border-radius:5px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--mono);color:${fg}" title="${MONTHS[m]}: $${claimed}/$${total} claimed">${pct}%</div>`;
     }
+    html+=`</div>`;
   });
   html+=`</div></div>`;
   html+=`<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;font-size:10px;font-family:var(--mono);color:var(--text-tertiary)">
@@ -654,15 +683,22 @@ export function renderROI(){
     const grade=getROIGrade(fee,cardKey);
     const effectiveFee=fee-captured;
     const projRatio=fee>0?projected/fee:0;
-    const gradeDesc={A:`On pace to capture $${projected.toFixed(0)} — covering the $${fee} fee`,B:`Projecting $${projected.toFixed(0)} by year end — close to the $${fee} fee`,C:`Projecting $${projected.toFixed(0)} — need to use more benefits`,D:`Only ${Math.round(projRatio*100)}% of fee covered at current pace`}[grade];
+    const projGap=fee-projected;
+    const verdict=projGap<=0?'→ Keep: in profit'
+      :projGap<=250?`→ Keep: $${projGap.toFixed(0)} short of break-even`
+      :projGap<=500?`→ Reconsider if habits don't improve`
+      :`→ Consider canceling ($${projGap.toFixed(0)} gap)`;
+    const verdictColor=projGap<=0?'var(--green)':projGap<=250?'var(--gold)':'var(--red)';
+    const gradeDesc={A:`Projecting $${projected.toFixed(0)} — fully covering the $${fee} fee`,B:`Projecting $${projected.toFixed(0)} — $${projGap.toFixed(0)} short but within acceptable range`,C:`Projecting $${projected.toFixed(0)} — need to claim more benefits`,D:`Projecting $${projected.toFixed(0)} — well below the $${fee} fee`}[grade];
     html+=`<div class="comparison-card ${CARD_CLS[cardKey]}" data-drag-card="${cardKey}" draggable="true">
       <div class="drag-handle">⠿</div>
       <div class="comp-card-name">${CARD_LABELS[cardKey]}</div>
       <div class="roi-grade ${grade}">${grade}</div>
       <div class="roi-label">${effectiveFee<=0?'$'+Math.abs(effectiveFee).toFixed(0)+' profit so far':'$'+captured.toFixed(0)+' of $'+fee+' captured'}</div>
       <div class="roi-desc">${gradeDesc}</div>
+      <div style="font-size:11px;font-family:var(--mono);font-weight:600;color:${verdictColor};margin:6px 0 2px">${verdict}</div>
       <div class="comp-divider"></div>
-      <div style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">Month ${elapsed} of 12 · $${projected.toFixed(0)} projected<br>${Math.round(projRatio*100)}% of fee covered at this pace</div>
+      <div style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">Month ${elapsed} of 12 · $${projected.toFixed(0)} projected</div>
     </div>`;
   });
   html+=`</div>`;

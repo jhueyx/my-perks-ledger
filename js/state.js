@@ -36,6 +36,7 @@ export const state = {
   _undoTimer: null,
   _noteCtx: {},
   _feeDateEditCard: null,
+  _periodOffset: 0,
   _feeOverrides: null,
   touchStartX: 0,
   touchStartY: 0,

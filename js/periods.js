@@ -240,9 +240,9 @@ export function getProjectedCapture(cardKey){
 }
 export function getROIGrade(fee,cardKey){
   const projected=getProjectedCapture(cardKey);
-  const ratio=fee>0?projected/fee:0;
-  if(ratio>=1.0) return 'A';
-  if(ratio>=0.8) return 'B';
-  if(ratio>=0.5) return 'C';
+  const gap=fee-projected;
+  if(gap<=0) return 'A';
+  if(gap<=250) return 'B';
+  if(gap<=500) return 'C';
   return 'D';
 }
