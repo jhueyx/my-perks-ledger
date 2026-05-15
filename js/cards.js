@@ -21,7 +21,7 @@ export const CARDS={
     ]},
     {label:'Quarterly',cadence:'quarterly',benefits:[
       {id:'p_resy',name:'Resy Dining Credit',desc:'At eligible U.S. Resy restaurants',amount:100,startsFrom:2026},
-      {id:'p_lulu',name:'Lululemon Credit',desc:'U.S. stores or lululemon.com',amount:75,startsFrom:2026},
+      {id:'p_lulu',name:'Lululemon Credit',desc:'U.S. stores or lululemon.com',amount:75,startsFrom:2025},
     ]},
     {label:'Semi-annual (card-year)',cadence:'semi-annual',benefits:[
       {id:'p_hotel',name:'Hotel Credit',desc:'Fine Hotels + Resorts or Hotel Collection, 2-night min',amount:300},
@@ -33,7 +33,7 @@ export const CARDS={
       {id:'p_uberone',name:'Uber One Membership Credit',desc:'One-time credit for annual Uber One membership',amount:96,startsFrom:2026},
       {id:'p_airline',name:'Airline Fee Credit',desc:'Incidental fees with one selected airline',amount:200,partial:true},
       {id:'p_equinox',name:'Equinox Credit',desc:'Equinox club or app membership',amount:300,partial:true},
-      {id:'p_oura',name:'Oura Ring Credit',desc:'Hardware only via OURAring.com',amount:200,startsFrom:2026},
+      {id:'p_oura',name:'Oura Ring Credit',desc:'Hardware only via OURAring.com',amount:200,startsFrom:2025},
       {id:'p_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
       {id:'p_clear',name:'CLEAR Plus Credit',desc:'Annual CLEAR Plus membership',amount:189},
     ]},
