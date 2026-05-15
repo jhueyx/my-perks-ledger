@@ -1524,7 +1524,7 @@
     .bottom-sheet-overlay {
       display: block;
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.45);
+      background: rgba(0,0,0,0.25);
       z-index: 600;
       opacity: 0; pointer-events: none;
       transition: opacity 0.25s;

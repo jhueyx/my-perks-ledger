@@ -274,6 +274,7 @@ function renderSettings(){
   const displayName=user?.user_metadata?.display_name||'';
   const email=escapeHtml(user?.email||'');
   state._mcSelected=new Set(state.userCards||['csr','gold','platinum']);
+  if(state._settingsCardsCollapsed===undefined) state._settingsCardsCollapsed=true;
   document.getElementById('main').innerHTML=`
     <div class="settings-page">
       <div class="settings-page-header">Settings</div>
@@ -307,16 +308,25 @@ function renderSettings(){
       </div>
 
       <div class="settings-section">
-        <div class="settings-section-title">My Cards</div>
-        <div class="settings-sub">Select the cards you want to track.</div>
-        <input class="cp-search" id="settingsCardSearch" placeholder="Search cards…" oninput="filterSettingsCards()" style="margin:12px 0 8px"/>
-        <div class="cp-count" id="settingsCardCount">${state._mcSelected.size} card${state._mcSelected.size!==1?'s':''} selected</div>
-        <div class="cp-grid" id="settingsCardGrid" style="margin-bottom:16px"></div>
-        <button class="settings-btn settings-btn-primary" id="settingsCardSave" onclick="saveSettingsCards()">Save Cards</button>
-        <div class="settings-feedback" id="settingsCardMsg"></div>
+        <div class="settings-section-title" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="toggleSettingsCards()">
+          My Cards
+          <span id="settingsCardsChevron" style="font-size:12px;color:var(--text-tertiary);transition:transform 0.2s;transform:${state._settingsCardsCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▾</span>
+        </div>
+        <div id="settingsCardsBody" style="display:${state._settingsCardsCollapsed?'none':'block'}">
+          <div class="settings-sub">Select the cards you want to track.</div>
+          <input class="cp-search" id="settingsCardSearch" placeholder="Search cards…" oninput="filterSettingsCards()" style="margin:12px 0 8px"/>
+          <div class="cp-count" id="settingsCardCount">${state._mcSelected.size} card${state._mcSelected.size!==1?'s':''} selected</div>
+          <div class="cp-grid" id="settingsCardGrid" style="margin-bottom:16px"></div>
+          <button class="settings-btn settings-btn-primary" id="settingsCardSave" onclick="saveSettingsCards()">Save Cards</button>
+          <div class="settings-feedback" id="settingsCardMsg"></div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <button class="settings-btn" style="color:var(--red);border-color:rgba(217,64,64,0.35);width:100%" onclick="signOut()">Sign Out</button>
       </div>
     </div>`;
-  renderCPGrid('settingsCardGrid','settingsCardSearch',state._mcSelected);
+  if(!state._settingsCardsCollapsed) renderCPGrid('settingsCardGrid','settingsCardSearch',state._mcSelected);
 }
 
 async function saveSettingsProfile(){
@@ -364,6 +374,14 @@ async function saveSettingsCards(){
 }
 
 function filterSettingsCards(){ renderCPGrid('settingsCardGrid','settingsCardSearch',state._mcSelected); }
+window.toggleSettingsCards=function(){
+  state._settingsCardsCollapsed=!state._settingsCardsCollapsed;
+  const body=document.getElementById('settingsCardsBody');
+  const chev=document.getElementById('settingsCardsChevron');
+  if(body) body.style.display=state._settingsCardsCollapsed?'none':'block';
+  if(chev) chev.style.transform=state._settingsCardsCollapsed?'rotate(-90deg)':'rotate(0deg)';
+  if(!state._settingsCardsCollapsed) renderCPGrid('settingsCardGrid','settingsCardSearch',state._mcSelected);
+};
 
 // ── Card selector ─────────────────────────────────────────────────────────
 function sizeCardSelector(){ /* sizing handled by CSS flex-basis breakpoints */ }
@@ -750,9 +768,13 @@ document.getElementById('drawerClose').addEventListener('click',closeDrawer);
 document.getElementById('drawerOverlay').addEventListener('click',closeDrawer);
 
 // ── Bottom tab bar + menu sheet ───────────────────────────────────────────
-document.getElementById('bottomMenuBtn').addEventListener('click',openMenuSheet);
+let _menuTapTime=0;
+document.getElementById('bottomMenuBtn').addEventListener('click',()=>{
+  const now=Date.now();
+  if(now-_menuTapTime<350){ _menuTapTime=0; closeMenuSheet(); setActiveView('priority'); }
+  else { _menuTapTime=now; openMenuSheet(); }
+});
 document.getElementById('bottomSheetOverlay').addEventListener('click',closeMenuSheet);
-document.getElementById('sheetSignOut').addEventListener('click',()=>{ closeMenuSheet(); signOut(); });
 document.getElementById('bottomTabBar').querySelectorAll('.bottom-tab[data-bottom]').forEach(btn=>{
   btn.addEventListener('click',()=>{ setActiveView(btn.dataset.bottom); });
 });
