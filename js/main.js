@@ -1022,7 +1022,7 @@ function openSnoozeModal(cardKey, benefitId, benefitName){
     const yr4=now.getFullYear()+4;
     const m4=String(now.getMonth()+1).padStart(2,'0');
     document.getElementById('snooze4yrBtn').dataset.until=`${yr4}-${m4}`;
-    document.getElementById('snooze4yrBtn').textContent=`⏸ Snooze 4 years — eligible again ${yr4}`;
+    document.getElementById('snooze4yrBtn').textContent=`⏸︎ Snooze 4 years — eligible again ${yr4}`;
   }
   document.getElementById('snoozeModal').classList.remove('hidden');
 }
