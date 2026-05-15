@@ -571,10 +571,12 @@ function closeDrawer(){
 function openMenuSheet(){
   document.getElementById('bottomSheet').classList.add('open');
   document.getElementById('bottomSheetOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
 }
 function closeMenuSheet(){
   document.getElementById('bottomSheet').classList.remove('open');
   document.getElementById('bottomSheetOverlay').classList.remove('open');
+  document.body.style.overflow='';
 }
 function updateBottomTabBar(primary){
   document.querySelectorAll('.bottom-tab[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===primary));
