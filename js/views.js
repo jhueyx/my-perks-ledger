@@ -390,15 +390,8 @@ export function renderCurrent(){
   const {captured}=calcStats(state.activeCard,c=>getCardYearPeriods(state.activeCard,c),isPCurrent);
   const effectiveFee=getFee(state.activeCard,CY)-captured;
 
-  // month nav bar
-  const prevAbsM=absMonth-1;
-  const prevY=Math.floor(prevAbsM/12),prevM=prevAbsM%12;
-  let html=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-    <button onclick="window.setPeriodOffset(${offset-1})" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-family:var(--mono);cursor:pointer;color:var(--text)">← ${MONTHS[prevM]} ${prevY}</button>
-    ${isHistory?`<button onclick="window.setPeriodOffset(0)" style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-family:var(--mono);cursor:pointer;font-weight:600">Back to current</button>`:'<span style="flex:1"></span>'}
-    ${isHistory&&offset<-1?`<button onclick="window.setPeriodOffset(${offset+1})" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-family:var(--mono);cursor:pointer;color:var(--text)">${MONTHS[CM]} ${CY} →</button>`:''}
-  </div>`;
-  if(isHistory) html+=`<div style="background:rgba(200,146,42,0.12);border:1px solid rgba(200,146,42,0.3);border-radius:8px;padding:8px 12px;font-size:12px;font-family:var(--mono);color:var(--gold);margin-bottom:10px">Viewing history: <strong>${MONTHS_FULL[viewM]} ${viewY}</strong></div>`;
+  let html='';
+  if(isHistory) html+=`<div style="background:rgba(200,146,42,0.08);border:1px solid rgba(200,146,42,0.2);border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--gold);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between"><span>${MONTHS_FULL[viewM]} ${viewY}</span><button onclick="window.setPeriodOffset(0)" style="background:none;border:none;cursor:pointer;font-size:11px;font-family:var(--mono);color:var(--gold);padding:0;text-decoration:underline">current</button></div>`;
 
   if(!isHistory){
     html+=buildCountdownStrip(state.activeCard);

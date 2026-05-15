@@ -734,7 +734,25 @@ document.getElementById('drawerClose').addEventListener('click',closeDrawer);
 document.getElementById('drawerOverlay').addEventListener('click',closeDrawer);
 
 document.getElementById('navPrimary').querySelectorAll('.nav-primary-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{ document.querySelectorAll('.drawer-item').forEach(b=>b.classList.remove('active')); setActiveView(btn.dataset.primary); });
+  btn.addEventListener('click',e=>{
+    if(e.target.closest('.month-arrow')) return;
+    if(btn.dataset.primary==='this-period'){ state._periodOffset=0; updateMonthTabLabel(); }
+    document.querySelectorAll('.drawer-item').forEach(b=>b.classList.remove('active'));
+    setActiveView(btn.dataset.primary);
+  });
+});
+document.getElementById('monthPrevBtn').addEventListener('click',e=>{
+  e.stopPropagation();
+  state._periodOffset=(state._periodOffset||0)-1;
+  updateMonthTabLabel();
+  if(state.activePrimary==='this-period') renderCurrent(); else setActiveView('this-period');
+});
+document.getElementById('monthNextBtn').addEventListener('click',e=>{
+  e.stopPropagation();
+  if((state._periodOffset||0)>=0) return;
+  state._periodOffset=(state._periodOffset||0)+1;
+  updateMonthTabLabel();
+  if(state.activePrimary==='this-period') renderCurrent(); else setActiveView('this-period');
 });
 document.getElementById('navExtras').querySelectorAll('.drawer-item').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -1157,4 +1175,13 @@ window.renderRecap=renderRecap;
 window.setSnoozedBenefit=setSnoozedBenefit;
 window.openSnoozeModal=openSnoozeModal;
 window.closeSnoozeModal=closeSnoozeModal;
-window.setPeriodOffset=(offset)=>{ state._periodOffset=offset; renderCurrent(); };
+function updateMonthTabLabel(){
+  const offset=state._periodOffset||0;
+  const absM=CY*12+CM+offset;
+  const viewM=absM%12;
+  const el=document.getElementById('currentTab');
+  const nextBtn=document.getElementById('monthNextBtn');
+  if(el) el.textContent=offset===0?'Month':MONTHS[viewM];
+  if(nextBtn) nextBtn.style.visibility=offset<0?'visible':'hidden';
+}
+window.setPeriodOffset=(offset)=>{ state._periodOffset=offset; updateMonthTabLabel(); renderCurrent(); };

@@ -522,6 +522,10 @@
   .nav-primary-btn:hover { color: var(--text); border-color: var(--border); }
   .nav-primary-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
   .nav-primary-btn .nav-icon { display: flex; align-items: center; justify-content: center; margin-bottom: 3px; }
+  .month-tab-label { display: flex; align-items: center; gap: 2px; line-height: 1; }
+  .month-arrow { font-size: 13px; padding: 0 3px; opacity: 0.55; transition: opacity 0.1s; }
+  .nav-primary-btn.active .month-arrow { opacity: 0.75; }
+  .month-arrow:hover { opacity: 1 !important; }
 
   /* Left drawer */
   .drawer-overlay {
