@@ -1,4 +1,4 @@
-import { CARDS, MONTHS, MONTHS_FULL, CARD_LABELS, CARD_CLS, BENEFIT_CATEGORIES, POINTS_MULTIPLIERS, CAT_COLORS } from './cards.js';
+import { CARDS, MONTHS, MONTHS_FULL, CARD_LABELS, CARD_CLS, BENEFIT_CATEGORIES, POINTS_MULTIPLIERS } from './cards.js';
 import { state, CY, CM, escapeHtml } from './state.js';
 import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, isGloballySnoozed, getSnoozedUntil, getCardFeeMonth, getCardFeeDay } from './storage.js';
 import {
@@ -102,12 +102,7 @@ function getBenefitExpiryLabel(b){
   }
   return '';
 }
-function getCategoryTag(benefitId){
-  const cat=BENEFIT_CATEGORIES[benefitId];
-  if(!cat||cat==='other') return '';
-  const color=CAT_COLORS[cat]||'var(--text-tertiary)';
-  return `<span class="cat-tag" style="background:${color}20;color:${color}">${cat}</span>`;
-}
+
 
 // ── Partial bar ────────────────────────────────────────────────────────────
 function buildPartialBar(cardKey,benefitId,pk,totalAmt){
@@ -399,7 +394,7 @@ export function renderCurrent(){
         const streak=s.cadence==='monthly'?getStreak(state.activeCard,b.id):0;
         const streakBadge=streak>=2?`<span class="streak-badge">${streak} mo streak</span>`:'';
         const expiryBadge=getExpiryBadge(b)+getBenefitExpiryLabel(b);
-        const catTag=getCategoryTag(b.id);
+        const catTag='';
         const effectiveAmt=getEffectiveAmount(state.activeCard,b.id,getBAmount(b,{m:CM}));
         const dispAmt=b.note&&b.amount===0?b.note:`$${effectiveAmt}`;
         const note=getNote(state.activeCard,b.id,pk);
@@ -442,7 +437,7 @@ export function renderHistBase(getPsFn,isCurFn,bannerHTML){
   let html=bannerHTML+`<div class="legend"><span class="legend-item"><span class="dot dot-used" style="width:13px;height:13px"></span>Used</span><span class="legend-item"><span class="dot dot-missed" style="width:13px;height:13px"></span>Missed</span><span class="legend-item"><span class="dot dot-current" style="width:13px;height:13px"></span>Current</span><span class="legend-item"><span class="dot dot-future" style="width:13px;height:13px"></span>Future</span></div><div class="period-note">Click any past or current dot to toggle used / missed.</div>`;
   card.sections.forEach(s=>{
     const ps=getPsFn(s.cadence);
-    const visibleBenefits=s.benefits.filter(b=>!isBNotAvailable(b,state.selectedYear));
+    const visibleBenefits=s.benefits.filter(b=>!isBNotAvailable(b,state.selectedYear)&&!isGloballySnoozed(state.activeCard,b.id));
     if(!visibleBenefits.length) return;
     html+=`<div class="section-header"><span class="section-title">${s.label} benefits</span></div>`;
     visibleBenefits.forEach(b=>{
@@ -484,6 +479,7 @@ export function renderSummBase(getPsFn,isCurFn,bannerHTML,label){
       const ps=getPsFn(s.cadence);
       if(isBNotAvailable(b,state.selectedYear)) return;
       if(isBExpired(b,{calY:state.selectedYear,calM:11,m:11})) return;
+      if(isGloballySnoozed(state.activeCard,b.id)) return;
       let bc=0,bm=0,bl=0;
       ps.forEach(p=>{
         if(isBExpired(b,p)) return;
@@ -937,7 +933,7 @@ export function updateCardBadges(){
     CARDS[cardKey].sections.forEach(s=>{
       const pk=getCurrentPK(cardKey,s.cadence);
       const p={calY:CY,calM:CM,m:CM};
-      s.benefits.forEach(b=>{ if(isBExpired(b,p)||isBNotAvailable(b,CY)) return; if(!isUsed(cardKey,b.id,pk)) unclaimed++; });
+      s.benefits.forEach(b=>{ if(isBExpired(b,p)||isBNotAvailable(b,CY)||isGloballySnoozed(cardKey,b.id)) return; if(!isUsed(cardKey,b.id,pk)) unclaimed++; });
     });
     let badge=btn.querySelector('.card-notif-badge');
     if(unclaimed>0){
