@@ -822,10 +822,10 @@ export function renderPriorityQueue(){
   const items=buildPriorityQueue();
   const eomDays=daysUntilEOM();
   const skippedCount=countSkipped();
-  let html=`<div class="banner"><strong>Use it now</strong> — ranked by urgency × value</div>`;
+  const dismissedBar=skippedCount>0?`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;margin-bottom:10px"><span style="font-size:12px;color:var(--text-secondary)">${skippedCount} benefit${skippedCount===1?'':'s'} hidden</span><button onclick="clearAllSkipped()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--blue);padding:0;font-family:var(--mono)">Show all</button></div>`:'';
+  let html=`<div class="banner"><strong>Use it now</strong> — ranked by urgency × value</div>${dismissedBar}`;
   if(!items.length){
     html+=`<div style="text-align:center;padding:32px;color:var(--green);font-size:14px">All current benefits claimed!</div>`;
-    if(skippedCount>0) html+=`<div style="text-align:center;margin-top:8px"><button onclick="clearAllSkipped()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;color:var(--text-secondary);cursor:pointer">Show ${skippedCount} dismissed</button></div>`;
     set(html); return;
   }
   if(eomDays<=5) html+=`<div class="eom-warning">Only ${eomDays} day${eomDays===1?'':'s'} left — monthly benefits reset soon!</div>`;
@@ -839,7 +839,6 @@ export function renderPriorityQueue(){
       <button onclick="skipBenefit('${item.cardKey}','${item.benefitId}','${item.pk}')" title="Dismiss" style="margin-left:10px;background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:16px;padding:4px;line-height:1;opacity:0.5" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.5'">×</button>
     </div>`;
   });
-  if(skippedCount>0) html+=`<div style="text-align:center;margin-top:16px"><button onclick="clearAllSkipped()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;color:var(--text-secondary);cursor:pointer">Show ${skippedCount} dismissed</button></div>`;
   set(html);
 }
 
