@@ -389,7 +389,7 @@ function sizeCardSelector(){ /* sizing handled by CSS flex-basis breakpoints */ 
 function applyUserCards(){
   document.querySelectorAll('.card-btn[data-card]').forEach(btn=>{
     const card=btn.dataset.card;
-    btn.style.display=(state.userCards&&state.userCards.includes(card))?'':'none';
+    btn.style.display=(state.userCards&&state.userCards.includes(card))?'block':'none';
   });
   sizeCardSelector();
   const firstCard=(state.userCards||['csr']).find(c=>CARDS[c])||'csr';
@@ -1183,8 +1183,6 @@ function startCarousel(){
 }
 function stopCarousel(){ if(_carouselId){ cancelAnimationFrame(_carouselId); _carouselId=null; } }
 
-// ── Hide all card buttons until user profile loads ────────────────────────
-document.querySelectorAll('.card-btn[data-card]').forEach(btn=>btn.style.display='none');
 initCardSelector();
 window.addEventListener('resize',sizeCardSelector);
 const _carouselSel=document.getElementById('cardSelector');
