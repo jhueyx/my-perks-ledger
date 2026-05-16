@@ -569,6 +569,7 @@ function setActiveView(primary){
   document.getElementById('navPrimary').classList.toggle('hidden', primary==='more');
   updateSecondaryNav(primary);
   updateBottomTabBar(primary);
+  updateMainChromeVisibility(primary);
   if(primary==='settings'){ renderSettings(); return; }
   if(primary==='more'){ renderMore(); return; }
   render();
@@ -601,6 +602,17 @@ function updateBottomTabBar(primary){
   document.querySelectorAll('.bottom-tab[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===primary));
   const menuBtn=document.getElementById('bottomMenuBtn');
   if(menuBtn) menuBtn.classList.toggle('active',primary==='more');
+}
+
+function updateMainChromeVisibility(primary){
+  const showTopChrome=['all-cards','this-period','card-year','ytd'].includes(primary);
+  ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=showTopChrome?'':'none';
+  });
+  document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{
+    el.style.display=showTopChrome?'':'none';
+  });
 }
 
 // ── Note modal ────────────────────────────────────────────────────────────
