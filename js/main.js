@@ -723,7 +723,7 @@ document.addEventListener('perks:benefit-toggled',()=>{ setTimeout(checkProfitCo
 
 // ── Shake to undo ─────────────────────────────────────────────────────────
 (function initShake(){
-  let lastAcc=0,shakeTime=0;
+  let shakeTime=0;
   const THRESHOLD=20,COOLDOWN=1000;
   function onMotion(e){
     const acc=e.accelerationIncludingGravity;
@@ -734,7 +734,6 @@ document.addEventListener('perks:benefit-toggled',()=>{ setTimeout(checkProfitCo
       shakeTime=now;
       executeUndo();
     }
-    lastAcc=mag;
   }
   if(typeof DeviceMotionEvent!=='undefined'){
     if(typeof DeviceMotionEvent.requestPermission==='function'){
