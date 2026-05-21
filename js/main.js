@@ -974,6 +974,7 @@ document.getElementById('main').addEventListener('drop',e=>{
   if(si<0||ti<0) return;
   keys.splice(si,1); keys.splice(ti,0,_dragCardSrc);
   localStorage.setItem('perks-card-order',JSON.stringify(keys));
+  scheduleSave();
   render();
 });
 

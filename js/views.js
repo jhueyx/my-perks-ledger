@@ -24,10 +24,10 @@ export function getVisibleCardKeys(){
   return base;
 }
 
-export function set(html){
+export function set(html, onReady){
   const main=document.getElementById('main');
   main.classList.add('transitioning');
-  setTimeout(()=>{ main.innerHTML=html; main.classList.remove('transitioning'); },180);
+  setTimeout(()=>{ main.innerHTML=html; main.classList.remove('transitioning'); if(onReady) onReady(); },180);
 }
 
 export function haptic(style='light'){
@@ -276,7 +276,7 @@ function buildLiveBanner(){
 function buildCategoryBreakdown(){
   const cats={dining:0,travel:0,shopping:0,fitness:0,entertainment:0,other:0};
   const catColors={dining:'#C86428',travel:'var(--plat)',shopping:'var(--gold)',fitness:'var(--green)',entertainment:'#9333ea',other:'var(--text-tertiary)'};
-  Object.keys(CARDS).forEach(cardKey=>{
+  getVisibleCardKeys().forEach(cardKey=>{
     CARDS[cardKey].sections.forEach(s=>{
       const pk=getCurrentPK(cardKey,s.cadence);
       s.benefits.forEach(b=>{
@@ -456,19 +456,20 @@ export function renderCurrent(){
     }
   });
 
-  set(html);
-  document.querySelectorAll('.benefit-note,.add-note').forEach(el=>el.addEventListener('click',()=>{
-    window.openNoteModal(state.activeCard,el.dataset.id,el.dataset.pk,el.dataset.name);
-  }));
-  document.querySelectorAll('.partial-input').forEach(inp=>inp.addEventListener('change',()=>{
-    const amt=Math.min(parseFloat(inp.value)||0,parseFloat(inp.dataset.total));
-    window.setPartialUsed(inp.dataset.card,inp.dataset.id,inp.dataset.pk,amt);
-    renderCurrent();
-  }));
-  document.querySelectorAll('[data-credit-id]').forEach(el=>el.addEventListener('click',()=>{
-    toggleCredited(state.activeCard,el.dataset.creditId,el.dataset.creditPk);
-    renderCurrent();
-  }));
+  set(html, ()=>{
+    document.querySelectorAll('.benefit-note,.add-note').forEach(el=>el.addEventListener('click',()=>{
+      window.openNoteModal(state.activeCard,el.dataset.id,el.dataset.pk,el.dataset.name);
+    }));
+    document.querySelectorAll('.partial-input').forEach(inp=>inp.addEventListener('change',()=>{
+      const amt=Math.min(parseFloat(inp.value)||0,parseFloat(inp.dataset.total));
+      window.setPartialUsed(inp.dataset.card,inp.dataset.id,inp.dataset.pk,amt);
+      renderCurrent();
+    }));
+    document.querySelectorAll('[data-credit-id]').forEach(el=>el.addEventListener('click',()=>{
+      toggleCredited(state.activeCard,el.dataset.creditId,el.dataset.creditPk);
+      renderCurrent();
+    }));
+  });
 }
 
 // ── Render: history / summary base ────────────────────────────────────────
@@ -522,7 +523,7 @@ export function renderSummBase(getPsFn,isCurFn,bannerHTML,label){
       const snoozedUntil=getSnoozedUntil(state.activeCard,b.id);
       const cadLbl=s.cadence==='semi-annual'||s.cadence==='cal-semi-annual'?'half':s.cadence==='monthly'?'mo':s.cadence==='quarterly'?'qtr':'yr';
       const amtLbl=b.decAmount?`$${b.amount}–$${b.decAmount}/mo`:`$${b.amount}/${cadLbl}`;
-      const expiredTag=b.expiresAfter?`<span style="font-size:10px;color:var(--red);margin-left:4px">ends Jun 2026</span>`:'';
+      const expiredTag=b.expiresAfter?`<span style="font-size:10px;color:var(--red);margin-left:4px">ends ${b.expiresAfter.h===0?'Jun':'Dec'} ${b.expiresAfter.y}</span>`:'';
       if(snoozed){
         html+=`<div class="summary-row-item" style="opacity:0.45"><div><span class="summary-item-name">${b.name}</span>${expiredTag}<span class="summary-item-cadence">${amtLbl}</span><span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-left:6px">⏸︎ until ${snoozedUntil} · <span style="cursor:pointer;text-decoration:underline" data-unsnooze="${b.id}" data-unsnooze-card="${state.activeCard}">resume</span></span></div></div>`;
         return;
@@ -1006,13 +1007,12 @@ export async function renderHistoryLog(){
     if(error||!data||!data.length){ set(`<div class="banner"><strong>Benefit history</strong></div><div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">No history yet — start marking benefits used!</div>`); return; }
     const benefitNames={};
     Object.keys(CARDS).forEach(ck=>{ CARDS[ck].sections.forEach(s=>s.benefits.forEach(b=>{ benefitNames[b.id]=b.name; })); });
-    const cardNames={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier'};
     let html=`<div class="banner"><strong>Benefit history</strong> — last ${data.length} actions</div>`;
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">`;
     data.forEach(entry=>{
       const d=new Date(entry.created_at);
       const timeStr=d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-      html+=`<div class="log-entry"><span class="log-dot ${entry.action}"></span><div style="flex:1"><div class="log-benefit">${entry.action==='used'?'✓':'✗'} ${benefitNames[entry.benefit_id]||entry.benefit_id}</div><div class="log-card">${cardNames[entry.card_key]||entry.card_key}</div></div><div class="log-time">${timeStr}</div></div>`;
+      html+=`<div class="log-entry"><span class="log-dot ${entry.action}"></span><div style="flex:1"><div class="log-benefit">${entry.action==='used'?'✓':'✗'} ${benefitNames[entry.benefit_id]||entry.benefit_id}</div><div class="log-card">${CARD_LABELS[entry.card_key]||entry.card_key}</div></div><div class="log-time">${timeStr}</div></div>`;
     });
     html+=`</div>`;
     set(html);
