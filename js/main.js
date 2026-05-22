@@ -8,7 +8,8 @@ import {
   loadCredited, saveCredited, toggleCredited,
   loadSkipped, saveSkipped, isSkipped, skipBenefit, unskipBenefit, clearAllSkipped, countSkipped,
   getFeeOverrides, saveFeeOverridesData, getCardFeeMonth, getCardFeeDay,
-  setSnoozedBenefit, isGloballySnoozed
+  setSnoozedBenefit, isGloballySnoozed,
+  loadCardMeta, setCardOpenedDate
 } from './storage.js';
 import { render, getVisibleCardKeys, renderCurrent, renderInsights, renderPriorityQueue, renderRecap, haptic, checkAllClaimed, animateCounters } from './views.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee } from './periods.js';
@@ -150,6 +151,7 @@ function doUnlock(){
     const val=localStorage.getItem(key);
     if(val) state.DATA=Object.assign(freshDATA(),JSON.parse(val));
   }catch(e){}
+  state.cardMeta=loadCardMeta();
   applyUserCards();
   render();
   setTimeout(initCardFlip,200);
@@ -243,6 +245,7 @@ async function confirmCardPick(){
   state.userCards=cards;
   document.getElementById('cardPickerOverlay').classList.add('hidden');
   doUnlock();
+  showCardDateModal(cards);
 }
 
 // ── My Cards modal ────────────────────────────────────────────────────────
@@ -368,6 +371,8 @@ async function saveSettingsCards(){
   const cards=[...state._mcSelected];
   const msg=document.getElementById('settingsCardMsg');
   if(cards.length===0){ msg.textContent='Select at least one card.'; msg.style.color='var(--red)'; return; }
+  const prev=new Set(state.userCards||[]);
+  const newCards=cards.filter(c=>!prev.has(c));
   const btn=document.getElementById('settingsCardSave');
   if(btn){ btn.textContent='Saving…'; btn.disabled=true; }
   await sb.from('user_profiles').upsert({user_id:state.currentUser.id,cards,updated_at:new Date().toISOString()},{onConflict:'user_id'});
@@ -377,6 +382,7 @@ async function saveSettingsCards(){
   if(btn){ btn.textContent='Save Cards'; btn.disabled=false; }
   msg.textContent='✓ Cards updated'; msg.style.color='var(--green)';
   setTimeout(()=>{ if(msg) msg.textContent=''; },2500);
+  if(newCards.length) showCardDateModal(newCards);
 }
 
 function filterSettingsCards(){ renderCPGrid('settingsCardGrid','settingsCardSearch',state._mcSelected); }
@@ -500,7 +506,7 @@ function updateYearSelector(show){
   const ys=document.getElementById('yearSelector');
   ys.classList.toggle('hidden',!show);
   const cardYearStart=(state.activePrimary==='card-year')?getCardYearStartLocal(state.activeCard,CY).year:CY;
-  const openedYear=CARDS[state.activeCard]?.openedYear;
+  const openedYear=state.cardMeta?.[state.activeCard]?.openedYear??CARDS[state.activeCard]?.openedYear;
   const prevYear=cardYearStart-1;
   const years=(openedYear&&prevYear<openedYear)?[cardYearStart]:[prevYear,cardYearStart];
   if(state.activePrimary==='card-year'&&!years.includes(state.selectedYear)) state.selectedYear=cardYearStart;
@@ -613,6 +619,45 @@ function updateMainChromeVisibility(primary){
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{
     el.style.display=showTopChrome?'':'none';
   });
+}
+
+// ── Card date modal ───────────────────────────────────────────────────────
+function showCardDateModal(cards){
+  const meta=loadCardMeta();
+  const rows=cards.map(id=>{
+    const card=CARDS[id]; if(!card) return '';
+    const existing=meta[id];
+    const monthOpts=MONTHS_FULL.map((m,i)=>`<option value="${i}"${existing?.openedMonth===i?' selected':''}>${m}</option>`).join('');
+    return `<div style="margin-bottom:16px">
+      <div style="font-size:12px;font-family:var(--mono);color:var(--text-secondary);margin-bottom:6px">${escapeHtml(card.name)}</div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div style="flex:1">
+          <label style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);display:block;margin-bottom:3px;letter-spacing:0.06em">MONTH</label>
+          <select data-card="${id}" data-field="month" style="width:100%;padding:7px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:13px">${monthOpts}</select>
+        </div>
+        <div style="width:80px">
+          <label style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);display:block;margin-bottom:3px;letter-spacing:0.06em">YEAR</label>
+          <input data-card="${id}" data-field="year" type="number" min="2000" max="2099" placeholder="—" value="${existing?.openedYear||''}" style="width:100%;padding:7px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('cardDateList').innerHTML=rows;
+  document.getElementById('cardDateModal').classList.remove('hidden');
+}
+
+function saveCardDates(){
+  const modal=document.getElementById('cardDateModal');
+  const years=modal.querySelectorAll('[data-field="year"]');
+  const months=modal.querySelectorAll('[data-field="month"]');
+  years.forEach((inp,i)=>{
+    const cardId=inp.dataset.card;
+    const year=parseInt(inp.value);
+    const month=parseInt(months[i].value)||0;
+    if(year>=2000&&year<=2099) setCardOpenedDate(cardId,year,month);
+  });
+  modal.classList.add('hidden');
+  render();
 }
 
 // ── Note modal ────────────────────────────────────────────────────────────
@@ -1284,6 +1329,7 @@ window.toggleCPCard=toggleCPCard;
 window.filterCPCards=filterCPCards;
 window.filterMCCards=filterMCCards;
 window.confirmCardPick=confirmCardPick;
+window.saveCardDates=saveCardDates;
 window.handleAuth=handleAuth;
 window.handleForgotPassword=handleForgotPassword;
 window.switchAuthTab=switchAuthTab;

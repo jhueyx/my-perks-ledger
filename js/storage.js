@@ -189,6 +189,16 @@ export function setSnoozedBenefit(cardKey,benefitId,fromYYYYMM,untilYYYYMM){
   scheduleSave();
 }
 
+// ── Card open dates ────────────────────────────────────────────────────────
+const CARD_META_KEY='perks-card-meta';
+export function loadCardMeta(){ try{ return JSON.parse(localStorage.getItem(CARD_META_KEY)||'{}'); }catch(e){ return {}; } }
+export function saveCardMetaData(d){ localStorage.setItem(CARD_META_KEY,JSON.stringify(d)); state.cardMeta=d; }
+export function setCardOpenedDate(cardKey,year,month){
+  const d=loadCardMeta();
+  if(!year){ delete d[cardKey]; } else { d[cardKey]={openedYear:year,openedMonth:month??0}; }
+  saveCardMetaData(d);
+}
+
 // ── Fee date overrides ─────────────────────────────────────────────────────
 export function getFeeOverrides(){ if(!state._feeOverrides) state._feeOverrides=JSON.parse(localStorage.getItem('perks-fee-overrides')||'{}'); return state._feeOverrides; }
 export function saveFeeOverridesData(d){ state._feeOverrides=d; localStorage.setItem('perks-fee-overrides',JSON.stringify(d)); }

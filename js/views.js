@@ -767,7 +767,8 @@ export function renderTrends(){
   let html=`<div class="banner"><strong>Multi-year trends</strong> — ${yearRange} comparison</div>`;
   function capturedForYear(cardKey,y){
     const card=CARDS[cardKey];
-    if(card.openedYear&&y<card.openedYear) return 0;
+    const openedYear=state.cardMeta?.[cardKey]?.openedYear??card.openedYear;
+    if(openedYear&&y<openedYear) return 0;
     let total=0;
     const lastMonth=y<CY?11:CM;
     card.sections.forEach(s=>{

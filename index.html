@@ -75,6 +75,18 @@
   </div>
 </div>
 
+<!-- Card open date modal -->
+<div class="modal-overlay hidden" id="cardDateModal">
+  <div class="modal" style="max-height:80vh;overflow-y:auto">
+    <div class="modal-title">When did you open these cards?</div>
+    <div class="modal-sub">Helps track which benefit years apply to you. Leave blank if unsure.</div>
+    <div id="cardDateList" style="margin:16px 0"></div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" onclick="saveCardDates()">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- Note modal -->
 <div class="modal-overlay hidden" id="noteModal">
   <div class="modal">

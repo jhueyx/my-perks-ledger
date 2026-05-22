@@ -126,7 +126,6 @@ export const CARDS={
   wf_premier_autograph:{name:'WF Premier Autograph',fee:95,historicalFees:{2025:95,2026:95},feeMonth:0,feeDay:1,sections:[
     {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
       {id:'wfpa_airline',name:'Airline Credit',desc:'Annual statement credit toward airline purchases',amount:50},
-      {id:'wfpa_hotel',name:'Hotel Credit',desc:'Annual statement credit toward hotel purchases',amount:50},
     ]},
   ]},
 };
@@ -210,7 +209,7 @@ export const BENEFIT_CATEGORIES={
   citist_hotel:'travel',
   usbar_travel:'travel', usbar_ge:'travel',
   vxb_travel:'travel', vxb_anniv:'travel', vxb_ge:'travel',
-  wfpa_airline:'travel', wfpa_hotel:'travel',
+  wfpa_airline:'travel',
 };
 
 export const POINTS_MULTIPLIERS={
