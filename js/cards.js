@@ -166,12 +166,12 @@ export const PREMIUM_CARD_CATALOG = [
   // Bank of America
   {id:'boa_premium',issuer:'Bank of America',name:'Premium Rewards Elite',fee:550,supported:false},
   {id:'boa_alaska_sig',issuer:'Bank of America',name:'Alaska Airlines Signature',fee:95,supported:false},
-  // US Bank
-  {id:'usb_altitude_reserve',issuer:'US Bank',name:'Altitude Reserve Visa Infinite',fee:400,supported:false},
-  {id:'usb_altitude_connect',issuer:'US Bank',name:'Altitude Connect',fee:95,supported:false},
-  // Barclays
-  {id:'barc_aa_aviator',issuer:'Barclays',name:'AAdvantage Aviator Red',fee:99,supported:false},
-  {id:'barc_jac',issuer:'Barclays',name:'JetBlue Plus',fee:99,supported:false},
+  // US Bank — hidden; re-enable if expanding issuer coverage
+  // {id:'usb_altitude_reserve',issuer:'US Bank',name:'Altitude Reserve Visa Infinite',fee:400,supported:false},
+  // {id:'usb_altitude_connect',issuer:'US Bank',name:'Altitude Connect',fee:95,supported:false},
+  // Barclays — hidden; re-enable if expanding issuer coverage
+  // {id:'barc_aa_aviator',issuer:'Barclays',name:'AAdvantage Aviator Red',fee:99,supported:false},
+  // {id:'barc_jac',issuer:'Barclays',name:'JetBlue Plus',fee:99,supported:false},
   // Other
   {id:'bilt',issuer:'Bilt',name:'Bilt Mastercard',fee:0,supported:false},
   {id:'apple_card',issuer:'Apple',name:'Apple Card',fee:0,supported:false},
