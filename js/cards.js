@@ -128,6 +128,16 @@ export const CARDS={
       {id:'wfpa_airline',name:'Airline Credit',desc:'Annual statement credit toward airline purchases',amount:50},
     ]},
   ]},
+  amex_biz_gold:{name:'AMEX Business Gold',fee:375,historicalFees:{2025:375},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'abizg_chatgpt',name:'ChatGPT Business Credit',desc:'Statement credit on U.S. ChatGPT Business purchases',amount:300},
+    ]},
+  ]},
+  amex_biz_plat:{name:'AMEX Business Platinum',fee:695,historicalFees:{2025:695},feeMonth:0,feeDay:1,sections:[
+    {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
+      {id:'abizp_chatgpt',name:'ChatGPT Business Credit',desc:'Statement credit on U.S. ChatGPT Business purchases',amount:300},
+    ]},
+  ]},
 };
 
 // ── Premium card catalog ──────────────────────────────────────────────────
@@ -136,8 +146,8 @@ export const PREMIUM_CARD_CATALOG = [
   {id:'platinum',issuer:'American Express',name:'Amex Platinum',fee:695,supported:true},
   {id:'gold',issuer:'American Express',name:'Amex Gold',fee:325,supported:true},
   {id:'amex_green',issuer:'American Express',name:'Amex Green',fee:150,supported:true},
-  {id:'amex_biz_plat',issuer:'American Express',name:'Amex Business Platinum',fee:695,supported:false},
-  {id:'amex_biz_gold',issuer:'American Express',name:'Amex Business Gold',fee:375,supported:false},
+  {id:'amex_biz_plat',issuer:'American Express',name:'Amex Business Platinum',fee:695,supported:true},
+  {id:'amex_biz_gold',issuer:'American Express',name:'Amex Business Gold',fee:375,supported:true},
   {id:'amex_delta_reserve',issuer:'American Express',name:'Delta SkyMiles Reserve',fee:650,supported:false},
   {id:'amex_delta_plat',issuer:'American Express',name:'Delta SkyMiles Platinum',fee:350,supported:false},
   {id:'amex_hilton_honors',issuer:'American Express',name:'Hilton Honors Aspire',fee:550,supported:true},
@@ -180,9 +190,9 @@ export const PREMIUM_CARD_CATALOG = [
 export const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 export const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
 export const CAT_COLORS={dining:'#C86428',travel:'#6366f1',shopping:'var(--gold)',fitness:'var(--green)',entertainment:'#9333ea'};
-export const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph'};
-export const CARD_SHORT_LABELS={gold:'Gold',platinum:'Platinum',csr:'CSR',cap1_venture_x:'Venture X',chase_sapphire_pref:'Sapphire P',amex_green:'Green',amex_hilton_honors:'Hilton',amex_marriott_brill:'Marriott',chase_world_of_hyatt:'Hyatt',chase_united_quest:'United Q',chase_united_club:'United C',citi_strata_prem:'Strata P',wf_premier_autograph:'WF Prem'};
-export const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier'};
+export const CARD_LABELS={gold:'AMEX Gold',platinum:'AMEX Platinum',csr:'Chase Sapphire Reserve',cap1_venture_x:'Capital One Venture X',chase_sapphire_pref:'Sapphire Preferred',amex_green:'AMEX Green',amex_hilton_honors:'Hilton Honors Aspire',amex_marriott_brill:'Marriott Bonvoy Brilliant',chase_world_of_hyatt:'World of Hyatt',chase_united_quest:'United Quest',chase_united_club:'United Club Infinite',citi_strata_prem:'Citi Strata Premier',wf_premier_autograph:'WF Premier Autograph',amex_biz_gold:'AMEX Biz Gold',amex_biz_plat:'AMEX Biz Platinum'};
+export const CARD_SHORT_LABELS={gold:'Gold',platinum:'Platinum',csr:'CSR',cap1_venture_x:'Venture X',chase_sapphire_pref:'Sapphire P',amex_green:'Green',amex_hilton_honors:'Hilton',amex_marriott_brill:'Marriott',chase_world_of_hyatt:'Hyatt',chase_united_quest:'United Q',chase_united_club:'United C',citi_strata_prem:'Strata P',wf_premier_autograph:'WF Prem',amex_biz_gold:'Biz Gold',amex_biz_plat:'Biz Plat'};
+export const CARD_CLS={gold:'gold',platinum:'platinum',csr:'csr',cap1_venture_x:'venturex',chase_sapphire_pref:'csp',amex_green:'amexgreen',amex_hilton_honors:'hilton',amex_marriott_brill:'marriott',chase_world_of_hyatt:'hyatt',chase_united_quest:'unitedq',chase_united_club:'unitedclub',citi_strata_prem:'citistrata',wf_premier_autograph:'wfpremier',amex_biz_gold:'gold',amex_biz_plat:'platinum'};
 export const FEE_MONTHS=Object.fromEntries(Object.keys(CARDS).map(k=>[k,CARDS[k].feeMonth??0]));
 
 export const BENEFIT_CATEGORIES={
@@ -210,6 +220,7 @@ export const BENEFIT_CATEGORIES={
   usbar_travel:'travel', usbar_ge:'travel',
   vxb_travel:'travel', vxb_anniv:'travel', vxb_ge:'travel',
   wfpa_airline:'travel',
+  abizg_chatgpt:'entertainment', abizp_chatgpt:'entertainment',
 };
 
 export const POINTS_MULTIPLIERS={
