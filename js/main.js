@@ -1,4 +1,4 @@
-import { CARDS, CARD_LABELS, PREMIUM_CARD_CATALOG, POINTS_MULTIPLIERS } from './cards.js';
+import { CARDS, CARD_LABELS, PREMIUM_CARD_CATALOG, POINTS_MULTIPLIERS, TRANSFER_PARTNERS } from './cards.js';
 import { state, CY, CM, MONTHS, MONTHS_FULL, sb, freshDATA, STORAGE_KEY, escapeHtml } from './state.js';
 import {
   toggle, scheduleSave, setSave, syncFromSupabase,
@@ -488,6 +488,17 @@ function openCardSheet(cardKey){
     });
   });
   html+=`</div>`;
+
+  const partners=TRANSFER_PARTNERS[cardKey]||[];
+  if(partners.length){
+    html+=`<div class="card-sheet-section">
+      <div class="card-sheet-section-title">Transfer partners</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">`;
+    partners.forEach(p=>{
+      html+=`<span style="font-size:10px;font-family:var(--mono);color:var(--text-secondary);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 7px">${p}</span>`;
+    });
+    html+=`</div></div>`;
+  }
 
   document.getElementById('cardSheetTitle').textContent=card.name;
   document.getElementById('cardSheetBody').innerHTML=html;

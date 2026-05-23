@@ -370,7 +370,6 @@ export function buildCardBack(cardKey){
       <div style="font-size:8px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Points multipliers</div>
       ${multipliers.map(m=>`<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:3px 0;border-bottom:0.5px solid rgba(255,255,255,0.08);gap:6px"><span style="font-size:8px;opacity:0.75;line-height:1.3;flex:1">${m.cat}</span><span style="font-size:11px;font-weight:700;font-family:var(--mono);color:var(--green);flex-shrink:0">${m.pts}</span></div>`).join('')}
     </div>
-    <div style="font-size:8px;font-family:var(--mono);color:rgba(255,255,255,0.3);text-align:center">double-tap to flip back</div>
   </div>`;
 }
 

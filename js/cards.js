@@ -125,7 +125,8 @@ export const CARDS={
   ]},
   wf_premier_autograph:{name:'WF Premier Autograph',fee:95,historicalFees:{2025:95,2026:95},feeMonth:0,feeDay:1,sections:[
     {label:'Annual (calendar year)',cadence:'cal-annual',benefits:[
-      {id:'wfpa_airline',name:'Airline Credit',desc:'Annual statement credit toward airline purchases',amount:50},
+      {id:'wfpa_airline',name:'Airline Credit',desc:'Statement credit on airline purchases — flights, seat upgrades, bag fees, in-flight purchases',amount:50},
+      {id:'wfpa_ge',name:'Global Entry / TSA PreCheck',desc:'Statement credit every 4 years',amount:120},
     ]},
   ]},
   amex_biz_gold:{name:'AMEX Business Gold',fee:375,historicalFees:{2025:375},feeMonth:0,feeDay:1,sections:[
@@ -187,6 +188,15 @@ export const PREMIUM_CARD_CATALOG = [
   {id:'apple_card',issuer:'Apple',name:'Apple Card',fee:0,supported:false},
 ];
 
+export const TRANSFER_PARTNERS={
+  gold:['Air Canada Aeroplan','ANA Mileage Club','British Airways Executive Club','Cathay Pacific Asia Miles','Delta SkyMiles','Emirates Skywards','Etihad Guest','Flying Blue (Air France/KLM)','Iberia Plus','JetBlue TrueBlue','Qatar Airways Privilege Club','Singapore Airlines KrisFlyer','Virgin Atlantic Flying Club'],
+  platinum:['Air Canada Aeroplan','ANA Mileage Club','British Airways Executive Club','Cathay Pacific Asia Miles','Delta SkyMiles','Emirates Skywards','Etihad Guest','Flying Blue (Air France/KLM)','Iberia Plus','JetBlue TrueBlue','Qatar Airways Privilege Club','Singapore Airlines KrisFlyer','Virgin Atlantic Flying Club'],
+  cap1_venture_x:['Aeromexico Club Premier','Air Canada Aeroplan','Air France/KLM Flying Blue','Avianca LifeMiles','British Airways Executive Club','Choice Privileges','Emirates Skywards','Etihad Guest','EVA Air Infinity MileageLands','Finnair Plus','Singapore Airlines KrisFlyer','Turkish Airlines Miles&Smiles','Virgin Red'],
+  csr:['Air Canada Aeroplan','British Airways Executive Club','Emirates Skywards','Flying Blue (Air France/KLM)','Iberia Plus','JetBlue TrueBlue','Singapore Airlines KrisFlyer','Southwest Rapid Rewards','United MileagePlus','Virgin Atlantic Flying Club','Hyatt World of Hyatt','IHG One Rewards','Marriott Bonvoy'],
+  citi_strata_prem:['Air France/KLM Flying Blue','Avianca LifeMiles','Cathay Pacific Asia Miles','Emirates Skywards','Etihad Guest','EVA Air Infinity MileageLands','Jet Airways InterMiles','Qatar Airways Privilege Club','Singapore Airlines KrisFlyer','Thai Royal Orchid Plus','Turkish Airlines Miles&Smiles','Virgin Atlantic Flying Club'],
+  wf_premier_autograph:['Aer Lingus AerClub','Air France/KLM Flying Blue','Avianca LifeMiles','British Airways Executive Club','Choice Privileges','Iberia Plus','Turkish Airlines Miles&Smiles'],
+};
+
 export const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 export const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
 export const CAT_COLORS={dining:'#C86428',travel:'#6366f1',shopping:'var(--gold)',fitness:'var(--green)',entertainment:'#9333ea'};
@@ -219,7 +229,7 @@ export const BENEFIT_CATEGORIES={
   citist_hotel:'travel',
   usbar_travel:'travel', usbar_ge:'travel',
   vxb_travel:'travel', vxb_anniv:'travel', vxb_ge:'travel',
-  wfpa_airline:'travel',
+  wfpa_airline:'travel', wfpa_ge:'travel',
   abizg_chatgpt:'entertainment', abizp_chatgpt:'entertainment',
 };
 
@@ -319,6 +329,13 @@ export const POINTS_MULTIPLIERS={
   citi_strata_prem:[
     {cat:'Air, hotels, car rentals & restaurants',pts:'3x'},
     {cat:'Supermarkets & gas stations',pts:'3x'},
+    {cat:'Everything else',pts:'1x'},
+  ],
+  wf_premier_autograph:[
+    {cat:'Hotels (booked directly)',pts:'5x'},
+    {cat:'Airlines (booked directly)',pts:'4x'},
+    {cat:'Other travel (car rentals, trains, cruises)',pts:'3x'},
+    {cat:'Dining (worldwide restaurants)',pts:'3x'},
     {cat:'Everything else',pts:'1x'},
   ],
   usb_altitude_reserve:[
