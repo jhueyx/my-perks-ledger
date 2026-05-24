@@ -12,7 +12,7 @@ import {
   loadCardMeta, setCardOpenedDate
 } from './storage.js';
 import { render, getVisibleCardKeys, renderCurrent, renderRecap, haptic, checkAllClaimed, animateCounters, renderFeeOptimizer } from './views.js';
-import { checkBadges, getEarnedBadges, getEarnedAt, getUnseenBadges, markAllSeen, BADGE_DEFS, getApplicableBadgeDefs, TIER_COLORS, backfill2025Badges } from './badges.js';
+import { checkBadges, getEarnedBadges, getEarnedAt, getUnseenBadges, markAllSeen, BADGE_DEFS, getApplicableBadgeDefs, TIER_COLORS, backfill2025Badges, unlockReviewedBadges } from './badges.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee, getBAmount, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
 
 // ── Splash: show login only if no cached session ──────────────────────────
@@ -206,7 +206,7 @@ function doUnlock(){
   setTimeout(saveDigestCache,3000);
   setTimeout(()=>{
     checkBadges();
-    const newOnes=backfill2025Badges();
+    const newOnes=[...backfill2025Badges(),...unlockReviewedBadges()];
     if(newOnes.length) showBadgeToast(newOnes[0]);
     if(state.activeView==='badges') renderBadgesView();
   },500);
