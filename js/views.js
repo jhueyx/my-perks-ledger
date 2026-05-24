@@ -353,7 +353,7 @@ export function renderDigest(){
     ${monthTotal>0?`<div class="digest-summary-sub">$${monthTotal.toFixed(0)} expires this month</div>`:''}
   </div>`;
 
-  // Dismissed section — individual restore
+  // Dismissed section — collapsed by default
   if(skippedCount>0){
     const skippedData=loadSkipped();
     const skippedRows=Object.keys(skippedData).map(key=>{
@@ -373,8 +373,16 @@ export function renderDigest(){
       </div>`;
     }).filter(Boolean).join('');
     if(skippedRows){
-      html+=`<div class="section-header" style="margin-top:4px"><span class="section-title">Dismissed</span><button onclick="clearAllSkipped()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--blue);padding:0;font-family:var(--mono)">Restore all</button></div>`;
-      html+=skippedRows;
+      html+=`<details style="margin-bottom:8px">
+        <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
+          <span style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary)">${skippedCount} Dismissed</span>
+          <span style="font-size:11px;color:var(--blue);font-family:var(--mono)">Show ▾</span>
+        </summary>
+        <div style="margin-top:4px">
+          <div style="text-align:right;margin-bottom:6px"><button onclick="clearAllSkipped()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--blue);padding:0;font-family:var(--mono)">Restore all</button></div>
+          ${skippedRows}
+        </div>
+      </details>`;
     }
   }
 
@@ -400,13 +408,13 @@ export function renderDigest(){
     });
   }
 
-  // By deadline — period buckets
+  // By deadline — collapsed period buckets
   const filledBuckets=buckets.filter(b=>b.items.length>0);
   if(filledBuckets.length){
-    html+=`<div class="section-header" style="margin-top:16px"><span class="section-title">By deadline</span></div>`;
+    let bucketHTML='';
     filledBuckets.forEach(bucket=>{
       const bucketTotal=bucket.items.reduce((s,i)=>s+i.amt,0);
-      html+=`<div class="digest-bucket ${bucket.urgentCls}">
+      bucketHTML+=`<div class="digest-bucket ${bucket.urgentCls}">
         <div class="digest-bucket-header">
           <div>
             <div class="digest-bucket-label">${bucket.label}</div>
@@ -415,7 +423,7 @@ export function renderDigest(){
           <div class="digest-bucket-total">$${bucketTotal.toFixed(0)}</div>
         </div>`;
       bucket.items.sort((a,b)=>b.amt-a.amt).forEach(item=>{
-        html+=`<div class="digest-item" onclick="goToCardPeriod('${item.cardKey}')">
+        bucketHTML+=`<div class="digest-item" onclick="goToCardPeriod('${item.cardKey}')">
           <div>
             <div class="digest-item-name">${item.name}</div>
             <div class="digest-item-card">${item.cardLabel}</div>
@@ -423,8 +431,15 @@ export function renderDigest(){
           <div class="digest-item-amt">$${item.amt}</div>
         </div>`;
       });
-      html+=`</div>`;
+      bucketHTML+=`</div>`;
     });
+    html+=`<details style="margin-top:16px">
+      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px">
+        <span style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary)">By Deadline</span>
+        <span style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono)">Show ▾</span>
+      </summary>
+      ${bucketHTML}
+    </details>`;
   }
 
   set(html);
