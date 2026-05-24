@@ -413,15 +413,16 @@ function applyUserCards(){
   sizeCardSelector();
   const firstCard=(state.userCards||['csr']).find(c=>CARDS[c])||'csr';
   state.activeCard=firstCard;
-  document.querySelectorAll('.card-btn').forEach(b=>b.className='card-btn');
-  const activeBtn=document.querySelector(`.card-btn[data-card="${state.activeCard}"]`);
+  document.querySelectorAll('.card-btn:not(.card-clone)').forEach(b=>b.className='card-btn');
+  const activeBtn=document.querySelector(`.card-btn[data-card="${state.activeCard}"]:not(.card-clone)`);
   if(activeBtn) activeBtn.classList.add(`active-${state.activeCard}`);
   requestAnimationFrame(initMobileInfiniteCarousel);
 }
 
 function initCardSelector(){
   const selector=document.getElementById('cardSelector');
-  const btns=()=>[...selector.querySelectorAll('.card-btn')];
+  // Exclude clones — they handle their own clicks and must keep their card-clone class
+  const btns=()=>[...selector.querySelectorAll('.card-btn:not(.card-clone)')];
   let dragSrc=null;
 
   btns().forEach(btn=>{
