@@ -11,7 +11,7 @@ import {
   setSnoozedBenefit, isGloballySnoozed, isUsed,
   loadCardMeta, setCardOpenedDate
 } from './storage.js';
-import { render, getVisibleCardKeys, renderCurrent, renderPriorityQueue, renderRecap, haptic, checkAllClaimed, animateCounters, renderFeeOptimizer } from './views.js';
+import { render, getVisibleCardKeys, renderCurrent, renderRecap, haptic, checkAllClaimed, animateCounters, renderFeeOptimizer } from './views.js';
 import { checkBadges, getEarnedBadges, getUnseenBadges, markAllSeen, BADGE_DEFS, TIER_COLORS } from './badges.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee, getBAmount, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
 
@@ -1315,7 +1315,6 @@ function renderMore(){
     {view:'net-value',label:'Portfolio Value'},
     {view:'badges',label:'Achievements'},
     {view:'fee-optimizer',label:'Fee Optimizer'},
-    {view:'priority',label:'Use It Now'},
     {view:'compare',label:'Compare Cards'},
     {view:'roi',label:'ROI Scores'},
     {view:'trends',label:'Trends'},

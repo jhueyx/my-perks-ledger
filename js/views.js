@@ -308,6 +308,9 @@ export function renderDigest(){
   const h=CM<6?0:1;
   const eohDays=Math.ceil((new Date(CY,h===0?6:12,0)-now)/86400000);
 
+  const priorityItems=buildPriorityQueue();
+  const skippedCount=countSkipped();
+
   const buckets=[
     {key:'month',label:'This month',days:eomDays,dayLabel:`${eomDays}d left`,cadences:['monthly'],
      urgentCls:eomDays<=5?'digest-urgent':eomDays<=10?'digest-soon':'',items:[]},
@@ -336,40 +339,74 @@ export function renderDigest(){
   const totalAtRisk=buckets.flatMap(b=>b.items).reduce((s,i)=>s+i.amt,0);
   const monthTotal=buckets[0].items.reduce((s,i)=>s+i.amt,0);
 
-  let html=`<div class="banner"><strong>Benefit digest</strong> — unclaimed by expiry window</div>`;
-  if(totalAtRisk===0){
+  let html=`<div class="banner"><strong>Benefit digest</strong> — unclaimed benefits by urgency &amp; deadline</div>`;
+
+  if(totalAtRisk===0 && !priorityItems.length){
     html+=`<div style="text-align:center;padding:48px 20px;color:var(--green);font-size:15px;font-weight:500">All benefits up to date! ✓</div>`;
     set(html); return;
   }
 
+  // Hero total
   html+=`<div class="digest-summary">
     <div class="digest-summary-val">$${totalAtRisk.toFixed(0)}</div>
     <div class="digest-summary-label">Total unclaimed across all cards</div>
     ${monthTotal>0?`<div class="digest-summary-sub">$${monthTotal.toFixed(0)} expires this month</div>`:''}
   </div>`;
 
-  buckets.forEach(bucket=>{
-    if(!bucket.items.length) return;
-    const bucketTotal=bucket.items.reduce((s,i)=>s+i.amt,0);
-    html+=`<div class="digest-bucket ${bucket.urgentCls}">
-      <div class="digest-bucket-header">
-        <div>
-          <div class="digest-bucket-label">${bucket.label}</div>
-          <div class="digest-bucket-days">${bucket.dayLabel} · ${bucket.items.length} benefit${bucket.items.length!==1?'s':''}</div>
+  // Dismissed bar
+  if(skippedCount>0){
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;margin-bottom:10px"><span style="font-size:12px;color:var(--text-secondary)">${skippedCount} benefit${skippedCount===1?'':'s'} hidden</span><button onclick="clearAllSkipped()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--blue);padding:0;font-family:var(--mono)">Show all</button></div>`;
+  }
+
+  if(eomDays<=5) html+=`<div class="eom-warning">Only ${eomDays} day${eomDays===1?'':'s'} left — monthly benefits reset soon!</div>`;
+
+  // Act now — urgency ranked list with dismiss
+  if(priorityItems.length){
+    html+=`<div class="section-header"><span class="section-title">Act now</span><span class="section-period">${priorityItems.length} unclaimed · by urgency</span></div>`;
+    priorityItems.forEach((item,i)=>{
+      const rankCls=i===0?'urgent':i<3?'high':'normal';
+      html+=`<div class="priority-row">
+        <div class="priority-rank ${rankCls}" onclick="goToCardPeriod('${item.cardKey}')">${i+1}</div>
+        <div style="flex:1;cursor:pointer" onclick="goToCardPeriod('${item.cardKey}')">
+          <div style="font-size:13px;font-weight:500;color:var(--text)">${item.name}</div>
+          <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--mono)">${item.card}</div>
         </div>
-        <div class="digest-bucket-total">$${bucketTotal.toFixed(0)}</div>
-      </div>`;
-    bucket.items.sort((a,b)=>b.amt-a.amt).forEach(item=>{
-      html+=`<div class="digest-item" onclick="goToCardPeriod('${item.cardKey}')">
-        <div>
-          <div class="digest-item-name">${item.name}</div>
-          <div class="digest-item-card">${item.cardLabel}</div>
+        <div style="text-align:right;cursor:pointer" onclick="goToCardPeriod('${item.cardKey}')">
+          <div style="font-size:14px;font-weight:700;font-family:var(--mono);color:var(--green)">$${item.amt}</div>
+          <span class="priority-urgency ${item.urgencyCls}">${item.urgencyLabel}</span>
         </div>
-        <div class="digest-item-amt">$${item.amt}</div>
+        <button onclick="skipBenefit('${item.cardKey}','${item.benefitId}','${item.pk}')" title="Dismiss" style="margin-left:10px;background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:16px;padding:4px;line-height:1;opacity:0.5" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.5'">×</button>
       </div>`;
     });
-    html+=`</div>`;
-  });
+  }
+
+  // By deadline — period buckets
+  const filledBuckets=buckets.filter(b=>b.items.length>0);
+  if(filledBuckets.length){
+    html+=`<div class="section-header" style="margin-top:16px"><span class="section-title">By deadline</span></div>`;
+    filledBuckets.forEach(bucket=>{
+      const bucketTotal=bucket.items.reduce((s,i)=>s+i.amt,0);
+      html+=`<div class="digest-bucket ${bucket.urgentCls}">
+        <div class="digest-bucket-header">
+          <div>
+            <div class="digest-bucket-label">${bucket.label}</div>
+            <div class="digest-bucket-days">${bucket.dayLabel} · ${bucket.items.length} benefit${bucket.items.length!==1?'s':''}</div>
+          </div>
+          <div class="digest-bucket-total">$${bucketTotal.toFixed(0)}</div>
+        </div>`;
+      bucket.items.sort((a,b)=>b.amt-a.amt).forEach(item=>{
+        html+=`<div class="digest-item" onclick="goToCardPeriod('${item.cardKey}')">
+          <div>
+            <div class="digest-item-name">${item.name}</div>
+            <div class="digest-item-card">${item.cardLabel}</div>
+          </div>
+          <div class="digest-item-amt">$${item.amt}</div>
+        </div>`;
+      });
+      html+=`</div>`;
+    });
+  }
+
   set(html);
 }
 
@@ -1278,7 +1315,7 @@ export function renderFeeOptimizer(){
 
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','streaks','history-log','recap','heatmap','roi','priority','trends','digest','net-value','badges','fee-optimizer'];
+  const _analyticsViews=['compare','streaks','history-log','recap','heatmap','roi','trends','digest','net-value','badges','fee-optimizer'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -1307,7 +1344,6 @@ export function render(){
   else if(state.activeView==='recap') renderRecap();
   else if(state.activeView==='heatmap') renderHeatmap();
   else if(state.activeView==='roi') renderROI();
-  else if(state.activeView==='priority') renderPriorityQueue();
   else if(state.activeView==='trends') renderTrends();
   else if(state.activeView==='digest') renderDigest();
   else if(state.activeView==='net-value') renderNetValue();
