@@ -12,6 +12,7 @@ import {
   loadCardMeta, setCardOpenedDate
 } from './storage.js';
 import { render, getVisibleCardKeys, renderCurrent, renderInsights, renderPriorityQueue, renderRecap, haptic, checkAllClaimed, animateCounters } from './views.js';
+import { checkBadges, getEarnedBadges, getUnseenBadges, markAllSeen, BADGE_DEFS, TIER_COLORS } from './badges.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee } from './periods.js';
 
 // ── Splash: show login only if no cached session ──────────────────────────
@@ -611,6 +612,7 @@ function setActiveView(primary){
   else if(primary==='trends') state.activeView='trends';
   else if(primary==='digest') state.activeView='digest';
   else if(primary==='net-value') state.activeView='net-value';
+  else if(primary==='badges') state.activeView='badges';
   else if(primary==='settings') state.activeView='settings';
   else if(primary==='more') state.activeView='more';
   else if(primary==='my-cards'){ openMyCards(); return; }
@@ -629,6 +631,7 @@ function setActiveView(primary){
   updateMainChromeVisibility(primary);
   if(primary==='settings'){ renderSettings(); return; }
   if(primary==='more'){ renderMore(); return; }
+  if(primary==='badges'){ renderBadgesView(); return; }
   render();
 }
 
@@ -839,6 +842,12 @@ document.addEventListener('perks:benefit-skipped',e=>{
 });
 document.addEventListener('perks:rerender',()=>{ if(state.activeView!=='settings') render(); });
 document.addEventListener('perks:benefit-toggled',()=>{ setTimeout(checkProfitConfetti,200); });
+document.addEventListener('perks:benefit-toggled',()=>{
+  setTimeout(()=>{
+    const newBadges=checkBadges();
+    if(newBadges.length) showBadgeToast(newBadges[0]);
+  },400);
+});
 
 // ── Shake to undo ─────────────────────────────────────────────────────────
 (function initShake(){
@@ -1176,14 +1185,73 @@ const _DRAWER_ICONS={
   'trends':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,13 6,9 9,11 13,5 14,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'digest':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="3" rx="1" fill="currentColor" opacity="0.9"/><rect x="2" y="6.5" width="8" height="3" rx="1" fill="currentColor" opacity="0.7"/><rect x="2" y="11" width="5" height="3" rx="1" fill="currentColor" opacity="0.45"/></svg>`,
   'net-value':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/></svg>`,
+  'badges':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3 3.5.5-2.5 2.4.6 3.6L8 10l-3.1 1.5.6-3.6L3 5.5l3.5-.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
 };
+
+// ── Badge toast ───────────────────────────────────────────────────────────
+let _badgeToastTimer=null;
+function showBadgeToast(id){
+  const def=BADGE_DEFS.find(d=>d.id===id);
+  if(!def) return;
+  const color=TIER_COLORS[def.tier];
+  const toast=document.getElementById('badgeToast');
+  const inner=document.getElementById('badgeToastInner');
+  if(!toast||!inner) return;
+  const trophySVG=`<svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3 3.5.5-2.5 2.4.6 3.6L8 10l-3.1 1.5.6-3.6L3 5.5l3.5-.5z" stroke="${color}" stroke-width="1.4" stroke-linejoin="round" fill="${color}22"/></svg>`;
+  inner.innerHTML=`
+    <div style="width:36px;height:36px;border-radius:50%;border:2px solid ${color};background:${color}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">${trophySVG}</div>
+    <div style="min-width:0">
+      <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.07em;color:${color};font-weight:600">Badge Unlocked · ${def.tier}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-top:1px">${def.name}</div>
+      <div style="font-size:11px;color:var(--text-secondary);font-family:var(--mono);margin-top:1px">${def.desc}</div>
+    </div>`;
+  inner.onclick=()=>{ toast.classList.remove('show'); setActiveView('badges'); };
+  clearTimeout(_badgeToastTimer);
+  toast.classList.add('show');
+  haptic('success');
+  _badgeToastTimer=setTimeout(()=>toast.classList.remove('show'),5000);
+}
+
+// ── Badges view ───────────────────────────────────────────────────────────
+function renderBadgesView(){
+  const earned=new Set(getEarnedBadges());
+  markAllSeen();
+  const total=BADGE_DEFS.length;
+  const earnedCount=earned.size;
+  const trophySVG=(color)=>`<svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3 3.5.5-2.5 2.4.6 3.6L8 10l-3.1 1.5.6-3.6L3 5.5l3.5-.5z" stroke="${color}" stroke-width="1.4" stroke-linejoin="round" fill="${color}22"/></svg>`;
+  const lockSVG=`<svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="3" y="7.5" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 7.5V5.5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`;
+  const pct=Math.round(earnedCount/total*100);
+  let html=`<div class="banner"><strong>Achievements</strong> — ${earnedCount} of ${total} unlocked</div>`;
+  html+=`<div class="badge-progress-row">
+    <span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">${earnedCount}/${total}</span>
+    <div class="badge-progress-bar-wrap"><div class="badge-progress-fill" style="width:${pct}%"></div></div>
+    <span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">${pct}%</span>
+  </div>`;
+  html+=`<div class="badges-grid">`;
+  BADGE_DEFS.forEach(def=>{
+    const isEarned=earned.has(def.id);
+    const color=TIER_COLORS[def.tier];
+    html+=`<div class="badge-card ${isEarned?'earned':'locked'}">
+      <div class="badge-icon-wrap" style="border-color:${isEarned?color:'var(--border)'};${isEarned?`box-shadow:0 0 14px ${color}35`:''}">
+        ${isEarned?trophySVG(color):`<span style="color:var(--border)">${lockSVG}</span>`}
+      </div>
+      <div class="badge-name">${def.name}</div>
+      <div class="badge-desc">${def.desc}</div>
+      <div class="badge-tier-label" style="color:${isEarned?color:'var(--border)'}">${def.tier}</div>
+    </div>`;
+  });
+  html+=`</div>`;
+  html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:4px;padding-bottom:8px">Keep claiming benefits to unlock more</div>`;
+  document.getElementById('main').innerHTML=html;
+}
 
 // ── More page ─────────────────────────────────────────────────────────────
 function renderMore(){
   const items=[
     {view:'digest',label:'Benefit Digest'},
     {view:'net-value',label:'Portfolio Value'},
+    {view:'badges',label:'Achievements'},
     {view:'priority',label:'Use It Now'},
     {view:'insights',label:'Insights'},
     {view:'keep-card',label:'Keep This Card?'},

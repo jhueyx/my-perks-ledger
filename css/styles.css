@@ -1943,3 +1943,85 @@
     transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
   .notif-toggle.on::after { transform: translateX(18px); }
+
+  /* ── Achievement badges ── */
+  .badges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .badge-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 5px;
+    transition: border-color 0.15s;
+  }
+  .badge-card.locked { opacity: 0.45; }
+  .badge-card.earned { border-color: var(--border); }
+  .badge-icon-wrap {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: 2px solid; display: flex; align-items: center;
+    justify-content: center; margin-bottom: 2px; flex-shrink: 0;
+  }
+  .badge-name {
+    font-size: 12px; font-weight: 600; line-height: 1.2; color: var(--text);
+  }
+  .badge-card.locked .badge-name { color: var(--text-tertiary); }
+  .badge-desc {
+    font-size: 10px; color: var(--text-secondary);
+    font-family: var(--mono); line-height: 1.4;
+  }
+  .badge-tier-label {
+    font-size: 9px; font-family: var(--mono);
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+    margin-top: 2px;
+  }
+  .badge-progress-row {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .badge-progress-bar-wrap {
+    height: 5px; background: var(--border-light); border-radius: 3px; flex: 1;
+    margin: 0 12px;
+  }
+  .badge-progress-fill {
+    height: 100%; border-radius: 3px; background: var(--gold); transition: width 0.4s ease;
+  }
+
+  /* ── Badge unlock toast ── */
+  .badge-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 1001;
+    pointer-events: none;
+    max-width: 320px;
+    width: calc(100% - 32px);
+  }
+  .badge-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+  .badge-toast-inner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.22);
+    cursor: pointer;
+  }
