@@ -299,6 +299,164 @@ function buildCategoryBreakdown(){
   return `<div class="cat-breakdown">${html}</div>`;
 }
 
+// ── Digest view ────────────────────────────────────────────────────────────
+export function renderDigest(){
+  const now=new Date();
+  const eomDays=daysUntilEOM();
+  const q=Math.floor(CM/3);
+  const eoqDays=Math.ceil((new Date(CY,(q+1)*3,0)-now)/86400000);
+  const h=CM<6?0:1;
+  const eohDays=Math.ceil((new Date(CY,h===0?6:12,0)-now)/86400000);
+
+  const buckets=[
+    {key:'month',label:'This month',days:eomDays,dayLabel:`${eomDays}d left`,cadences:['monthly'],
+     urgentCls:eomDays<=5?'digest-urgent':eomDays<=10?'digest-soon':'',items:[]},
+    {key:'quarter',label:'This quarter',days:eoqDays,dayLabel:`${eoqDays}d left`,cadences:['quarterly'],
+     urgentCls:eoqDays<=7?'digest-urgent':eoqDays<=21?'digest-soon':'',items:[]},
+    {key:'half',label:'This half-year',days:eohDays,dayLabel:`${eohDays}d left`,cadences:['semi-annual','cal-semi-annual'],
+     urgentCls:eohDays<=14?'digest-urgent':eohDays<=45?'digest-soon':'',items:[]},
+    {key:'year',label:'This year',days:null,dayLabel:'renews annually',cadences:['annual','cal-annual','feb-annual'],
+     urgentCls:'',items:[]},
+  ];
+
+  getVisibleCardKeys().forEach(cardKey=>{
+    CARDS[cardKey].sections.forEach(s=>{
+      const bucket=buckets.find(b=>b.cadences.includes(s.cadence));
+      if(!bucket) return;
+      const pk=getCurrentPK(cardKey,s.cadence);
+      const p={calY:CY,calM:CM,m:CM};
+      s.benefits.forEach(b=>{
+        if(isBExpired(b,p)||isBNotAvailable(b,CY,p)||isGloballySnoozed(cardKey,b.id)) return;
+        if(isUsed(cardKey,b.id,pk)||isSkipped(cardKey,b.id,pk)) return;
+        bucket.items.push({cardKey,cardLabel:CARD_LABELS[cardKey],name:b.name,amt:getBAmount(b,{m:CM}),pk,benefitId:b.id});
+      });
+    });
+  });
+
+  const totalAtRisk=buckets.flatMap(b=>b.items).reduce((s,i)=>s+i.amt,0);
+  const monthTotal=buckets[0].items.reduce((s,i)=>s+i.amt,0);
+
+  let html=`<div class="banner"><strong>Benefit digest</strong> — unclaimed by expiry window</div>`;
+  if(totalAtRisk===0){
+    html+=`<div style="text-align:center;padding:48px 20px;color:var(--green);font-size:15px;font-weight:500">All benefits up to date! ✓</div>`;
+    set(html); return;
+  }
+
+  html+=`<div class="digest-summary">
+    <div class="digest-summary-val">$${totalAtRisk.toFixed(0)}</div>
+    <div class="digest-summary-label">Total unclaimed across all cards</div>
+    ${monthTotal>0?`<div class="digest-summary-sub">$${monthTotal.toFixed(0)} expires this month</div>`:''}
+  </div>`;
+
+  buckets.forEach(bucket=>{
+    if(!bucket.items.length) return;
+    const bucketTotal=bucket.items.reduce((s,i)=>s+i.amt,0);
+    html+=`<div class="digest-bucket ${bucket.urgentCls}">
+      <div class="digest-bucket-header">
+        <div>
+          <div class="digest-bucket-label">${bucket.label}</div>
+          <div class="digest-bucket-days">${bucket.dayLabel} · ${bucket.items.length} benefit${bucket.items.length!==1?'s':''}</div>
+        </div>
+        <div class="digest-bucket-total">$${bucketTotal.toFixed(0)}</div>
+      </div>`;
+    bucket.items.sort((a,b)=>b.amt-a.amt).forEach(item=>{
+      html+=`<div class="digest-item" onclick="goToCardPeriod('${item.cardKey}')">
+        <div>
+          <div class="digest-item-name">${item.name}</div>
+          <div class="digest-item-card">${item.cardLabel}</div>
+        </div>
+        <div class="digest-item-amt">$${item.amt}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  set(html);
+}
+
+// ── Net value dashboard ────────────────────────────────────────────────────
+export function renderNetValue(){
+  const CARD_KEYS=getVisibleCardKeys();
+  let totalFees=0,totalCaptured=0,totalProjected=0;
+  const cards=CARD_KEYS.map(cardKey=>{
+    const fee=getFee(cardKey,CY);
+    const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
+    const projected=getProjectedCapture(cardKey);
+    totalFees+=fee; totalCaptured+=captured; totalProjected+=projected;
+    return {cardKey,fee,captured,projected};
+  });
+  const netNow=totalCaptured-totalFees;
+  const netProj=totalProjected-totalFees;
+  const inProfit=netNow>=0;
+  const projProfit=netProj>=0;
+  const coveragePct=totalFees>0?Math.min(100,Math.round(totalCaptured/totalFees*100)):0;
+  const projPct=totalFees>0?Math.min(110,Math.round(totalProjected/totalFees*100)):0;
+
+  let html=`<div class="banner"><strong>Portfolio value</strong> — all cards, this card year</div>`;
+
+  // Hero summary
+  html+=`<div class="netval-hero">
+    <div class="netval-hero-row">
+      <div>
+        <div class="netval-hero-val ${inProfit?'green':'red'}">${inProfit?'+':'-'}$${Math.abs(netNow).toFixed(0)}</div>
+        <div class="netval-hero-label">Net position now</div>
+      </div>
+      <div style="text-align:right">
+        <div class="netval-hero-val ${projProfit?'green':''}">${projProfit?'+':'-'}$${Math.abs(netProj).toFixed(0)}</div>
+        <div class="netval-hero-label">Projected year-end</div>
+      </div>
+    </div>
+    <div class="netval-progress">
+      <div class="netval-progress-proj" style="width:${projPct}%;background:${projProfit?'rgba(42,155,106,0.22)':'rgba(200,146,42,0.18)'}"></div>
+      <div class="netval-progress-fill" style="width:${coveragePct}%;background:${inProfit?'var(--green)':'var(--gold)'}"></div>
+    </div>
+    <div class="netval-progress-labels">
+      <span>$0</span>
+      <span style="color:${inProfit?'var(--green)':'var(--gold)'}">
+        ${coveragePct}% of $${totalFees} in fees captured
+      </span>
+      <span>$${totalFees}</span>
+    </div>
+    <div class="netval-hero-totals">
+      <span><strong style="color:var(--green)">$${totalCaptured.toFixed(0)}</strong> captured</span>
+      <span>·</span>
+      <span><strong>$${totalProjected.toFixed(0)}</strong> projected</span>
+      <span>·</span>
+      <span><strong>$${totalFees}</strong> total fees</span>
+    </div>
+  </div>`;
+
+  // Per-card breakdown sorted by captured %
+  html+=`<div class="section-header"><span class="section-title">Per card breakdown</span></div>`;
+  [...cards].sort((a,b)=>(b.captured/(b.fee||1))-(a.captured/(a.fee||1))).forEach(({cardKey,fee,captured,projected})=>{
+    const capPct=fee>0?Math.min(100,captured/fee*100):0;
+    const projPct2=fee>0?Math.min(110,projected/fee*100):0;
+    const net=captured-fee;
+    const inP=net>=0;
+    const projNet=projected-fee;
+    const projInP=projNet>=0;
+    html+=`<div class="netval-card-row" onclick="goToCardPeriod('${cardKey}')">
+      <div class="netval-card-header">
+        <span class="netval-card-name">${CARD_LABELS[cardKey]}</span>
+        <span class="netval-card-net" style="color:${inP?'var(--green)':'var(--text-secondary)'}">
+          ${inP?'+':'-'}$${Math.abs(net).toFixed(0)}<span style="font-size:9px;color:var(--text-tertiary)"> / $${fee}</span>
+        </span>
+      </div>
+      <div class="netval-bar-wrap">
+        <div class="netval-bar-proj" style="width:${projPct2}%;background:${projInP?'rgba(42,155,106,0.18)':'rgba(200,146,42,0.18)'}"></div>
+        <div class="netval-bar-cap" style="width:${capPct}%;background:${inP?'var(--green)':'var(--gold)'}"></div>
+      </div>
+      <div class="netval-card-sub">
+        <span style="color:var(--green)">$${captured.toFixed(0)} captured</span>
+        <span style="color:var(--text-tertiary)">·</span>
+        <span>$${projected.toFixed(0)} projected</span>
+        <span style="color:var(--text-tertiary)">·</span>
+        <span style="color:${projInP?'var(--green)':'var(--text-tertiary)'}">$${fee} fee${projInP?' ✓':''}</span>
+      </div>
+    </div>`;
+  });
+  set(html);
+}
+
 // ── Priority queue ─────────────────────────────────────────────────────────
 function buildPriorityQueue(){
   const eomDays=daysUntilEOM();
@@ -1048,7 +1206,7 @@ export function updateTabBadge(){
 
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','streaks','history-log','recap','insights','heatmap','roi','priority','keep-card','trends'];
+  const _analyticsViews=['compare','streaks','history-log','recap','insights','heatmap','roi','priority','keep-card','trends','digest','net-value'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -1081,5 +1239,7 @@ export function render(){
   else if(state.activeView==='priority') renderPriorityQueue();
   else if(state.activeView==='keep-card') renderKeepCard();
   else if(state.activeView==='trends') renderTrends();
+  else if(state.activeView==='digest') renderDigest();
+  else if(state.activeView==='net-value') renderNetValue();
   setTimeout(()=>{ updateTabBadge(); updateCardBadges(); },200);
 }

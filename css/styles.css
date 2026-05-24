@@ -1792,3 +1792,154 @@
   body.pwa-mode .bottom-tab-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 700; padding-bottom: env(safe-area-inset-bottom); }
   body.pwa-mode .container { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
   body.pwa-mode .menu-btn { display: none; }
+
+  /* ── Digest view ── */
+  .digest-summary {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 18px 18px;
+    text-align: center; margin-bottom: 14px;
+  }
+  .digest-summary-val {
+    font-size: 38px; font-weight: 700; font-family: var(--mono);
+    color: var(--text); line-height: 1;
+  }
+  .digest-summary-label {
+    font-size: 10px; font-family: var(--mono); color: var(--text-tertiary);
+    margin-top: 5px; text-transform: uppercase; letter-spacing: 0.07em;
+  }
+  .digest-summary-sub {
+    display: inline-block; margin-top: 10px; font-size: 11px;
+    font-family: var(--mono); color: var(--red);
+    background: rgba(217,64,64,0.08); border: 1px solid rgba(217,64,64,0.2);
+    border-radius: 100px; padding: 3px 12px;
+  }
+  .digest-bucket {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px; overflow: hidden;
+  }
+  .digest-bucket.digest-urgent { border-color: rgba(217,64,64,0.35); }
+  .digest-bucket.digest-soon { border-color: rgba(200,146,42,0.35); }
+  .digest-bucket-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 14px; background: var(--bg);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .digest-bucket.digest-urgent .digest-bucket-header { background: rgba(217,64,64,0.04); }
+  .digest-bucket.digest-soon .digest-bucket-header { background: rgba(200,146,42,0.04); }
+  .digest-bucket-label {
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  }
+  .digest-bucket.digest-urgent .digest-bucket-label { color: var(--red); }
+  .digest-bucket.digest-soon .digest-bucket-label { color: var(--gold); }
+  .digest-bucket-days {
+    font-size: 10px; font-family: var(--mono); color: var(--text-tertiary); margin-top: 2px;
+  }
+  .digest-bucket-total {
+    font-size: 16px; font-weight: 700; font-family: var(--mono); color: var(--text);
+  }
+  .digest-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid var(--border-light);
+    cursor: pointer; transition: background 0.1s;
+  }
+  .digest-item:last-child { border-bottom: none; }
+  .digest-item:hover, .digest-item:active { background: var(--border-light); }
+  .digest-item-name { font-size: 13px; color: var(--text); font-weight: 500; }
+  .digest-item-card {
+    font-size: 10px; font-family: var(--mono);
+    color: var(--text-tertiary); margin-top: 2px;
+  }
+  .digest-item-amt {
+    font-size: 15px; font-weight: 700; font-family: var(--mono);
+    color: var(--green); flex-shrink: 0; margin-left: 14px;
+  }
+
+  /* ── Net value dashboard ── */
+  .netval-hero {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; margin-bottom: 14px;
+  }
+  .netval-hero-row {
+    display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;
+  }
+  .netval-hero-val {
+    font-size: 28px; font-weight: 700; font-family: var(--mono); line-height: 1;
+    color: var(--text);
+  }
+  .netval-hero-val.green { color: var(--green); }
+  .netval-hero-val.red { color: var(--red); }
+  .netval-hero-label {
+    font-size: 10px; font-family: var(--mono); color: var(--text-tertiary);
+    margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .netval-progress {
+    height: 7px; background: var(--border-light); border-radius: 4px;
+    position: relative; overflow: hidden; margin-bottom: 6px;
+  }
+  .netval-progress-proj {
+    position: absolute; top: 0; left: 0; height: 100%;
+    border-radius: 4px; transition: width 0.5s ease;
+  }
+  .netval-progress-fill {
+    position: absolute; top: 0; left: 0; height: 100%;
+    border-radius: 4px; transition: width 0.5s ease;
+  }
+  .netval-progress-labels {
+    display: flex; justify-content: space-between;
+    font-size: 10px; font-family: var(--mono);
+    color: var(--text-tertiary); margin-bottom: 10px;
+  }
+  .netval-hero-totals {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    font-size: 11px; font-family: var(--mono);
+  }
+  .netval-hero-totals span { color: var(--text-tertiary); }
+  .netval-hero-totals strong { color: var(--text); font-weight: 600; }
+  .netval-card-row {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 8px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .netval-card-row:hover { border-color: var(--gold); }
+  .netval-card-header {
+    display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px;
+  }
+  .netval-card-name {
+    font-size: 11px; font-family: var(--mono); color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .netval-card-net {
+    font-size: 15px; font-weight: 700; font-family: var(--mono);
+  }
+  .netval-bar-wrap {
+    height: 6px; background: var(--border-light); border-radius: 3px;
+    position: relative; margin-bottom: 8px; overflow: hidden;
+  }
+  .netval-bar-proj, .netval-bar-cap {
+    position: absolute; top: 0; left: 0; height: 100%;
+    border-radius: 3px; transition: width 0.5s ease;
+  }
+  .netval-card-sub {
+    display: flex; gap: 6px; font-size: 10px; font-family: var(--mono); flex-wrap: wrap;
+  }
+
+  /* ── Notification settings row ── */
+  .notif-setting-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border-light);
+  }
+  .notif-setting-row:last-child { border-bottom: none; }
+  .notif-setting-label { font-size: 13px; color: var(--text); }
+  .notif-setting-sub { font-size: 11px; color: var(--text-tertiary); font-family: var(--mono); margin-top: 2px; }
+  .notif-toggle {
+    width: 40px; height: 22px; border-radius: 11px; border: none; cursor: pointer;
+    position: relative; transition: background 0.2s; flex-shrink: 0;
+    background: var(--border);
+  }
+  .notif-toggle.on { background: var(--green); }
+  .notif-toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 16px; height: 16px; border-radius: 50%; background: white;
+    transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .notif-toggle.on::after { transform: translateX(18px); }

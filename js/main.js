@@ -271,6 +271,36 @@ async function saveMyCards(){
   setTimeout(()=>setSave('',''),2000);
 }
 
+// ── Notification settings helpers ────────────────────────────────────────
+function buildNotifSettingsHTML(){
+  const supported='Notification' in window;
+  if(!supported) return `<div class="settings-sub">Notifications not supported in this browser.</div>`;
+  const granted=Notification.permission==='granted';
+  const enabled=localStorage.getItem('perks-notif')==='1';
+  if(!granted||!enabled){
+    return `<div class="settings-sub" style="margin-bottom:10px">Get reminded when benefits are about to expire across monthly, quarterly, and semi-annual windows.</div>
+    <button class="settings-btn settings-btn-primary" onclick="requestNotifications()">Enable Notifications</button>`;
+  }
+  const rows=[
+    {key:'notif-monthly',label:'Monthly reminders',sub:'Last 3 days of the month'},
+    {key:'notif-quarterly',label:'Quarterly reminders',sub:'Last 5 days of each quarter'},
+    {key:'notif-semiannual',label:'Semi-annual reminders',sub:'Last 2 weeks of each half-year'},
+  ];
+  let html=`<div class="settings-sub" style="margin-bottom:10px">Notifications enabled. Toggle individual reminder types below.</div>`;
+  rows.forEach(r=>{
+    const isOn=localStorage.getItem(r.key)!=='0';
+    html+=`<div class="notif-setting-row">
+      <div>
+        <div class="notif-setting-label">${r.label}</div>
+        <div class="notif-setting-sub">${r.sub}</div>
+      </div>
+      <button class="notif-toggle ${isOn?'on':''}" onclick="toggleNotifType('${r.key}',this)"></button>
+    </div>`;
+  });
+  html+=`<button class="settings-btn" style="margin-top:12px;font-size:12px;color:var(--text-tertiary)" onclick="disableNotifications()">Turn off all notifications</button>`;
+  return html;
+}
+
 // ── Settings screen ──────────────────────────────────────────────────────
 function renderSettings(){
   const user=state.currentUser;
@@ -329,6 +359,11 @@ function renderSettings(){
           <button class="settings-btn settings-btn-primary" id="settingsCardSave" onclick="saveSettingsCards()">Save Cards</button>
           <div class="settings-feedback" id="settingsCardMsg"></div>
         </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Notifications</div>
+        ${buildNotifSettingsHTML()}
       </div>
 
       <div class="settings-section">
@@ -574,6 +609,8 @@ function setActiveView(primary){
   else if(primary==='priority') state.activeView='priority';
   else if(primary==='keep-card') state.activeView='keep-card';
   else if(primary==='trends') state.activeView='trends';
+  else if(primary==='digest') state.activeView='digest';
+  else if(primary==='net-value') state.activeView='net-value';
   else if(primary==='settings') state.activeView='settings';
   else if(primary==='more') state.activeView='more';
   else if(primary==='my-cards'){ openMyCards(); return; }
@@ -715,33 +752,56 @@ async function requestNotifications(){
   if(perm==='granted'){
     localStorage.setItem('perks-notif','1');
     scheduleMonthlyReminder();
-    new Notification('Perks Ledger',{body:'Notifications enabled! You\'ll be reminded at month-end.',icon:'apple-touch-icon.png'});
-    renderInsights();
+    new Notification('Perks Ledger',{body:'Notifications enabled! You\'ll be reminded before monthly, quarterly, and semi-annual benefits expire.',icon:'apple-touch-icon.png'});
+    if(state.activeView==='settings') renderSettings();
+    else renderInsights();
   }
+}
+function disableNotifications(){
+  localStorage.setItem('perks-notif','0');
+  if(state.activeView==='settings') renderSettings();
+}
+function toggleNotifType(key,btn){
+  const isOn=btn.classList.toggle('on');
+  localStorage.setItem(key,isOn?'1':'0');
 }
 
 function scheduleMonthlyReminder(){
+  if(localStorage.getItem('perks-notif')!=='1') return;
   const now=new Date();
-  const eom=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  const day=now.getDate();
-  if(day>=eom-2&&localStorage.getItem('perks-notif')==='1'){
-    const key=`notif-sent-${now.getFullYear()}-${now.getMonth()}`;
-    if(!localStorage.getItem(key)){
-      let total=0;
-      getVisibleCardKeys().forEach(ck=>{
-        CARDS[ck].sections.forEach(s=>{
-          if(s.cadence!=='monthly') return;
-          s.benefits.forEach(b=>{
-            const pk=`${CY}-m${CM}`;
-            if(!state.DATA[ck]?.[`${b.id}__${pk}`]) total+=b.amount||0;
-          });
-        });
+  const eomDays=new Date(CY,CM+1,0).getDate()-now.getDate();
+  const q=Math.floor(CM/3);
+  const eoqDays=Math.ceil((new Date(CY,(q+1)*3,0)-now)/86400000);
+  const h=CM<6?0:1;
+  const eohDays=Math.ceil((new Date(CY,h===0?6:12,0)-now)/86400000);
+
+  function fire(key,body){ if(!localStorage.getItem(key)){ new Notification('Perks Ledger',{body,icon:'apple-touch-icon.png'}); localStorage.setItem(key,'1'); } }
+  function sum(cadences,pkFn){
+    let t=0;
+    getVisibleCardKeys().forEach(ck=>{
+      CARDS[ck].sections.forEach(s=>{
+        if(!cadences.includes(s.cadence)) return;
+        const pk=pkFn(s.cadence);
+        s.benefits.forEach(b=>{ if(!state.DATA[ck]?.[`${b.id}__${pk}`]) t+=b.amount||0; });
       });
-      if(total>0){
-        new Notification('Perks Ledger',{body:`You have $${total.toFixed(0)} in unclaimed benefits expiring this month!`,icon:'apple-touch-icon.png'});
-        localStorage.setItem(key,'1');
-      }
-    }
+    });
+    return t;
+  }
+
+  // Monthly: last 3 days
+  if(eomDays<=2){
+    const t=sum(['monthly'],()=>`${CY}-m${CM}`);
+    if(t>0) fire(`notif-m-${CY}-${CM}`,`$${t.toFixed(0)} in monthly benefits expiring this month!`);
+  }
+  // Quarterly: last 5 days of quarter
+  if(eoqDays<=4){
+    const t=sum(['quarterly'],()=>`${CY}-q${q}`);
+    if(t>0) fire(`notif-q-${CY}-${q}`,`$${t.toFixed(0)} in quarterly benefits expiring this week!`);
+  }
+  // Semi-annual: last 14 days of half
+  if(eohDays<=13){
+    const t=sum(['cal-semi-annual'],()=>`${CY}-h${h}`);
+    if(t>0) fire(`notif-h-${CY}-${h}`,`$${t.toFixed(0)} in semi-annual benefits expiring soon!`);
   }
 }
 if(localStorage.getItem('perks-notif')==='1') scheduleMonthlyReminder();
@@ -1114,12 +1174,16 @@ const _DRAWER_ICONS={
   'history-log':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><polyline points="8,5 8,8.5 10.5,10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'recap':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L9.5 6h4L10 8.5l1.5 4.5L8 10.5 4.5 13 6 8.5 2.5 6h4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   'trends':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,13 6,9 9,11 13,5 14,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'digest':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="3" rx="1" fill="currentColor" opacity="0.9"/><rect x="2" y="6.5" width="8" height="3" rx="1" fill="currentColor" opacity="0.7"/><rect x="2" y="11" width="5" height="3" rx="1" fill="currentColor" opacity="0.45"/></svg>`,
+  'net-value':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/></svg>`,
   'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
 };
 
 // ── More page ─────────────────────────────────────────────────────────────
 function renderMore(){
   const items=[
+    {view:'digest',label:'Benefit Digest'},
+    {view:'net-value',label:'Portfolio Value'},
     {view:'priority',label:'Use It Now'},
     {view:'insights',label:'Insights'},
     {view:'keep-card',label:'Keep This Card?'},
@@ -1358,6 +1422,8 @@ window.saveSettingsPassword=saveSettingsPassword;
 window.saveSettingsCards=saveSettingsCards;
 window.filterSettingsCards=filterSettingsCards;
 window.scheduleMonthlyReminder=scheduleMonthlyReminder;
+window.disableNotifications=disableNotifications;
+window.toggleNotifType=toggleNotifType;
 window.isSkipped=isSkipped;
 window.renderRecap=renderRecap;
 window.setSnoozedBenefit=setSnoozedBenefit;
