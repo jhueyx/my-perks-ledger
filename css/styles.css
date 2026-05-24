@@ -1466,7 +1466,7 @@
     .comparison-grid { grid-template-columns: repeat(3,1fr); }
   }
   @media (min-width: 1024px) {
-    .card-selector .card-btn { flex: 0 0 260px; }
+    .card-selector .card-btn { flex: 1 0 200px; max-width: 275px; }
   }
 
   @media (max-width: 600px) {

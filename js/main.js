@@ -8,12 +8,12 @@ import {
   loadCredited, saveCredited, toggleCredited,
   loadSkipped, saveSkipped, isSkipped, skipBenefit, unskipBenefit, clearAllSkipped, countSkipped,
   getFeeOverrides, saveFeeOverridesData, getCardFeeMonth, getCardFeeDay,
-  setSnoozedBenefit, isGloballySnoozed,
+  setSnoozedBenefit, isGloballySnoozed, isUsed,
   loadCardMeta, setCardOpenedDate
 } from './storage.js';
 import { render, getVisibleCardKeys, renderCurrent, renderInsights, renderPriorityQueue, renderRecap, haptic, checkAllClaimed, animateCounters } from './views.js';
 import { checkBadges, getEarnedBadges, getUnseenBadges, markAllSeen, BADGE_DEFS, TIER_COLORS } from './badges.js';
-import { calcStats, getCardYearPeriods, isPCurrent, getFee } from './periods.js';
+import { calcStats, getCardYearPeriods, isPCurrent, getFee, getBAmount, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
 
 // ── Splash: show login only if no cached session ──────────────────────────
 try {
@@ -117,10 +117,56 @@ function updateDrawerGreeting(){
   if(se) se.textContent=user.email||'';
 }
 
+// ── Email digest cache ────────────────────────────────────────────────────
+function buildDigestCache(){
+  const user=state.currentUser;
+  if(!user) return null;
+  const buckets={monthly:[],quarterly:[],semiannual:[],annual:[]};
+  let totalUnclaimed=0;
+  getVisibleCardKeys().forEach(cardKey=>{
+    CARDS[cardKey].sections.forEach(sec=>{
+      const pk=getCurrentPK(cardKey,sec.cadence);
+      const p={calY:CY,calM:CM,m:CM};
+      sec.benefits.forEach(b=>{
+        if(isBExpired(b,p)||isBNotAvailable(b,CY,p)||isGloballySnoozed(cardKey,b.id)) return;
+        if(isUsed(cardKey,b.id,pk)||isSkipped(cardKey,b.id,pk)) return;
+        const amt=getBAmount(b,{m:CM});
+        const item={card:CARD_LABELS[cardKey],name:b.name,amt};
+        if(sec.cadence==='monthly') buckets.monthly.push(item);
+        else if(sec.cadence==='quarterly') buckets.quarterly.push(item);
+        else if(sec.cadence==='semi-annual'||sec.cadence==='cal-semi-annual') buckets.semiannual.push(item);
+        else buckets.annual.push(item);
+        totalUnclaimed+=amt;
+      });
+    });
+  });
+  return {email:user.email,total_unclaimed:totalUnclaimed,...buckets,updated_at:new Date().toISOString()};
+}
+
+async function saveDigestCache(){
+  if(!state.currentUser||!state._digestEnabled) return;
+  const cache=buildDigestCache();
+  if(!cache) return;
+  await sb.from('user_profiles').upsert({user_id:state.currentUser.id,digest_cache:cache,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+}
+
+async function toggleDigestEmail(el){
+  if(!state.currentUser) return;
+  const enabled=el.checked;
+  el.disabled=true;
+  const cache=enabled?buildDigestCache():null;
+  await sb.from('user_profiles').upsert({user_id:state.currentUser.id,digest_enabled:enabled,digest_cache:cache,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  state._digestEnabled=enabled;
+  el.disabled=false;
+  const msg=document.getElementById('digestMsg');
+  if(msg){ msg.textContent=enabled?'✓ Digest enabled — you\'ll get a weekly email':'Digest disabled'; msg.style.color=enabled?'var(--green)':'var(--text-tertiary)'; setTimeout(()=>{ if(msg) msg.textContent=''; },3000); }
+}
+
 async function onSignedIn(user,isNew){
   state.currentUser=user;
   updateDrawerGreeting();
-  const {data:profile}=await sb.from('user_profiles').select('cards').eq('user_id',user.id).single();
+  const {data:profile}=await sb.from('user_profiles').select('cards,digest_enabled').eq('user_id',user.id).single();
+  state._digestEnabled=profile?.digest_enabled||false;
   if(isNew||!profile||!profile.cards||profile.cards.length===0){
     document.getElementById('splash').classList.add('hidden');
     showCardPicker();
@@ -157,6 +203,7 @@ function doUnlock(){
   render();
   setTimeout(initCardFlip,200);
   syncFromSupabase();
+  setTimeout(saveDigestCache,3000);
 }
 
 // ── Session restore ───────────────────────────────────────────────────────
@@ -365,6 +412,19 @@ function renderSettings(){
       <div class="settings-section">
         <div class="settings-section-title">Notifications</div>
         ${buildNotifSettingsHTML()}
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Email Digest</div>
+        <div class="settings-sub" style="margin-bottom:12px">Get a weekly email listing all unclaimed benefits across your cards, sent every Monday morning.</div>
+        <div class="notif-setting-row" style="border-bottom:none;padding-bottom:0">
+          <div>
+            <div class="notif-setting-label">Weekly digest email</div>
+            <div class="notif-setting-sub">${escapeHtml(user?.email||'')}</div>
+          </div>
+          <input type="checkbox" id="digestToggle" ${state._digestEnabled?'checked':''} onchange="toggleDigestEmail(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
+        </div>
+        <div class="settings-feedback" id="digestMsg"></div>
       </div>
 
       <div class="settings-section">
@@ -1492,6 +1552,7 @@ window.filterSettingsCards=filterSettingsCards;
 window.scheduleMonthlyReminder=scheduleMonthlyReminder;
 window.disableNotifications=disableNotifications;
 window.toggleNotifType=toggleNotifType;
+window.toggleDigestEmail=toggleDigestEmail;
 window.isSkipped=isSkipped;
 window.renderRecap=renderRecap;
 window.setSnoozedBenefit=setSnoozedBenefit;
