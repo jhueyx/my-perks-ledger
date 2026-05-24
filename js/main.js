@@ -693,7 +693,7 @@ function setActiveView(primary){
   else if(primary==='card-year') state.activeView=state.activeSecondary['card-year']||'history';
   else if(primary==='ytd') state.activeView=state.activeSecondary['ytd']||'ytd-history';
   else if(primary==='compare') state.activeView='compare';
-  else if(primary==='streaks') state.activeView='streaks';
+  else if(primary==='streaks') state.activeView='badges';
   else if(primary==='history-log') state.activeView='history-log';
   else if(primary==='recap') state.activeView='recap';
   else if(primary==='insights') state.activeView='insights';
@@ -1275,7 +1275,6 @@ const _DRAWER_ICONS={
   'compare':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="5.5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="3.5" width="5.5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>`,
   'roi':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="9" width="2.5" height="5" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="6" y="6" width="2.5" height="8" rx="0.75" fill="currentColor" opacity="0.85"/><rect x="10" y="3" width="2.5" height="11" rx="0.75" fill="currentColor"/><line x1="1.5" y1="14.5" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
   'heatmap':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.3"/><rect x="6.5" y="2" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="11" y="2" width="3" height="3" rx="0.75" fill="currentColor"/><rect x="2" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="6.5" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.4"/><rect x="11" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.85"/><rect x="2" y="11" width="3" height="3" rx="0.75" fill="currentColor"/><rect x="6.5" y="11" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.5"/><rect x="11" y="11" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.25"/></svg>`,
-  'streaks':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9 2C9 2 10.5 4.5 9.5 6.5C11 5.5 11.5 3.5 11.5 3.5C12.5 5 13 7 12 9C11 11.5 8.5 13 6.5 13C4 13 2.5 11 2.5 9C2.5 6.5 4.5 5 4.5 5C4.5 7 6 7.5 6 7.5C5.5 5.5 7 2 9 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   'history-log':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><polyline points="8,5 8,8.5 10.5,10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'recap':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/><line x1="10.5" y1="1.5" x2="10.5" y2="4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="5.5" y1="1.5" x2="5.5" y2="4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="2" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.4"/></svg>`,
   'trends':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,13 6,9 9,11 13,5 14,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -1498,8 +1497,7 @@ function renderBadgesView(){
   </div>`;
   const lockSVG=`<svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="5" y="10" width="14" height="11" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 
-  html+=`<div class="badges-grid">`;
-  defs.forEach((def,i)=>{
+  function badgeCard(def,i){
     const isEarned=earned.has(def.id);
     const isHidden=def.hidden&&!isEarned;
     const color=TIER_COLORS[def.tier];
@@ -1510,7 +1508,7 @@ function renderBadgesView(){
     const earnedDate=fmtDate(earnedAt[def.id]);
     const displayName=isHidden?'???':def.name;
     const displayDesc=isHidden?'Unlock to reveal this hidden achievement':def.desc;
-    html+=`<div class="badge-flip-wrap ${isEarned?'earned-badge':'locked-badge'}" onclick="window.flipBadge(this)">
+    return `<div class="badge-flip-wrap ${isEarned?'earned-badge':'locked-badge'}" onclick="window.flipBadge(this)">
       <div class="badge-flip-inner">
         <div class="badge-front ${isEarned?'earned-front':''}" ${isEarned?`style="border-color:${color}44"`:''}">
           <div class="badge-medallion ${isEarned?'earned-medal':'locked-medal'}"
@@ -1533,7 +1531,19 @@ function renderBadgesView(){
         </div>
       </div>
     </div>`;
-  });
+  }
+
+  const streakDefs=defs.filter(def=>def.id.startsWith('streak_'));
+  const otherDefs=defs.filter(def=>!def.id.startsWith('streak_'));
+  if(streakDefs.length){
+    html+=`<div class="achievement-section-head"><strong>Streak Badges</strong><span>Best monthly streaks unlock these achievements</span></div>`;
+    html+=`<div class="badges-grid">`;
+    streakDefs.forEach((def,i)=>{ html+=badgeCard(def,i); });
+    html+=`</div>`;
+  }
+  html+=`<div class="achievement-section-head"><strong>All Badges</strong><span>Everything else in your portfolio</span></div>`;
+  html+=`<div class="badges-grid">`;
+  otherDefs.forEach((def,i)=>{ html+=badgeCard(def,i+streakDefs.length); });
   html+=`</div>`;
   html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:4px;padding-bottom:8px">Keep claiming benefits to unlock more achievements</div>`;
   document.getElementById('main').innerHTML=html;
@@ -1554,7 +1564,6 @@ function renderMore(){
     {view:'roi',label:'ROI Scores'},
     {view:'trends',label:'Trends'},
     {view:'heatmap',label:'Heatmap'},
-    {view:'streaks',label:'Streaks'},
     {view:'history-log',label:'History'},
     {view:'recap',label:'Annual Recap'},
     {view:'settings',label:'Settings'},

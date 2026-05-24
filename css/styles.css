@@ -1651,6 +1651,18 @@
   .streak-row:first-child { border-top: none; }
   .streak-card-tag { font-size: 10px; font-family: var(--mono); color: var(--text-tertiary); margin-left: 6px; }
   .streak-count { font-family: var(--mono); font-weight: 600; color: var(--gold); font-size: 14px; }
+  .streak-current { font-size: 10px; font-family: var(--mono); color: var(--text-tertiary); margin-top: 2px; }
+  .streak-meta { font-size: 10px; font-family: var(--mono); color: var(--text-tertiary); margin-top: 2px; padding-left: 34px; }
+  .streak-achievements { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 5px; padding-left: 34px; }
+  .streak-achievement, .streak-next {
+    font-size: 9px; font-family: var(--mono); border-radius: 100px; padding: 2px 7px;
+    border: 1px solid var(--border-light); color: var(--text-tertiary); background: var(--surface);
+  }
+  .streak-achievement.bronze { color: #CD7F32; border-color: #CD7F3244; background: #CD7F3214; }
+  .streak-achievement.silver { color: #A0A8B0; border-color: #A0A8B044; background: #A0A8B014; }
+  .streak-achievement.gold { color: #C8922A; border-color: #C8922A44; background: #C8922A14; }
+  .streak-achievement.platinum { color: #4A7FA5; border-color: #4A7FA544; background: #4A7FA514; }
+  .streak-achievement.legendary { color: #9B59B6; border-color: #9B59B644; background: #9B59B614; }
 
   .compare-btn {
     padding: 7px 14px; border-radius: 100px;
@@ -2115,6 +2127,13 @@
   }
   .badge-progress-fill {
     height: 100%; border-radius: 3px; background: var(--gold); transition: width 0.4s ease;
+  }
+  .achievement-section-head {
+    display: flex; align-items: baseline; gap: 8px; margin: 14px 2px 8px;
+    color: var(--text); font-size: 13px;
+  }
+  .achievement-section-head span {
+    color: var(--text-tertiary); font-family: var(--mono); font-size: 10px; font-weight: 400;
   }
 
   /* ── Fee optimizer ── */

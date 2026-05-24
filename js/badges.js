@@ -1,7 +1,7 @@
 import { CARDS, PREMIUM_CARD_CATALOG } from './cards.js';
 import { state, CY, CM } from './state.js';
 import { isUsed, isGloballySnoozed, scheduleSave } from './storage.js';
-import { calcStats, getCardYearPeriods, isPCurrent, getFee, getStreak, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
+import { calcStats, getCardYearPeriods, isPCurrent, getFee, getLongestStreak, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
 import { getVisibleCardKeys } from './views.js';
 
 const BADGES_KEY = 'perks-badges';
@@ -198,7 +198,7 @@ export const TIER_COLORS = {
 };
 
 function loadState(){ try{ const s=JSON.parse(localStorage.getItem(BADGES_KEY)||'{}'); return {earned:s.earned||[],seen:s.seen||[],earnedAt:s.earnedAt||{}}; }catch(e){ return {earned:[],seen:[],earnedAt:{}}; } }
-function saveState(s){ localStorage.setItem(BADGES_KEY,JSON.stringify(s)); }
+function saveState(s){ localStorage.setItem(BADGES_KEY,JSON.stringify(s)); scheduleSave(); }
 
 export function getEarnedBadges(){ return loadState().earned; }
 export function getEarnedAt(){ return loadState().earnedAt; }
@@ -218,7 +218,6 @@ export function awardBadges(ids, approxDates){
   });
   s.earned=[...earned];
   saveState(s);
-  scheduleSave();
   return ids.filter(id=>!new Set(loadState().seen).has(id));
 }
 
@@ -423,7 +422,7 @@ export function checkBadges(){
     CARDS[ck].sections.forEach(sec=>{
       if(sec.cadence!=='monthly') return;
       sec.benefits.forEach(b=>{
-        const st=getStreak(ck,b.id);
+        const st=getLongestStreak(ck,b.id);
         if(st>maxStreak) maxStreak=st;
         if(['g_uber','p_uber'].includes(b.id)&&st>uberMaxStreak) uberMaxStreak=st;
         if(['c_dd_restaurant','c_dd_nonrest1','c_dd_nonrest2'].includes(b.id)&&st>ddMaxStreak) ddMaxStreak=st;
@@ -582,10 +581,10 @@ export function checkBadges(){
   maybe('dec_bonus',         decBonus);
 
   // Specific benefits — streaks
-  maybe('digital_devotee',   getStreak('platinum','p_digital')>=6);
-  maybe('dunkin_addict',     getStreak('gold','g_dunkin')>=6);
-  maybe('walmart_weekly',    getStreak('platinum','p_walmart')>=6);
-  maybe('peloton_rider',     getStreak('csr','c_peloton')>=3);
+  maybe('digital_devotee',   getLongestStreak('platinum','p_digital')>=6);
+  maybe('dunkin_addict',     getLongestStreak('gold','g_dunkin')>=6);
+  maybe('walmart_weekly',    getLongestStreak('platinum','p_walmart')>=6);
+  maybe('peloton_rider',     getLongestStreak('csr','c_peloton')>=3);
 
   // Specific benefits — volume
   maybe('uber_vip',          uberTotalUses>=18);
@@ -628,13 +627,13 @@ export function checkBadges(){
   maybe('exclusive_tables',  everUsed('csr','c_dining'));
   maybe('apple_insider',     everUsed('csr','c_apple'));
   maybe('the_edit_guest',    everUsed('csr','c_edit1')||everUsed('csr','c_edit2'));
-  maybe('lyft_rider',        getStreak('csr','c_lyft')>=6);
+  maybe('lyft_rider',        getLongestStreak('csr','c_lyft')>=6);
   maybe('csr_month_sweep',   csrMonthFull);
   maybe('stub_season',       stubBoth);
 
   // Gold-specific
   maybe('gold_sweep',        goldMonthFull);
-  maybe('dunkin_power',      getStreak('gold','g_dunkin')>=12);
+  maybe('dunkin_power',      getLongestStreak('gold','g_dunkin')>=12);
 
   // Platinum-specific
   maybe('plat_trifecta_month', platMonthFull);

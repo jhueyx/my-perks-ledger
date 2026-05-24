@@ -172,6 +172,24 @@ export function getStreak(cardKey,benefitId){
   }
   return streak;
 }
+export function getLongestStreak(cardKey,benefitId){
+  const months=Object.entries(state.DATA[cardKey]||{})
+    .filter(([k,v])=>v===true&&k.startsWith(`${benefitId}__`))
+    .map(([k])=>{
+      const m=/__(\d{4})-m(\d{1,2})$/.exec(k);
+      if(!m) return null;
+      return Number(m[1])*12+Number(m[2]);
+    })
+    .filter(v=>v!==null)
+    .sort((a,b)=>a-b);
+  let best=0,cur=0,prev=null;
+  months.forEach(abs=>{
+    cur=prev!==null&&abs===prev+1?cur+1:1;
+    if(cur>best) best=cur;
+    prev=abs;
+  });
+  return best;
+}
 export function daysUntilFee(cardKey){
   const fm=getCardFeeMonth(cardKey),fd=getCardFeeDay(cardKey);
   const now=new Date();

@@ -4,7 +4,7 @@ import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPar
 import {
   getCardYearStart, getCardYearPeriods, getYTDPeriods, isPFuture, isPCurrent, isYTDCurrent,
   getCurrentPK, getCurrentLabel, getBAmount, getFee, isBExpired, isBNotAvailable,
-  calcStats, metricsHTML, progressHTML, getStreak, daysUntilFee, daysUntilEOM,
+  calcStats, metricsHTML, progressHTML, getStreak, getLongestStreak, daysUntilFee, daysUntilEOM,
   getUnclaimedMonthly, maxCardYearValue, calcCapturedByType, getCardYearMonthsElapsed,
   getProjectedCapture, getROIGrade
 } from './periods.js';
@@ -1079,27 +1079,53 @@ export function renderPriorityQueue(){
 // ── Render: streaks ────────────────────────────────────────────────────────
 export function renderStreaks(){
   const CARD_KEYS=getVisibleCardKeys();
+  const milestones=[
+    {n:24,id:'streak_24',label:'Diamond',tier:'legendary'},
+    {n:18,id:'streak_18',label:'Iron',tier:'platinum'},
+    {n:12,id:'streak_12',label:'12 mo',tier:'gold'},
+    {n:6,id:'streak_6',label:'6 mo',tier:'silver'},
+    {n:3,id:'streak_3',label:'3 mo',tier:'bronze'},
+  ];
+  const nextMilestone=best=>[3,6,12,18,24].find(n=>best<n);
+  const badgeFor=best=>milestones.find(m=>best>=m.n);
   const allStreaks=[];
   CARD_KEYS.forEach(cardKey=>{
     CARDS[cardKey].sections.forEach(s=>{
       if(s.cadence!=='monthly') return;
       s.benefits.forEach(b=>{
         if(isBNotAvailable(b,CY)) return;
-        allStreaks.push({name:b.name,card:CARD_LABELS[cardKey],streak:getStreak(cardKey,b.id)});
+        const current=getStreak(cardKey,b.id);
+        const best=getLongestStreak(cardKey,b.id);
+        allStreaks.push({name:b.name,card:CARD_LABELS[cardKey],current,best,badge:badgeFor(best),next:nextMilestone(best)});
       });
     });
   });
-  allStreaks.sort((a,b)=>b.streak-a.streak);
-  let html=`<div class="banner"><strong>Streak leaderboard</strong> — consecutive months claimed</div>`;
+  allStreaks.sort((a,b)=>b.best-a.best||b.current-a.current);
+  let html=`<div class="banner"><strong>Streak achievements</strong> — best consecutive monthly claims unlock badges</div>`;
   if(!allStreaks.length){ html+=`<div style="text-align:center;padding:32px;color:var(--text-tertiary);font-size:13px">No streaks yet — start claiming your monthly benefits!</div>`; }
   else {
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">`;
     const ordinal=n=>n===1?'1st':n===2?'2nd':n===3?'3rd':`${n}th`;
     let rank=1;
     allStreaks.forEach((s,i)=>{
-      if(i>0&&allStreaks[i-1].streak!==s.streak) rank=i+1;
+      if(i>0&&allStreaks[i-1].best!==s.best) rank=i+1;
       const medal=ordinal(rank);
-      html+=`<div class="streak-row"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);width:28px;flex-shrink:0">${medal}</span><span style="color:var(--text);font-weight:500">${s.name}</span></div><div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);margin-top:2px;padding-left:34px">${s.card}</div></div><div class="streak-count" style="white-space:nowrap;padding-left:12px">${s.streak} mo</div></div>`;
+      const badge=s.badge?`<span class="streak-achievement ${s.badge.tier}">${s.badge.label} badge</span>`:`<span class="streak-next">next: ${s.next} mo</span>`;
+      const next=s.next?`<span class="streak-next">${s.best}/${s.next}</span>`:'<span class="streak-next">max tier</span>';
+      html+=`<div class="streak-row">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;min-width:0">
+            <span style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);width:28px;flex-shrink:0">${medal}</span>
+            <span style="color:var(--text);font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</span>
+          </div>
+          <div class="streak-meta">${s.card}</div>
+          <div class="streak-achievements">${badge}${s.badge?next:''}</div>
+        </div>
+        <div style="text-align:right;white-space:nowrap;padding-left:12px">
+          <div class="streak-count">${s.best} mo</div>
+          <div class="streak-current">${s.current} current</div>
+        </div>
+      </div>`;
     });
     html+=`</div>`;
   }
@@ -1350,7 +1376,7 @@ export function renderFeeOptimizer(){
 
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','streaks','history-log','recap','heatmap','roi','trends','digest','net-value','badges','fee-optimizer'];
+  const _analyticsViews=['compare','history-log','recap','heatmap','roi','trends','digest','net-value','badges','fee-optimizer'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
