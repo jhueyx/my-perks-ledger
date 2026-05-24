@@ -1516,6 +1516,8 @@
       font-family: var(--font);
       transition: color 0.15s;
       -webkit-tap-highlight-color: transparent;
+      -webkit-appearance: none;
+      appearance: none;
     }
     .bottom-tab.active { color: var(--gold); }
     .bottom-tab-center { color: var(--text-secondary); }
@@ -1808,15 +1810,40 @@
     .bottom-sheet.open { transform: translateY(0) !important; }
   }
 
-  /* ── iOS PWA standalone mode — ensure bottom nav always shows ── */
-  @media (display-mode: standalone) {
+  /* ── iOS PWA standalone mode — portrait ── */
+  @media (display-mode: standalone) and (orientation: portrait) {
     .bottom-tab-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 700; padding-bottom: env(safe-area-inset-bottom); }
     .container { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
     .menu-btn { display: none; }
   }
-  body.pwa-mode .bottom-tab-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 700; padding-bottom: env(safe-area-inset-bottom); }
-  body.pwa-mode .container { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
-  body.pwa-mode .menu-btn { display: none; }
+  /* ── iOS PWA standalone mode — landscape → side rail ── */
+  @media (display-mode: standalone) and (orientation: landscape) {
+    .bottom-tab-bar { display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; right: auto; width: 52px; background: var(--surface); border-right: 1px solid var(--border); border-top: none; z-index: 700; padding: 0; justify-content: center; gap: 6px; }
+    .bottom-tab { padding: 12px 0 !important; width: 52px !important; flex: 0 0 auto !important; }
+    .bottom-tab-label { display: none !important; }
+    .menu-btn { display: none; }
+    .app-header { margin-left: 52px; }
+    .container { padding-bottom: 12px !important; margin-left: 52px; }
+    .bottom-sheet { left: 52px !important; bottom: 0 !important; transform: translateY(110%) !important; }
+    .bottom-sheet.open { transform: translateY(0) !important; }
+  }
+  /* ── PWA class portrait ── */
+  @media (orientation: portrait) {
+    body.pwa-mode .bottom-tab-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 700; padding-bottom: env(safe-area-inset-bottom); }
+    body.pwa-mode .container { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+    body.pwa-mode .menu-btn { display: none; }
+  }
+  /* ── PWA class landscape → side rail ── */
+  @media (orientation: landscape) {
+    body.pwa-mode .bottom-tab-bar { display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; right: auto; width: 52px; background: var(--surface); border-right: 1px solid var(--border); border-top: none; z-index: 700; padding: 0; justify-content: center; gap: 6px; }
+    body.pwa-mode .bottom-tab { padding: 12px 0 !important; width: 52px !important; flex: 0 0 auto !important; }
+    body.pwa-mode .bottom-tab-label { display: none !important; }
+    body.pwa-mode .menu-btn { display: none; }
+    body.pwa-mode .app-header { margin-left: 52px; }
+    body.pwa-mode .container { padding-bottom: 12px !important; margin-left: 52px; }
+    body.pwa-mode .bottom-sheet { left: 52px !important; bottom: 0 !important; transform: translateY(110%) !important; }
+    body.pwa-mode .bottom-sheet.open { transform: translateY(0) !important; }
+  }
 
   /* ── Digest view ── */
   .digest-summary {

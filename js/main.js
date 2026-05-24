@@ -363,29 +363,33 @@ function renderSettings(){
   state._mcSelected=new Set(state.userCards||['csr','gold','platinum']);
   if(state._settingsCardsCollapsed===undefined) state._settingsCardsCollapsed=true;
   if(state._settingsSecurityCollapsed===undefined) state._settingsSecurityCollapsed=true;
+  if(state._settingsProfileCollapsed===undefined) state._settingsProfileCollapsed=true;
+  if(state._settingsNotifCollapsed===undefined) state._settingsNotifCollapsed=true;
+  if(state._settingsDigestCollapsed===undefined) state._settingsDigestCollapsed=true;
+  const chev=(id,collapsed)=>`<span id="${id}" style="font-size:12px;color:var(--text-tertiary);transition:transform 0.2s;transform:${collapsed?'rotate(-90deg)':'rotate(0deg)'}">▾</span>`;
+  const colTitle=(label,fn,chevId,collapsed)=>`<div class="settings-section-title" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="${fn}()">${label}${chev(chevId,collapsed)}</div>`;
   document.getElementById('main').innerHTML=`
     <div class="settings-page">
       <div class="settings-page-header">Settings</div>
 
       <div class="settings-section">
-        <div class="settings-section-title">Profile</div>
-        <div class="settings-field">
-          <label class="settings-label">What to call you</label>
-          <input class="settings-input" id="settingsName" type="text" placeholder="e.g. Jason" value="${escapeHtml(displayName)}"/>
+        ${colTitle('Profile','toggleSettingsProfile','settingsProfileChevron',state._settingsProfileCollapsed)}
+        <div id="settingsProfileBody" style="display:${state._settingsProfileCollapsed?'none':'block'}">
+          <div class="settings-field">
+            <label class="settings-label">What to call you</label>
+            <input class="settings-input" id="settingsName" type="text" placeholder="e.g. Jason" value="${escapeHtml(displayName)}"/>
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">Email</label>
+            <input class="settings-input" type="email" value="${email}" readonly/>
+          </div>
+          <button class="settings-btn settings-btn-primary" onclick="saveSettingsProfile()">Save Profile</button>
+          <div class="settings-feedback" id="settingsProfileMsg"></div>
         </div>
-        <div class="settings-field">
-          <label class="settings-label">Email</label>
-          <input class="settings-input" type="email" value="${email}" readonly/>
-        </div>
-        <button class="settings-btn settings-btn-primary" onclick="saveSettingsProfile()">Save Profile</button>
-        <div class="settings-feedback" id="settingsProfileMsg"></div>
       </div>
 
       <div class="settings-section">
-        <div class="settings-section-title" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="toggleSettingsSecurity()">
-          Security
-          <span id="settingsSecurityChevron" style="font-size:12px;color:var(--text-tertiary);transition:transform 0.2s;transform:${state._settingsSecurityCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▾</span>
-        </div>
+        ${colTitle('Security','toggleSettingsSecurity','settingsSecurityChevron',state._settingsSecurityCollapsed)}
         <div id="settingsSecurityBody" style="display:${state._settingsSecurityCollapsed?'none':'block'}">
           <div class="settings-field">
             <label class="settings-label">New password</label>
@@ -401,10 +405,7 @@ function renderSettings(){
       </div>
 
       <div class="settings-section">
-        <div class="settings-section-title" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="toggleSettingsCards()">
-          My Cards
-          <span id="settingsCardsChevron" style="font-size:12px;color:var(--text-tertiary);transition:transform 0.2s;transform:${state._settingsCardsCollapsed?'rotate(-90deg)':'rotate(0deg)'}">▾</span>
-        </div>
+        ${colTitle('My Cards','toggleSettingsCards','settingsCardsChevron',state._settingsCardsCollapsed)}
         <div id="settingsCardsBody" style="display:${state._settingsCardsCollapsed?'none':'block'}">
           <div class="settings-sub">Select the cards you want to track.</div>
           <input class="cp-search" id="settingsCardSearch" placeholder="Search cards…" oninput="filterSettingsCards()" style="margin:12px 0 8px"/>
@@ -416,21 +417,25 @@ function renderSettings(){
       </div>
 
       <div class="settings-section">
-        <div class="settings-section-title">Notifications</div>
-        ${buildNotifSettingsHTML()}
+        ${colTitle('Notifications','toggleSettingsNotif','settingsNotifChevron',state._settingsNotifCollapsed)}
+        <div id="settingsNotifBody" style="display:${state._settingsNotifCollapsed?'none':'block'}">
+          ${buildNotifSettingsHTML()}
+        </div>
       </div>
 
       <div class="settings-section">
-        <div class="settings-section-title">Email Digest</div>
-        <div class="settings-sub" style="margin-bottom:12px">Get a weekly email listing all unclaimed benefits across your cards, sent every Monday morning.</div>
-        <div class="notif-setting-row" style="border-bottom:none;padding-bottom:0">
-          <div>
-            <div class="notif-setting-label">Weekly digest email</div>
-            <div class="notif-setting-sub">${escapeHtml(user?.email||'')}</div>
+        ${colTitle('Email Digest','toggleSettingsDigest','settingsDigestChevron',state._settingsDigestCollapsed)}
+        <div id="settingsDigestBody" style="display:${state._settingsDigestCollapsed?'none':'block'}">
+          <div class="settings-sub" style="margin-bottom:12px">Get a weekly email listing all unclaimed benefits across your cards, sent every Monday morning.</div>
+          <div class="notif-setting-row" style="border-bottom:none;padding-bottom:0">
+            <div>
+              <div class="notif-setting-label">Weekly digest email</div>
+              <div class="notif-setting-sub">${escapeHtml(user?.email||'')}</div>
+            </div>
+            <input type="checkbox" id="digestToggle" ${state._digestEnabled?'checked':''} onchange="toggleDigestEmail(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
           </div>
-          <input type="checkbox" id="digestToggle" ${state._digestEnabled?'checked':''} onchange="toggleDigestEmail(this)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--green)">
+          <div class="settings-feedback" id="digestMsg"></div>
         </div>
-        <div class="settings-feedback" id="digestMsg"></div>
       </div>
 
       <div class="settings-section">
@@ -502,6 +507,27 @@ window.toggleSettingsSecurity=function(){
   const chev=document.getElementById('settingsSecurityChevron');
   if(body) body.style.display=state._settingsSecurityCollapsed?'none':'block';
   if(chev) chev.style.transform=state._settingsSecurityCollapsed?'rotate(-90deg)':'rotate(0deg)';
+};
+window.toggleSettingsProfile=function(){
+  state._settingsProfileCollapsed=!state._settingsProfileCollapsed;
+  const body=document.getElementById('settingsProfileBody');
+  const chev=document.getElementById('settingsProfileChevron');
+  if(body) body.style.display=state._settingsProfileCollapsed?'none':'block';
+  if(chev) chev.style.transform=state._settingsProfileCollapsed?'rotate(-90deg)':'rotate(0deg)';
+};
+window.toggleSettingsNotif=function(){
+  state._settingsNotifCollapsed=!state._settingsNotifCollapsed;
+  const body=document.getElementById('settingsNotifBody');
+  const chev=document.getElementById('settingsNotifChevron');
+  if(body) body.style.display=state._settingsNotifCollapsed?'none':'block';
+  if(chev) chev.style.transform=state._settingsNotifCollapsed?'rotate(-90deg)':'rotate(0deg)';
+};
+window.toggleSettingsDigest=function(){
+  state._settingsDigestCollapsed=!state._settingsDigestCollapsed;
+  const body=document.getElementById('settingsDigestBody');
+  const chev=document.getElementById('settingsDigestChevron');
+  if(body) body.style.display=state._settingsDigestCollapsed?'none':'block';
+  if(chev) chev.style.transform=state._settingsDigestCollapsed?'rotate(-90deg)':'rotate(0deg)';
 };
 
 // ── Card selector ─────────────────────────────────────────────────────────
@@ -729,6 +755,8 @@ function updateBottomTabBar(primary){
   document.querySelectorAll('.bottom-tab[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===primary));
   const menuBtn=document.getElementById('bottomMenuBtn');
   if(menuBtn) menuBtn.classList.toggle('active',primary==='more');
+  const homeBtn=document.getElementById('bottomHomeBtn');
+  if(homeBtn) homeBtn.classList.toggle('active',['all-cards','this-period','card-year','ytd'].includes(primary));
 }
 
 function updateMainChromeVisibility(primary){
@@ -1003,6 +1031,7 @@ document.getElementById('drawerOverlay').addEventListener('click',closeDrawer);
 
 // ── Bottom tab bar + menu sheet ───────────────────────────────────────────
 document.getElementById('bottomMenuBtn').addEventListener('click',()=>setActiveView('more'));
+document.getElementById('bottomHomeBtn').addEventListener('click',()=>{ closeMenuSheet(); setActiveView('this-period'); });
 document.getElementById('bottomSheetOverlay').addEventListener('click',closeMenuSheet);
 document.getElementById('bottomTabBar').querySelectorAll('.bottom-tab[data-bottom]').forEach(btn=>{
   btn.addEventListener('click',()=>{ closeMenuSheet(); setActiveView(btn.dataset.bottom); });
