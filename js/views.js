@@ -1,6 +1,6 @@
 import { CARDS, MONTHS, MONTHS_FULL, CARD_LABELS, CARD_SHORT_LABELS, CARD_CLS, BENEFIT_CATEGORIES, POINTS_MULTIPLIERS } from './cards.js';
 import { state, CY, CM, escapeHtml } from './state.js';
-import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, isGloballySnoozed, isMonthSnoozed, getSnoozedUntil, getCardFeeMonth, getCardFeeDay, countSkipped, clearAllSkipped } from './storage.js';
+import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, isGloballySnoozed, isMonthSnoozed, getSnoozedUntil, getCardFeeMonth, getCardFeeDay, countSkipped, clearAllSkipped, loadSkipped } from './storage.js';
 import {
   getCardYearStart, getCardYearPeriods, getYTDPeriods, isPFuture, isPCurrent, isYTDCurrent,
   getCurrentPK, getCurrentLabel, getBAmount, getFee, isBExpired, isBNotAvailable,
@@ -353,9 +353,29 @@ export function renderDigest(){
     ${monthTotal>0?`<div class="digest-summary-sub">$${monthTotal.toFixed(0)} expires this month</div>`:''}
   </div>`;
 
-  // Dismissed bar
+  // Dismissed section — individual restore
   if(skippedCount>0){
-    html+=`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;margin-bottom:10px"><span style="font-size:12px;color:var(--text-secondary)">${skippedCount} benefit${skippedCount===1?'':'s'} hidden</span><button onclick="clearAllSkipped()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--blue);padding:0;font-family:var(--mono)">Show all</button></div>`;
+    const skippedData=loadSkipped();
+    const skippedRows=Object.keys(skippedData).map(key=>{
+      const [cardKey,benefitId,pk]=key.split('__');
+      if(!CARDS[cardKey]) return '';
+      let benefitName='',benefitAmt=0;
+      CARDS[cardKey].sections.forEach(s=>s.benefits.forEach(b=>{
+        if(b.id===benefitId){ benefitName=b.name; benefitAmt=getBAmount(b,{m:CM}); }
+      }));
+      if(!benefitName) return '';
+      return `<div class="priority-row" style="opacity:0.6">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500;color:var(--text)">${benefitName}</div>
+          <div style="font-size:10px;color:var(--text-tertiary);font-family:var(--mono)">${CARD_LABELS[cardKey]||cardKey} · $${benefitAmt}</div>
+        </div>
+        <button onclick="unskipBenefit('${cardKey}','${benefitId}','${pk}')" style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-secondary);font-size:12px;padding:4px 10px;font-family:var(--mono);flex-shrink:0">Restore</button>
+      </div>`;
+    }).filter(Boolean).join('');
+    if(skippedRows){
+      html+=`<div class="section-header" style="margin-top:4px"><span class="section-title">Dismissed</span><button onclick="clearAllSkipped()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--blue);padding:0;font-family:var(--mono)">Restore all</button></div>`;
+      html+=skippedRows;
+    }
   }
 
   if(eomDays<=5) html+=`<div class="eom-warning">Only ${eomDays} day${eomDays===1?'':'s'} left — monthly benefits reset soon!</div>`;

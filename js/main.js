@@ -1523,6 +1523,7 @@ window.openFeeDateModal=openFeeDateModal;
 window.closeFeeDateModal=closeFeeDateModal;
 window.goToCardPeriod=goToCardPeriod;
 window.skipBenefit=skipBenefit;
+window.unskipBenefit=unskipBenefit;
 window.clearAllSkipped=clearAllSkipped;
 window.requestNotifications=requestNotifications;
 window.setSelectedYear=(y)=>{ state.selectedYear=y; };
