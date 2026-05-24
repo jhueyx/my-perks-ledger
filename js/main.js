@@ -416,6 +416,7 @@ function applyUserCards(){
   document.querySelectorAll('.card-btn').forEach(b=>b.className='card-btn');
   const activeBtn=document.querySelector(`.card-btn[data-card="${state.activeCard}"]`);
   if(activeBtn) activeBtn.classList.add(`active-${state.activeCard}`);
+  requestAnimationFrame(initMobileInfiniteCarousel);
 }
 
 function initCardSelector(){
@@ -1289,6 +1290,58 @@ function startCarousel(){
   tick();
 }
 function stopCarousel(){ if(_carouselId){ cancelAnimationFrame(_carouselId); _carouselId=null; } }
+
+// ── Mobile infinite-loop carousel ─────────────────────────────────────────
+let _infJumping=false;
+function initMobileInfiniteCarousel(){
+  if(window.innerWidth>600) return;
+  const sel=document.getElementById('cardSelector');
+  sel.querySelectorAll('.card-clone').forEach(c=>c.remove());
+  const realBtns=[...sel.querySelectorAll('.card-btn[data-card]')].filter(b=>b.offsetWidth>0&&b.style.display!=='none');
+  const n=realBtns.length;
+  if(n<2) return;
+  const CLONES=2;
+  function mkClone(src){
+    const cl=src.cloneNode(true);
+    cl.classList.add('card-clone');
+    cl.setAttribute('draggable','false');
+    const card=src.dataset.card;
+    cl.addEventListener('click',()=>{ const real=sel.querySelector(`.card-btn[data-card="${card}"]:not(.card-clone)`); if(real) real.click(); });
+    return cl;
+  }
+  // Prepend clones of last CLONES real cards
+  for(let i=n-CLONES;i<n;i++) sel.insertBefore(mkClone(realBtns[i]),realBtns[0]);
+  // Append clones of first CLONES real cards
+  for(let i=0;i<CLONES;i++) sel.appendChild(mkClone(realBtns[i]));
+  // Scroll to active real card
+  requestAnimationFrame(()=>{
+    const activeBtn=sel.querySelector(`.card-btn[data-card="${state.activeCard}"]:not(.card-clone)`);
+    if(activeBtn) activeBtn.scrollIntoView({behavior:'instant',block:'nearest',inline:'start'});
+  });
+  function checkBounds(){
+    if(_infJumping) return;
+    const padL=parseInt(getComputedStyle(sel).paddingLeft)||0;
+    const selRect=sel.getBoundingClientRect();
+    const contentLeft=selRect.left+padL;
+    const allBtns=[...sel.querySelectorAll('.card-btn')].filter(b=>b.offsetWidth>0);
+    let snapped=null;
+    for(const btn of allBtns){
+      if(Math.abs(btn.getBoundingClientRect().left-contentLeft)<24){ snapped=btn; break; }
+    }
+    if(snapped&&snapped.classList.contains('card-clone')){
+      const card=snapped.dataset.card;
+      const real=sel.querySelector(`.card-btn[data-card="${card}"]:not(.card-clone)`);
+      if(real){
+        _infJumping=true;
+        real.scrollIntoView({behavior:'instant',block:'nearest',inline:'start'});
+        setTimeout(()=>{ _infJumping=false; },80);
+      }
+    }
+  }
+  sel.addEventListener('scrollend',checkBounds);
+  let _sbTimer=null;
+  sel.addEventListener('scroll',()=>{ clearTimeout(_sbTimer); _sbTimer=setTimeout(checkBounds,120); },{passive:true});
+}
 
 initCardSelector();
 window.addEventListener('resize',sizeCardSelector);

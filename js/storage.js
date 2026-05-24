@@ -25,10 +25,10 @@ export async function syncFromSupabase(){
       const localTs=localStorage.getItem(STORAGE_KEY+'-ts-'+state.currentUser.id);
       if(localTs&&data.updated_at&&new Date(data.updated_at)<=new Date(localTs)) return;
       const raw=data.data;
-      const remoteExtras={_customAmounts:raw._customAmounts||{},_partial:raw._partial||{},_notes:raw._notes||{},_credited:raw._credited||{},_skipped:raw._skipped||{},_feeOverrides:raw._feeOverrides||{},_snoozed:raw._snoozed||{},_cardOrder:raw._cardOrder||[]};
+      const remoteExtras={_customAmounts:raw._customAmounts||{},_partial:raw._partial||{},_notes:raw._notes||{},_credited:raw._credited||{},_skipped:raw._skipped||{},_feeOverrides:raw._feeOverrides||{},_snoozed:raw._snoozed||{},_cardOrder:raw._cardOrder||[],_cardMeta:raw._cardMeta||{}};
       const benefitData={...raw};
-      delete benefitData._customAmounts; delete benefitData._partial; delete benefitData._notes; delete benefitData._credited; delete benefitData._skipped; delete benefitData._feeOverrides; delete benefitData._snoozed; delete benefitData._cardOrder;
-      const localExtras={_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped(),_feeOverrides:getFeeOverrides(),_snoozed:loadSnoozed(),_cardOrder:JSON.parse(localStorage.getItem('perks-card-order')||'[]')};
+      delete benefitData._customAmounts; delete benefitData._partial; delete benefitData._notes; delete benefitData._credited; delete benefitData._skipped; delete benefitData._feeOverrides; delete benefitData._snoozed; delete benefitData._cardOrder; delete benefitData._cardMeta;
+      const localExtras={_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped(),_feeOverrides:getFeeOverrides(),_snoozed:loadSnoozed(),_cardOrder:JSON.parse(localStorage.getItem('perks-card-order')||'[]'),_cardMeta:loadCardMeta()};
       const changed=JSON.stringify(benefitData)!==JSON.stringify(state.DATA)||JSON.stringify(remoteExtras)!==JSON.stringify(localExtras);
       if(changed){
         state.DATA=Object.assign(freshDATA(),benefitData);
@@ -42,6 +42,7 @@ export async function syncFromSupabase(){
         if(Object.keys(remoteExtras._feeOverrides).length) saveFeeOverridesData(remoteExtras._feeOverrides);
         if(Object.keys(remoteExtras._snoozed).length) saveSnoozed(remoteExtras._snoozed);
         if(remoteExtras._cardOrder.length) localStorage.setItem('perks-card-order',JSON.stringify(remoteExtras._cardOrder));
+        if(Object.keys(remoteExtras._cardMeta).length) saveCardMetaData(remoteExtras._cardMeta);
         document.dispatchEvent(new CustomEvent('perks:rerender'));
       }
     }
@@ -58,7 +59,7 @@ export async function saveToStorage(){
     localStorage.setItem(STORAGE_KEY+'-ts-'+state.currentUser.id,ts);
   }catch(e){}
   try{
-    const payload={...state.DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped(),_feeOverrides:getFeeOverrides(),_snoozed:loadSnoozed(),_cardOrder:JSON.parse(localStorage.getItem('perks-card-order')||'[]')};
+    const payload={...state.DATA,_customAmounts:loadCustomAmounts(),_partial:loadPartial(),_notes:loadNotes(),_credited:loadCredited(),_skipped:loadSkipped(),_feeOverrides:getFeeOverrides(),_snoozed:loadSnoozed(),_cardOrder:JSON.parse(localStorage.getItem('perks-card-order')||'[]'),_cardMeta:loadCardMeta()};
     const {data:updated,error:upErr}=await sb.from('tracker_data').update({data:payload,updated_at:ts}).eq('user_id',state.currentUser.id).select('user_id');
     if(upErr) throw upErr;
     if(!updated||updated.length===0){
