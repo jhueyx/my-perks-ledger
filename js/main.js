@@ -1312,42 +1312,41 @@ function initMobileInfiniteCarousel(){
     cl.addEventListener('click',()=>{ const real=sel.querySelector(`.card-btn[data-card="${card}"]:not(.card-clone)`); if(real) real.click(); });
     return cl;
   }
-  // Prepend clones of last CLONES real cards
+  // Prepend clones of last CLONES real cards, append clones of first CLONES
   for(let i=n-CLONES;i<n;i++) sel.insertBefore(mkClone(realBtns[i]),realBtns[0]);
-  // Append clones of first CLONES real cards
   for(let i=0;i<CLONES;i++) sel.appendChild(mkClone(realBtns[i]));
-  // Scroll to active real card (use scrollLeft delta so padding is naturally accounted for)
-  requestAnimationFrame(()=>{
+  // Scroll active real card to the snap edge using getBoundingClientRect delta
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const activeBtn=sel.querySelector(`.card-btn[data-card="${state.activeCard}"]:not(.card-clone)`);
-    const firstReal=realBtns[0];
-    if(activeBtn&&firstReal){
-      // Jump by delta from first real card to active real card
-      sel.scrollLeft=activeBtn.offsetLeft-firstReal.offsetLeft+(CLONES*(firstReal.offsetWidth+12));
-    }
-  });
+    if(!activeBtn) return;
+    const padL=parseInt(getComputedStyle(sel).paddingLeft)||0;
+    const snapEdge=sel.getBoundingClientRect().left+padL;
+    sel.scrollLeft+=activeBtn.getBoundingClientRect().left-snapEdge;
+  }));
   function checkBounds(){
     if(_infJumping) return;
-    // Find which card is closest to the left snap edge (scrollLeft position)
+    const padL=parseInt(getComputedStyle(sel).paddingLeft)||0;
+    const snapEdge=sel.getBoundingClientRect().left+padL;
     const allBtns=[...sel.querySelectorAll('.card-btn')].filter(b=>b.offsetWidth>0);
     let snapped=null,minDist=Infinity;
     for(const btn of allBtns){
-      const dist=Math.abs(btn.offsetLeft-sel.scrollLeft);
-      if(dist<minDist){ minDist=dist; snapped=btn; }
+      const d=Math.abs(btn.getBoundingClientRect().left-snapEdge);
+      if(d<minDist){ minDist=d; snapped=btn; }
     }
     if(snapped&&snapped.classList.contains('card-clone')){
       const card=snapped.dataset.card;
       const real=sel.querySelector(`.card-btn[data-card="${card}"]:not(.card-clone)`);
       if(real){
         _infJumping=true;
-        // Teleport: shift scrollLeft by the exact offset between clone and real card
-        sel.scrollLeft+=real.offsetLeft-snapped.offsetLeft;
-        setTimeout(()=>{ _infJumping=false; },80);
+        // Shift scrollLeft by the viewport distance between real and clone — seamless teleport
+        sel.scrollLeft+=real.getBoundingClientRect().left-snapped.getBoundingClientRect().left;
+        setTimeout(()=>{ _infJumping=false; },100);
       }
     }
   }
   sel.addEventListener('scrollend',checkBounds);
   let _sbTimer=null;
-  sel.addEventListener('scroll',()=>{ clearTimeout(_sbTimer); _sbTimer=setTimeout(checkBounds,150); },{passive:true});
+  sel.addEventListener('scroll',()=>{ clearTimeout(_sbTimer); _sbTimer=setTimeout(checkBounds,250); },{passive:true});
 }
 
 initCardSelector();
