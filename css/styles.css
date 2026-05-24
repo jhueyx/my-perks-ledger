@@ -1996,6 +1996,32 @@
     height: 100%; border-radius: 3px; background: var(--gold); transition: width 0.4s ease;
   }
 
+  /* ── Fee optimizer ── */
+  .optimizer-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 8px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .optimizer-card:hover { border-color: var(--gold); }
+  .optimizer-card-header {
+    display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;
+  }
+  .optimizer-card-name {
+    font-size: 11px; font-family: var(--mono); color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .optimizer-impact { font-size: 18px; font-weight: 700; font-family: var(--mono); }
+  .optimizer-verdict { font-size: 12px; font-weight: 500; margin-bottom: 10px; }
+  .optimizer-bar-wrap {
+    height: 5px; background: var(--border-light); border-radius: 3px;
+    margin-bottom: 8px; overflow: hidden;
+  }
+  .optimizer-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .optimizer-card-sub {
+    display: flex; gap: 6px; font-size: 10px; font-family: var(--mono);
+    flex-wrap: wrap; color: var(--text-secondary);
+  }
+
   /* ── Badge unlock toast ── */
   .badge-toast {
     position: fixed;

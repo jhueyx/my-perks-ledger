@@ -1204,9 +1204,81 @@ export function updateTabBadge(){
   if(dot) dot.remove();
 }
 
+// ── Render: fee optimizer ──────────────────────────────────────────────────
+export function renderFeeOptimizer(){
+  const CARD_KEYS=getVisibleCardKeys();
+  let totalFees=0,totalProjected=0;
+  const cards=CARD_KEYS.map(cardKey=>{
+    const fee=getFee(cardKey,CY);
+    const projected=getProjectedCapture(cardKey);
+    const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
+    totalFees+=fee; totalProjected+=projected;
+    return {cardKey,fee,projected,captured,cancelImpact:fee-projected};
+  });
+  cards.sort((a,b)=>b.cancelImpact-a.cancelImpact);
+  const netPortfolio=totalProjected-totalFees;
+  const inProfit=netPortfolio>=0;
+  const coveragePct=totalFees>0?Math.min(100,Math.round(totalProjected/totalFees*100)):0;
+  let html=`<div class="banner"><strong>Fee optimizer</strong> — net impact of canceling each card</div>`;
+  html+=`<div class="netval-hero">
+    <div class="netval-hero-row">
+      <div>
+        <div class="netval-hero-val ${inProfit?'green':'red'}">${inProfit?'+':'-'}$${Math.abs(netPortfolio).toFixed(0)}</div>
+        <div class="netval-hero-label">Portfolio net (projected)</div>
+      </div>
+      <div style="text-align:right">
+        <div class="netval-hero-val">$${totalFees}</div>
+        <div class="netval-hero-label">Total annual fees</div>
+      </div>
+    </div>
+    <div class="netval-progress">
+      <div class="netval-progress-fill" style="width:${coveragePct}%;background:${inProfit?'var(--green)':'var(--gold)'}"></div>
+    </div>
+    <div class="netval-progress-labels">
+      <span>$0</span>
+      <span style="color:${inProfit?'var(--green)':'var(--gold)'}">$${totalProjected.toFixed(0)} projected vs $${totalFees} fees</span>
+      <span>$${totalFees}</span>
+    </div>
+  </div>`;
+  html+=`<div class="section-header"><span class="section-title">Cancel impact</span><span class="section-period">sorted by net gain from canceling</span></div>`;
+  cards.forEach(({cardKey,fee,projected,captured,cancelImpact})=>{
+    const saves=cancelImpact>0;
+    const close=Math.abs(cancelImpact)<=75;
+    const verdictColor=saves?'var(--green)':close?'var(--gold)':'var(--text-secondary)';
+    const verdict=saves
+      ?`Cancel and save $${cancelImpact.toFixed(0)}/yr net`
+      :close
+      ?`Borderline — costs $${Math.abs(cancelImpact).toFixed(0)}/yr to cancel`
+      :`Keep — you'd lose $${Math.abs(cancelImpact).toFixed(0)}/yr net`;
+    const capPct=fee>0?Math.min(100,Math.round(projected/fee*100)):0;
+    const barColor=projected>=fee?'var(--green)':projected>=fee*0.7?'var(--gold)':'var(--red)';
+    html+=`<div class="optimizer-card" onclick="goToCardPeriod('${cardKey}')">
+      <div class="optimizer-card-header">
+        <span class="optimizer-card-name">${CARD_LABELS[cardKey]}</span>
+        <span class="optimizer-impact" style="color:${saves?'var(--green)':'var(--red)'}">${saves?'+':'-'}$${Math.abs(cancelImpact).toFixed(0)}</span>
+      </div>
+      <div class="optimizer-verdict" style="color:${verdictColor}">${verdict}</div>
+      <div class="optimizer-bar-wrap">
+        <div class="optimizer-bar-fill" style="width:${capPct}%;background:${barColor}"></div>
+      </div>
+      <div class="optimizer-card-sub">
+        <span>$${fee} fee</span>
+        <span style="color:var(--text-tertiary)">·</span>
+        <span style="color:var(--green)">$${captured.toFixed(0)} captured</span>
+        <span style="color:var(--text-tertiary)">·</span>
+        <span>$${projected.toFixed(0)} proj.</span>
+        <span style="color:var(--text-tertiary)">·</span>
+        <span style="color:${capPct>=100?'var(--green)':capPct>=70?'var(--gold)':'var(--red)'}">${capPct}% coverage</span>
+      </div>
+    </div>`;
+  });
+  html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:12px;padding-bottom:8px">Cancel impact = annual fee saved minus projected annual benefits lost</div>`;
+  set(html);
+}
+
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','streaks','history-log','recap','insights','heatmap','roi','priority','keep-card','trends','digest','net-value','badges'];
+  const _analyticsViews=['compare','streaks','history-log','recap','insights','heatmap','roi','priority','keep-card','trends','digest','net-value','badges','fee-optimizer'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -1241,5 +1313,6 @@ export function render(){
   else if(state.activeView==='trends') renderTrends();
   else if(state.activeView==='digest') renderDigest();
   else if(state.activeView==='net-value') renderNetValue();
+  else if(state.activeView==='fee-optimizer') renderFeeOptimizer();
   setTimeout(()=>{ updateTabBadge(); updateCardBadges(); },200);
 }
