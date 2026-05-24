@@ -416,7 +416,7 @@ function applyUserCards(){
   document.querySelectorAll('.card-btn:not(.card-clone)').forEach(b=>b.className='card-btn');
   const activeBtn=document.querySelector(`.card-btn[data-card="${state.activeCard}"]:not(.card-clone)`);
   if(activeBtn) activeBtn.classList.add(`active-${state.activeCard}`);
-  requestAnimationFrame(initMobileInfiniteCarousel);
+  requestAnimationFrame(initMobileCarousel);
 }
 
 function initCardSelector(){
@@ -438,7 +438,7 @@ function initCardSelector(){
       btn.classList.add(`active-${c}`);
       state.activeCard=c;
       stopCarousel();
-      btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+      if(window.innerWidth>600) btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
       setActiveView('this-period');
       setTimeout(()=>{ initCardFlip(); },50);
     });
@@ -1295,67 +1295,194 @@ function startCarousel(){
 }
 function stopCarousel(){ if(_carouselId){ cancelAnimationFrame(_carouselId); _carouselId=null; } }
 
-// ── Mobile infinite-loop carousel ─────────────────────────────────────────
-let _infJumping=false;
-function initMobileInfiniteCarousel(){
+// ── Mobile carousel (iOS-style, transform-based) ──────────────────────────
+let _mc=null;
+function initMobileCarousel(){
   if(window.innerWidth>600) return;
   const sel=document.getElementById('cardSelector');
-  sel.querySelectorAll('.card-clone').forEach(c=>c.remove());
-  const realBtns=[...sel.querySelectorAll('.card-btn[data-card]:not(.card-clone)')].filter(b=>b.style.display!=='none');
-  const n=realBtns.length;
-  if(n<2) return;
+
+  // ── Destroy previous instance cleanly ─────────────────────────────────
+  if(_mc){ _mc.destroy(); _mc=null; }
+
+  // ── Visible real cards ─────────────────────────────────────────────────
+  const cards=[...sel.querySelectorAll('.card-btn[data-card]:not(.card-clone)')]
+    .filter(b=>b.style.display!=='none');
+  const n=cards.length; if(n<1) return;
+
+  // ── Build track with 2-card clone buffer at each end ──────────────────
+  const track=document.createElement('div');
+  track.className='carousel-track';
+  const CLONES=2;
+
   function mkClone(src){
     const cl=src.cloneNode(true);
-    cl.classList.add('card-clone');
+    cl.className='card-btn card-clone';
     cl.setAttribute('draggable','false');
     const card=src.dataset.card;
-    cl.addEventListener('click',()=>{ const real=sel.querySelector(`.card-btn[data-card="${card}"]:not(.card-clone)`); if(real) real.click(); });
+    cl.addEventListener('click',()=>{
+      const real=sel.querySelector(`.card-btn[data-card="${card}"]:not(.card-clone)`);
+      if(real) real.click();
+    });
     return cl;
   }
-  // Clone the full set once before and once after — gives n cards of buffer in each direction
-  const frag=document.createDocumentFragment();
-  for(let i=0;i<n;i++) frag.appendChild(mkClone(realBtns[i]));
-  sel.insertBefore(frag, realBtns[0]);
-  for(let i=0;i<n;i++) sel.appendChild(mkClone(realBtns[i]));
+  for(let i=n-CLONES;i<n;i++) track.appendChild(mkClone(cards[i])); // prepend: last CLONES
+  cards.forEach(c=>track.appendChild(c));                             // real cards
+  for(let i=0;i<CLONES;i++) track.appendChild(mkClone(cards[i]));   // append: first CLONES
+  sel.appendChild(track);
 
-  // After layout: measure stride, compute safe zone bounds, scroll to active card
-  let _minSnap=0, _maxSnap=0, _stride=0, _totalW=0;
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    const all=[...sel.querySelectorAll('.card-btn')].filter(b=>b.offsetWidth>0);
-    _stride=all.length>1 ? all[1].getBoundingClientRect().left-all[0].getBoundingClientRect().left : all[0].offsetWidth+12;
-    _totalW=n*_stride;
-    // snap positions for real cards: indices n..(2n-1) → scrollLeft = n*stride + k*stride
-    const padL=parseInt(getComputedStyle(sel).paddingLeft)||0;
-    const selLeft=sel.getBoundingClientRect().left;
-    const snapEdge=selLeft+padL;
-    _minSnap=sel.scrollLeft+(realBtns[0].getBoundingClientRect().left-snapEdge);
-    _maxSnap=_minSnap+(n-1)*_stride;
-    // Scroll to active card
-    const activeBtn=sel.querySelector(`.card-btn[data-card="${state.activeCard}"]:not(.card-clone)`);
-    const target=activeBtn||realBtns[0];
-    sel.style.scrollSnapType='none';
-    sel.scrollLeft+=target.getBoundingClientRect().left-snapEdge;
-    requestAnimationFrame(()=>{ sel.style.scrollSnapType='x mandatory'; });
-  }));
-
-  function checkBounds(){
-    if(_infJumping||!_stride) return;
-    const sl=sel.scrollLeft;
-    let delta=0;
-    if(sl<_minSnap-_stride*0.4) delta=_totalW;       // scrolled into prepend clones
-    else if(sl>_maxSnap+_stride*0.4) delta=-_totalW;  // scrolled into append clones
-    if(!delta) return;
-    _infJumping=true;
-    sel.style.scrollSnapType='none';
-    sel.scrollLeft+=delta;
-    requestAnimationFrame(()=>{
-      sel.style.scrollSnapType='x mandatory';
-      _infJumping=false;
-    });
+  // ── Pagination dots ────────────────────────────────────────────────────
+  const dotsEl=document.createElement('div');
+  dotsEl.className='carousel-dots';
+  const dots=[];
+  for(let i=0;i<n;i++){
+    const d=document.createElement('span');
+    d.className='carousel-dot';
+    d.addEventListener('click',()=>goTo(i));
+    dotsEl.appendChild(d); dots.push(d);
   }
-  sel.addEventListener('scrollend',checkBounds);
-  let _t=null;
-  sel.addEventListener('scroll',()=>{ clearTimeout(_t); _t=setTimeout(checkBounds,300); },{passive:true});
+  sel.appendChild(dotsEl);
+
+  // ── Layout constants ───────────────────────────────────────────────────
+  const vw=window.innerWidth;
+  const cardW=Math.round(vw*0.78);
+  const gap=12;
+  const stride=cardW+gap;
+  const peek=Math.round((vw-cardW)/2); // inset so active card is centered
+
+  // x-position for physical track index p (0 = first prepended clone)
+  function xFor(p){ return peek-p*stride; }
+
+  let curIdx=Math.max(0,cards.findIndex(b=>b.dataset.card===state.activeCard));
+  let curX=xFor(CLONES+curIdx);
+
+  function applyX(x,dur=0){
+    track.style.transition=dur>0?`transform ${dur}ms cubic-bezier(0.25,0.46,0.45,0.94)`:'none';
+    track.style.transform=`translateX(${x}px)`;
+    curX=x;
+  }
+  applyX(curX,0);
+
+  // ── Dot + active-card state ────────────────────────────────────────────
+  function setDot(i){ dots.forEach((d,j)=>d.classList.toggle('active',j===i)); }
+  setDot(curIdx);
+
+  function activateCard(i){
+    if(i<0||i>=n) return;
+    const key=cards[i].dataset.card;
+    document.querySelectorAll('.card-btn:not(.card-clone)').forEach(b=>b.className='card-btn');
+    cards[i].classList.add(`active-${key}`);
+    state.activeCard=key; setDot(i);
+  }
+  activateCard(curIdx);
+
+  // ── Silent reset after transition lands on a clone ────────────────────
+  let _resetFn=null;
+  function clearReset(){
+    if(_resetFn){ track.removeEventListener('transitionend',_resetFn); _resetFn=null; }
+  }
+  function scheduleReset(realPhysIdx){
+    clearReset();
+    const targetX=xFor(realPhysIdx);
+    _resetFn=(e)=>{
+      if(e.propertyName!=='transform') return;
+      clearReset();
+      requestAnimationFrame(()=>{
+        track.style.transition='none';
+        track.style.transform=`translateX(${targetX}px)`;
+        curX=targetX;
+      });
+    };
+    track.addEventListener('transitionend',_resetFn);
+  }
+
+  function goTo(realIdx,animate=true){
+    clearReset();
+    curIdx=((realIdx%n)+n)%n;
+    applyX(xFor(CLONES+curIdx),animate?420:0);
+    activateCard(curIdx);
+  }
+
+  // ── Touch handling ─────────────────────────────────────────────────────
+  let t0x=0,t0y=0,t0X=0,tLastX=0,tLastT=0,tVel=0,dirLock=null,dragging=false;
+
+  function onTouchStart(e){
+    // Capture animated position mid-transition and cancel pending reset
+    clearReset();
+    const mat=new DOMMatrixReadOnly(window.getComputedStyle(track).transform);
+    curX=mat.m41;
+    track.style.transition='none';
+    track.style.transform=`translateX(${curX}px)`;
+
+    const t=e.touches[0];
+    t0x=t.clientX; t0y=t.clientY; t0X=curX;
+    tLastX=t.clientX; tLastT=Date.now(); tVel=0;
+    dirLock=null; dragging=false;
+  }
+
+  function onTouchMove(e){
+    const t=e.touches[0];
+    const dx=t.clientX-t0x, dy=t.clientY-t0y;
+    if(!dirLock){
+      if(Math.abs(dx)>9||Math.abs(dy)>9) dirLock=Math.abs(dx)>=Math.abs(dy)?'h':'v';
+      return;
+    }
+    if(dirLock!=='h') return;
+    e.preventDefault();
+    dragging=true;
+    const now=Date.now(), dt=now-tLastT;
+    if(dt>0) tVel=(t.clientX-tLastX)/dt;
+    tLastX=t.clientX; tLastT=now;
+    track.style.transform=`translateX(${t0X+dx}px)`;
+    curX=t0X+dx;
+  }
+
+  function onTouchEnd(e){
+    if(!dragging||dirLock!=='h'){ dragging=false; dirLock=null; return; }
+    dragging=false; dirLock=null;
+
+    // Physical index of current position
+    const rawPhys=(peek-curX)/stride;
+    const startPhys=Math.round((peek-t0X)/stride);
+
+    // Snap target: nearest card, biased by velocity
+    let targetPhys=Math.round(rawPhys);
+    if(tVel<-0.3) targetPhys=Math.floor(rawPhys)+1; // flick left → advance
+    if(tVel>0.3)  targetPhys=Math.ceil(rawPhys)-1;  // flick right → back
+    // One card per gesture max
+    targetPhys=Math.max(startPhys-1,Math.min(startPhys+1,targetPhys));
+    // Clamp to valid track range
+    targetPhys=Math.max(0,Math.min(n+CLONES*2-1,targetPhys));
+
+    const realIdx=((targetPhys-CLONES)%n+n)%n;
+    curIdx=realIdx; activateCard(realIdx);
+    applyX(xFor(targetPhys),400);
+
+    // If landed on a clone, silently reset to real card position after animation
+    if(targetPhys<CLONES||targetPhys>=CLONES+n){
+      scheduleReset(CLONES+realIdx);
+    }
+  }
+
+  sel.addEventListener('touchstart',onTouchStart,{passive:true});
+  sel.addEventListener('touchmove',onTouchMove,{passive:false});
+  sel.addEventListener('touchend',onTouchEnd,{passive:true});
+
+  // ── Wire card clicks to animate carousel ──────────────────────────────
+  cards.forEach((btn,i)=>btn.addEventListener('click',()=>{ if(_mc) _mc.goTo(i); }));
+
+  // ── Public API ─────────────────────────────────────────────────────────
+  _mc={
+    goTo,
+    getIndex:()=>curIdx,
+    destroy(){
+      clearReset();
+      sel.removeEventListener('touchstart',onTouchStart);
+      sel.removeEventListener('touchmove',onTouchMove);
+      sel.removeEventListener('touchend',onTouchEnd);
+      cards.forEach(c=>{ c.style.flex=''; c.style.width=''; sel.appendChild(c); });
+      track.remove(); dotsEl.remove();
+    }
+  };
 }
 
 initCardSelector();
