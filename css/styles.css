@@ -1956,41 +1956,107 @@
   /* ── Achievement badges ── */
   .badges-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     margin-bottom: 16px;
   }
-  .badge-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+  @media (min-width: 540px) {
+    .badges-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .badge-flip-inner { height: 200px !important; }
+  }
+  .badge-flip-wrap {
+    cursor: pointer;
+    perspective: 900px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .badge-flip-inner {
+    position: relative;
+    height: 182px;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+  }
+  .badge-flip-inner.flipped { transform: rotateY(180deg); }
+  .badge-front, .badge-back {
+    position: absolute;
+    inset: 0;
     border-radius: var(--radius);
-    padding: 14px 12px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
-    text-align: center;
+    padding: 14px 8px 8px;
+    box-sizing: border-box;
     gap: 5px;
-    transition: border-color 0.15s;
   }
-  .badge-card.locked { opacity: 0.45; }
-  .badge-card.earned { border-color: var(--border); }
-  .badge-icon-wrap {
-    width: 46px; height: 46px; border-radius: 50%;
-    border: 2px solid; display: flex; align-items: center;
-    justify-content: center; margin-bottom: 2px; flex-shrink: 0;
+  .badge-front {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    justify-content: center;
+  }
+  .badge-front.earned-front { border-color: var(--badge-border, var(--border)); }
+  .badge-back {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transform: rotateY(180deg);
+    justify-content: flex-start;
+    text-align: center;
+  }
+  .badge-medallion {
+    width: 64px; height: 64px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden; flex-shrink: 0;
+  }
+  .badge-medallion.locked-medal {
+    background: linear-gradient(145deg, #252525, #383838);
+    opacity: 0.45;
+  }
+  @keyframes badgeShimmer {
+    0%   { transform: translateX(-140%) rotate(-20deg); }
+    100% { transform: translateX(220%) rotate(-20deg); }
+  }
+  .badge-medallion.earned-medal::after {
+    content: '';
+    position: absolute;
+    top: -30%; left: -20%;
+    width: 35%; height: 160%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: badgeShimmer 3.5s ease-in-out infinite;
+    animation-delay: var(--sd, 0s);
   }
   .badge-name {
-    font-size: 12px; font-weight: 600; line-height: 1.2; color: var(--text);
+    font-size: 11px; font-weight: 600; line-height: 1.2;
+    color: var(--text); text-align: center;
   }
-  .badge-card.locked .badge-name { color: var(--text-tertiary); }
-  .badge-desc {
-    font-size: 10px; color: var(--text-secondary);
-    font-family: var(--mono); line-height: 1.4;
+  .badge-flip-wrap.locked-badge .badge-name { color: var(--text-tertiary); }
+  .badge-tier-pill {
+    font-size: 8.5px; font-family: var(--mono); text-transform: uppercase;
+    letter-spacing: 0.08em; font-weight: 700;
+    padding: 1px 7px; border-radius: 100px; border: 1px solid currentColor;
   }
-  .badge-tier-label {
-    font-size: 9px; font-family: var(--mono);
-    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
-    margin-top: 2px;
+  .badge-tap-hint {
+    font-size: 8px; color: var(--text-tertiary); font-family: var(--mono);
+    position: absolute; bottom: 5px; left: 0; right: 0; text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .badge-back-status {
+    font-size: 8.5px; font-family: var(--mono); text-transform: uppercase;
+    letter-spacing: 0.12em; font-weight: 700;
+  }
+  .earned-status  { color: #4CAF7D; }
+  .locked-status  { color: var(--text-tertiary); }
+  .badge-back-name {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    line-height: 1.2; margin: 3px 0 5px;
+  }
+  .badge-back-desc {
+    font-size: 10px; color: var(--text-secondary); font-family: var(--mono);
+    line-height: 1.45; flex: 1;
+  }
+  .badge-back-date {
+    font-size: 9px; color: var(--text-tertiary); font-family: var(--mono);
+    margin-top: 4px;
   }
   .badge-progress-row {
     background: var(--surface); border: 1px solid var(--border);

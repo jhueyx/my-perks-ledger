@@ -12,7 +12,7 @@ import {
   loadCardMeta, setCardOpenedDate
 } from './storage.js';
 import { render, getVisibleCardKeys, renderCurrent, renderRecap, haptic, checkAllClaimed, animateCounters, renderFeeOptimizer } from './views.js';
-import { checkBadges, getEarnedBadges, getUnseenBadges, markAllSeen, BADGE_DEFS, TIER_COLORS, backfill2025Badges } from './badges.js';
+import { checkBadges, getEarnedBadges, getEarnedAt, getUnseenBadges, markAllSeen, BADGE_DEFS, TIER_COLORS, backfill2025Badges } from './badges.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee, getBAmount, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
 
 // ── Splash: show login only if no cached session ──────────────────────────
@@ -1282,14 +1282,100 @@ function showBadgeToast(id){
 }
 
 // ── Badges view ───────────────────────────────────────────────────────────
+const BADGE_ICONS={
+  // Streaks — flame / lightning / diamond
+  streak_3:   `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M12 3c-2 3.5-4 7-2 10C8.5 12 8 10 8 10 6 12.5 6 16 8.5 18.5 10 20 11 21 12 21s2-1 3.5-2.5C18 16 18 12.5 16 10c0 0 0 2-2 3 2-3 0-7-2-10z" fill="white"/></svg>`,
+  streak_6:   `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M12 3c-2 3.5-4 7-2 10C8.5 12 8 10 8 10 6 12.5 6 16 8.5 18.5 10 20 11 21 12 21s2-1 3.5-2.5C18 16 18 12.5 16 10c0 0 0 2-2 3 2-3 0-7-2-10z" fill="white"/></svg>`,
+  streak_12:  `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M12 3c-2 3.5-4 7-2 10C8.5 12 8 10 8 10 6 12.5 6 16 8.5 18.5 10 20 11 21 12 21s2-1 3.5-2.5C18 16 18 12.5 16 10c0 0 0 2-2 3 2-3 0-7-2-10z" fill="white"/></svg>`,
+  streak_18:  `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M13 3L6 14h6l-1 7 7-11h-6l1-7z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/></svg>`,
+  streak_24:  `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M12 3l2.4 7.3H22l-6.2 4.5 2.4 7.2L12 17.2l-6.2 4.8 2.4-7.2L2 10.3h7.6z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/></svg>`,
+  // Portfolio size — stacked cards
+  collector:     `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="2" y="13" width="14" height="8" rx="2" fill="white" fill-opacity="0.45"/><rect x="4" y="9" width="14" height="8" rx="2" fill="white" fill-opacity="0.7"/><rect x="6" y="5" width="14" height="8" rx="2" fill="white"/></svg>`,
+  portfolio_pro: `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="2" y="13" width="14" height="8" rx="2" fill="white" fill-opacity="0.45"/><rect x="4" y="9" width="14" height="8" rx="2" fill="white" fill-opacity="0.7"/><rect x="6" y="5" width="14" height="8" rx="2" fill="white"/></svg>`,
+  card_shark:    `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="2" y="13" width="14" height="8" rx="2" fill="white" fill-opacity="0.45"/><rect x="4" y="9" width="14" height="8" rx="2" fill="white" fill-opacity="0.7"/><rect x="6" y="5" width="14" height="8" rx="2" fill="white"/></svg>`,
+  whale:         `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M2 19h20M4 19L2 8l5 5 5-9 5 9 5-5-2 11H4z" fill="white" fill-opacity="0.25" stroke="white" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  // Single-card value — gem
+  big_win:      `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M8 7l4-4 4 4-4 10z" fill="white"/><path d="M5 7l3-4M19 7l-3-4M5 7h14" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  high_roller:  `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M8 7l4-4 4 4-4 10z" fill="white"/><path d="M5 7l3-4M19 7l-3-4M5 7h14" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  elite_earner: `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M8 7l4-4 4 4-4 10z" fill="white"/><path d="M5 7l3-4M19 7l-3-4M5 7h14" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Portfolio total — trophy / chart up
+  getting_started:`<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M12 5v14M5 12l7-7 7 7" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  gaining_ground: `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><polyline points="3,17 9,11 13,15 21,7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 7h6v6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  high_achiever:  `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M8 3h8v5a4 4 0 0 1-8 0V3z" fill="white" fill-opacity="0.9"/><path d="M5 5H3v2.5a3 3 0 0 0 3 3" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M19 5h2v2.5a3 3 0 0 1-3 3" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M9 11.5h6M12 11.5v3M9 14.5h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  power_user:     `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M8 3h8v5a4 4 0 0 1-8 0V3z" fill="white" fill-opacity="0.9"/><path d="M5 5H3v2.5a3 3 0 0 0 3 3" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M19 5h2v2.5a3 3 0 0 1-3 3" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M9 11.5h6M12 11.5v3M9 14.5h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  maximizer:      `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M8 3h8v5a4 4 0 0 1-8 0V3z" fill="white" fill-opacity="0.9"/><path d="M5 5H3v2.5a3 3 0 0 0 3 3" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M19 5h2v2.5a3 3 0 0 1-3 3" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M9 11.5h6M12 11.5v3M9 14.5h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  true_maximizer: `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M8 3h8v5a4 4 0 0 1-8 0V3z" fill="white" fill-opacity="0.9"/><path d="M5 5H3v2.5a3 3 0 0 0 3 3" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M19 5h2v2.5a3 3 0 0 1-3 3" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M9 11.5h6M12 11.5v3M9 14.5h6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  // Fee mastery — scissors
+  first_profit:  `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="7" cy="7" r="2.5" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.2"/><circle cx="7" cy="17" r="2.5" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.2"/><path d="M9.5 8.5L21 4M9.5 15.5L21 20" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  double_dipper: `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="7" cy="7" r="2.5" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.2"/><circle cx="7" cy="17" r="2.5" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.2"/><path d="M9.5 8.5L21 4M9.5 15.5L21 20" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  triple_threat: `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="7" cy="7" r="2.5" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.2"/><circle cx="7" cy="17" r="2.5" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.2"/><path d="M9.5 8.5L21 4M9.5 15.5L21 20" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  fee_crusher:   `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="7" cy="7" r="2.5" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.2"/><circle cx="7" cy="17" r="2.5" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.2"/><path d="M9.5 8.5L21 4M9.5 15.5L21 20" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  // Card mastery — ribbon medal
+  gold_master:  `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="12" cy="9" r="4.5" fill="white" fill-opacity="0.9"/><path d="M8.5 12l-3 9 3.5-1.5 1.5 2 2.5-7M15.5 12l3 9-3.5-1.5-1.5 2-2.5-7" fill="white" fill-opacity="0.55"/></svg>`,
+  plat_master:  `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="12" cy="9" r="4.5" fill="white" fill-opacity="0.9"/><path d="M8.5 12l-3 9 3.5-1.5 1.5 2 2.5-7M15.5 12l3 9-3.5-1.5-1.5 2-2.5-7" fill="white" fill-opacity="0.55"/></svg>`,
+  csr_master:   `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="12" cy="9" r="4.5" fill="white" fill-opacity="0.9"/><path d="M8.5 12l-3 9 3.5-1.5 1.5 2 2.5-7M15.5 12l3 9-3.5-1.5-1.5 2-2.5-7" fill="white" fill-opacity="0.55"/></svg>`,
+  // Claim volume — lightning
+  benefit_ninja:   `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M13 3L6 14h6l-1 7 7-11h-6l1-7z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/></svg>`,
+  benefit_machine: `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M13 3L6 14h6l-1 7 7-11h-6l1-7z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/></svg>`,
+  century:         `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M13 3L6 14h6l-1 7 7-11h-6l1-7z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/></svg>`,
+  // Completionist — star / sunrise
+  grand_slam:   `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M12 2l2.4 7.3H22l-6.2 4.5 2.4 7.2L12 17l-6.2 4 2.4-7.2L2 9.3h7.6z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/></svg>`,
+  early_bird:   `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M12 9v1.5M7.5 11.5l1.1 1.1M16.5 11.5l-1.1 1.1M5 18h14M8.5 18a3.5 3.5 0 0 1 7 0" stroke="white" stroke-width="1.9" stroke-linecap="round"/></svg>`,
+  all_in:       `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M12 2l2.4 7.3H22l-6.2 4.5 2.4 7.2L12 17l-6.2 4 2.4-7.2L2 9.3h7.6z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/></svg>`,
+  perfectionist:`<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M12 2l2.4 7.3H22l-6.2 4.5 2.4 7.2L12 17l-6.2 4 2.4-7.2L2 9.3h7.6z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/></svg>`,
+  all_in_2:     `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M12 2l2.4 7.3H22l-6.2 4.5 2.4 7.2L12 17l-6.2 4 2.4-7.2L2 9.3h7.6z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/></svg>`,
+  // Category specialists
+  uber_loyalist:    `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M5 11l2-5h10l2 5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="11" width="18" height="6" rx="1.5" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.15"/><circle cx="7.5" cy="19.5" r="1.5" fill="white"/><circle cx="16.5" cy="19.5" r="1.5" fill="white"/></svg>`,
+  doordash_devotee:`<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M6 8h12l1.5 10H4.5L6 8z" stroke="white" stroke-width="1.8" stroke-linejoin="round" fill="white" fill-opacity="0.15"/><path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  dining_devotee:  `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M8 3v7a3 3 0 0 0 3 3v8" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M16 3v18" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M8 3c0 0 2.5 1.5 2.5 3.5S8 10 8 10" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  fitness_fan:     `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M2 12h4l3-6 4 12 3-6h6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  clear_member:    `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M12 3L4 7v5c0 4.5 3.5 8.7 8 10 4.5-1.3 8-5.5 8-10V7L12 3z" stroke="white" stroke-width="1.8" stroke-linejoin="round" fill="white" fill-opacity="0.15"/><path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  global_traveler: `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M21 16v-2l-8-5V4a1 1 0 0 0-2 0v5l-8 5v2l8-2.5V18l-2 1.5V21l3-1 3 1v-1.5l-2-1.5v-4.5l8 2.5z" fill="white"/></svg>`,
+  hotel_hopper:    `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="3" y="4" width="18" height="17" rx="1.5" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M3 9h18" stroke="white" stroke-width="1.8"/><path d="M8 14h2M14 14h2M8 17h2M14 17h2" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M10 21v-4h4v4" stroke="white" stroke-width="1.8"/></svg>`,
+  lounge_lizard:   `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M4 12V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M2 12h20v4H2v-4z" fill="white" fill-opacity="0.2" stroke="white" stroke-width="1.8" stroke-linejoin="round"/><path d="M6 20v-4M18 20v-4" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  jet_setter:      `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="1.8"/><path d="M12 3c-2.5 3-4 6-4 9s1.5 6 4 9M12 3c2.5 3 4 6 4 9s-1.5 6-4 9M3 12h18M4.5 7.5h15M4.5 16.5h15" stroke="white" stroke-width="1.3"/></svg>`,
+  // Brand loyalty
+  amex_loyalist:   `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="2" y="6" width="20" height="13" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M2 10h20" stroke="white" stroke-width="1.8"/><path d="M6 14h4M15 14h3" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  chase_loyalist:  `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="2" y="6" width="20" height="13" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M2 10h20" stroke="white" stroke-width="1.8"/><path d="M6 14h4M15 14h3" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  cap1_loyalist:   `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="2" y="6" width="20" height="13" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M2 10h20" stroke="white" stroke-width="1.8"/><path d="M6 14h4M15 14h3" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  multi_bank:      `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><path d="M3 9l9-6 9 6v2H3V9z" fill="white" fill-opacity="0.8" stroke="white" stroke-width="0.5"/><rect x="5" y="11" width="3" height="7" fill="white" fill-opacity="0.7"/><rect x="10.5" y="11" width="3" height="7" fill="white" fill-opacity="0.7"/><rect x="16" y="11" width="3" height="7" fill="white" fill-opacity="0.7"/><path d="M2 20h20" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  // Year badges — calendar
+  yr_2024:      `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M3 10h18M8 3v4M16 3v4" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M7 15h2M11 15h2M15 15h2M7 18h2M11 18h2" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  yr_2025:      `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M3 10h18M8 3v4M16 3v4" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M7 15h2M11 15h2M15 15h2M7 18h2M11 18h2" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  yr_2026:      `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M3 10h18M8 3v4M16 3v4" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M7 15h2M11 15h2M15 15h2M7 18h2M11 18h2" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  multi_year:   `<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M3 10h18M8 3v4M16 3v4" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M12 13l1 2.5L16 16l-2.5 2 .8 3L12 19.5l-2.3 1.5.8-3L8 16l3-.5z" fill="white" stroke="white" stroke-width="0.5"/></svg>`,
+  early_adopter:`<svg viewBox="0 0 24 24" width="28" height="28" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="1.8"/><path d="M12 8v5l3 3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Legendary
+  founder:  `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M2 19h20M4 19L2 8l5 5 5-9 5 9 5-5-2 11H4z" fill="white" fill-opacity="0.25" stroke="white" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+  hacker:   `<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M8 9l3 3-3 3M13 15h3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 21h20" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  obsessive:`<svg viewBox="0 0 24 24" width="30" height="30" fill="none"><path d="M12 5c-5.5 0-9 7-9 7s3.5 7 9 7 9-7 9-7-3.5-7-9-7z" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.12"/><circle cx="12" cy="12" r="3.5" fill="white"/></svg>`,
+};
+
 function renderBadgesView(){
   const earned=new Set(getEarnedBadges());
+  const earnedAt=getEarnedAt();
   markAllSeen();
   const total=BADGE_DEFS.length;
   const earnedCount=earned.size;
-  const trophySVG=(color)=>`<svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3 3.5.5-2.5 2.4.6 3.6L8 10l-3.1 1.5.6-3.6L3 5.5l3.5-.5z" stroke="${color}" stroke-width="1.4" stroke-linejoin="round" fill="${color}22"/></svg>`;
-  const lockSVG=`<svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="3" y="7.5" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 7.5V5.5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`;
   const pct=Math.round(earnedCount/total*100);
+
+  function fmtDate(ts){
+    if(!ts) return '';
+    return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
+  function gradient(tier){
+    return {
+      bronze:   'linear-gradient(145deg,#7A4010,#CD7F32,#E8A040)',
+      silver:   'linear-gradient(145deg,#5A6570,#9CAAB5,#C0D0DA)',
+      gold:     'linear-gradient(145deg,#7A5000,#C8922A,#F0BC40)',
+      platinum: 'linear-gradient(145deg,#1A3E5A,#4A7FA5,#70B0E0)',
+      legendary:'linear-gradient(145deg,#4A1070,#9B59B6,#C880E8)',
+    }[tier]||'linear-gradient(145deg,#444,#888)';
+  }
+  function glow(tier){
+    return {bronze:'#CD7F3255',silver:'#A0A8B040',gold:'#C8922A55',platinum:'#4A7FA555',legendary:'#9B59B665'}[tier]||'#88888840';
+  }
+
   let html=`<div class="banner"><strong>Achievements</strong> — ${earnedCount} of ${total} unlocked</div>`;
   html+=`<div class="badge-progress-row">
     <span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">${earnedCount}/${total}</span>
@@ -1297,22 +1383,43 @@ function renderBadgesView(){
     <span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">${pct}%</span>
   </div>`;
   html+=`<div class="badges-grid">`;
-  BADGE_DEFS.forEach(def=>{
+  BADGE_DEFS.forEach((def,i)=>{
     const isEarned=earned.has(def.id);
     const color=TIER_COLORS[def.tier];
-    html+=`<div class="badge-card ${isEarned?'earned':'locked'}">
-      <div class="badge-icon-wrap" style="border-color:${isEarned?color:'var(--border)'};${isEarned?`box-shadow:0 0 14px ${color}35`:''}">
-        ${isEarned?trophySVG(color):`<span style="color:var(--border)">${lockSVG}</span>`}
+    const icon=BADGE_ICONS[def.id]||'';
+    const grad=isEarned?gradient(def.tier):'linear-gradient(145deg,#252525,#383838)';
+    const shadow=isEarned?`0 0 20px ${glow(def.tier)},0 4px 12px rgba(0,0,0,0.3)`:'none';
+    const sd=`${((i*0.41)%4).toFixed(2)}s`;
+    const earnedDate=fmtDate(earnedAt[def.id]);
+    html+=`<div class="badge-flip-wrap ${isEarned?'earned-badge':'locked-badge'}" onclick="window.flipBadge(this)">
+      <div class="badge-flip-inner">
+        <div class="badge-front ${isEarned?'earned-front':''}" ${isEarned?`style="--badge-border:${color}44"`:''}">
+          <div class="badge-medallion ${isEarned?'earned-medal':'locked-medal'}"
+               style="background:${grad};${isEarned?`box-shadow:${shadow};--sd:${sd}`:''}">
+            ${icon}
+          </div>
+          <div class="badge-name">${def.name}</div>
+          <div class="badge-tier-pill" style="color:${isEarned?color:'var(--text-tertiary)'}">${def.tier}</div>
+          <div class="badge-tap-hint">tap to flip</div>
+        </div>
+        <div class="badge-back" style="${isEarned?`border-color:${color}44`:''}">
+          <div class="badge-back-status ${isEarned?'earned-status':'locked-status'}">${isEarned?'✓ Earned':'Locked'}</div>
+          <div class="badge-back-name">${def.name}</div>
+          <div class="badge-back-desc">${def.desc}</div>
+          ${earnedDate?`<div class="badge-back-date">Earned ${earnedDate}</div>`:''}
+          <div class="badge-tap-hint">tap to flip</div>
+        </div>
       </div>
-      <div class="badge-name">${def.name}</div>
-      <div class="badge-desc">${def.desc}</div>
-      <div class="badge-tier-label" style="color:${isEarned?color:'var(--border)'}">${def.tier}</div>
     </div>`;
   });
   html+=`</div>`;
-  html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:4px;padding-bottom:8px">Keep claiming benefits to unlock more</div>`;
+  html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:4px;padding-bottom:8px">Keep claiming benefits to unlock more achievements</div>`;
   document.getElementById('main').innerHTML=html;
 }
+
+window.flipBadge=function(el){
+  el.querySelector('.badge-flip-inner').classList.toggle('flipped');
+};
 
 // ── More page ─────────────────────────────────────────────────────────────
 function renderMore(){

@@ -1,4 +1,4 @@
-import { CARDS } from './cards.js';
+import { CARDS, PREMIUM_CARD_CATALOG } from './cards.js';
 import { state, CY, CM } from './state.js';
 import { isUsed, isGloballySnoozed } from './storage.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee, getStreak, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
@@ -74,6 +74,12 @@ export const BADGE_DEFS = [
   { id:'multi_year',      tier:'gold',      name:'Multi-Year Veteran',       desc:'Active tracker in 3+ calendar years' },
   { id:'early_adopter',   tier:'silver',    name:'Early Adopter',            desc:'Using Perks Ledger since 2024 or earlier' },
 
+  // ── Brand & bank loyalty ─────────────────────────────────────────────
+  { id:'amex_loyalist',   tier:'gold',      name:'Amex Loyalist',            desc:'Tracking 3+ American Express cards' },
+  { id:'chase_loyalist',  tier:'gold',      name:'Chase Loyalist',           desc:'Tracking 3+ Chase cards' },
+  { id:'cap1_loyalist',   tier:'silver',    name:'Capital One Fan',          desc:'Tracking 2+ Capital One cards' },
+  { id:'multi_bank',      tier:'platinum',  name:'Multi-Bank Master',        desc:'Cards from 3+ different banks in your portfolio' },
+
   // ── Legendary ────────────────────────────────────────────────────────
   { id:'founder',         tier:'legendary', name:'Founder',                  desc:'Built this — no one else gets this badge', special:true },
   { id:'hacker',          tier:'legendary', name:'Credit Card Benefit Hacker', desc:'Mastered the art of extracting every dollar from every card', special:true },
@@ -88,17 +94,25 @@ export const TIER_COLORS = {
   legendary:'#9B59B6',
 };
 
-function loadState(){ try{ return JSON.parse(localStorage.getItem(BADGES_KEY)||'{"earned":[],"seen":[]}'); }catch(e){ return {earned:[],seen:[]}; } }
+function loadState(){ try{ const s=JSON.parse(localStorage.getItem(BADGES_KEY)||'{}'); return {earned:s.earned||[],seen:s.seen||[],earnedAt:s.earnedAt||{}}; }catch(e){ return {earned:[],seen:[],earnedAt:{}}; } }
 function saveState(s){ localStorage.setItem(BADGES_KEY,JSON.stringify(s)); }
 
 export function getEarnedBadges(){ return loadState().earned; }
+export function getEarnedAt(){ return loadState().earnedAt; }
 export function getUnseenBadges(){ const s=loadState(); const seen=new Set(s.seen); return s.earned.filter(id=>!seen.has(id)); }
 export function markAllSeen(){ const s=loadState(); s.seen=[...s.earned]; saveState(s); }
 
-export function awardBadges(ids){
+export function awardBadges(ids, approxDates){
   const s=loadState();
-  const earned=new Set(s.earned);
-  ids.forEach(id=>earned.add(id));
+  const prev=new Set(s.earned);
+  const earned=new Set(prev);
+  const now=Date.now();
+  ids.forEach(id=>{
+    if(!earned.has(id)){
+      earned.add(id);
+      s.earnedAt[id]=approxDates&&approxDates[id] ? approxDates[id] : now;
+    }
+  });
   s.earned=[...earned];
   saveState(s);
   return ids.filter(id=>!new Set(loadState().seen).has(id));
@@ -107,15 +121,27 @@ export function awardBadges(ids){
 export function backfill2025Badges(){
   const FLAG='perks-badges-2025-backfill-v2';
   if(localStorage.getItem(FLAG)) return [];
-  const earned=[
-    'collector','portfolio_pro',
-    'streak_3','streak_6','streak_12',
-    'first_profit','big_win','high_achiever','getting_started','gaining_ground',
-    'uber_loyalist','dining_devotee',
-    'yr_2025','yr_2026','multi_year',
-    'founder','hacker','obsessive',
-  ];
-  const newOnes=awardBadges(earned);
+  const approx={
+    getting_started: new Date('2025-02-01').getTime(),
+    gaining_ground:  new Date('2025-04-01').getTime(),
+    collector:       new Date('2025-03-01').getTime(),
+    portfolio_pro:   new Date('2025-06-01').getTime(),
+    streak_3:        new Date('2025-04-01').getTime(),
+    streak_6:        new Date('2025-07-01').getTime(),
+    streak_12:       new Date('2026-01-01').getTime(),
+    first_profit:    new Date('2025-06-01').getTime(),
+    big_win:         new Date('2025-12-01').getTime(),
+    high_achiever:   new Date('2025-09-01').getTime(),
+    uber_loyalist:   new Date('2025-07-01').getTime(),
+    dining_devotee:  new Date('2025-07-01').getTime(),
+    yr_2025:         new Date('2026-01-01').getTime(),
+    yr_2026:         new Date('2026-01-15').getTime(),
+    multi_year:      new Date('2026-01-15').getTime(),
+    founder:         new Date('2025-01-01').getTime(),
+    hacker:          new Date('2025-01-01').getTime(),
+    obsessive:       new Date('2025-01-01').getTime(),
+  };
+  const newOnes=awardBadges(Object.keys(approx), approx);
   localStorage.setItem(FLAG,'1');
   return newOnes;
 }
@@ -140,6 +166,12 @@ export function checkBadges(){
   let fitnessUsed=false, clearUsed=false, geUsed=false, loungeUsed=false;
   let travelCardCount=0, hotelCardCount=0;
   let goldProfit=false, platProfit=false, csrProfit=false;
+
+  // Brand/bank loyalty — count by issuer
+  const issuerMap=Object.fromEntries(PREMIUM_CARD_CATALOG.map(c=>[c.id,c.issuer]));
+  const issuerCounts={};
+  cardKeys.forEach(ck=>{ const iss=issuerMap[ck]; if(iss) issuerCounts[iss]=(issuerCounts[iss]||0)+1; });
+  const uniqueIssuers=Object.keys(issuerCounts).length;
 
   // Count total benefit claims across all state.DATA
   let totalClaims=0;
@@ -235,8 +267,9 @@ export function checkBadges(){
   });
 
   const day=new Date().getDate();
+  const now=Date.now();
   const earned=[...prev];
-  function maybe(id,cond){ if(cond&&!prev.has(id)) earned.push(id); }
+  function maybe(id,cond){ if(cond&&!prev.has(id)){ earned.push(id); if(!s.earnedAt[id]) s.earnedAt[id]=now; } }
 
   // Streaks
   maybe('streak_3',          maxStreak>=3);
@@ -304,6 +337,12 @@ export function checkBadges(){
   maybe('yr_2026',           activeYears.has(2026));
   maybe('multi_year',        activeYears.size>=3);
   maybe('early_adopter',     activeYears.has(2024)||activeYears.has(2023));
+
+  // Brand & bank loyalty
+  maybe('amex_loyalist',     (issuerCounts['American Express']||0)>=3);
+  maybe('chase_loyalist',    (issuerCounts['Chase']||0)>=3);
+  maybe('cap1_loyalist',     (issuerCounts['Capital One']||0)>=2);
+  maybe('multi_bank',        uniqueIssuers>=3);
 
   s.earned=earned;
   saveState(s);
