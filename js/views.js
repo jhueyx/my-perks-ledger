@@ -1278,7 +1278,7 @@ export function renderFeeOptimizer(){
 
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','streaks','history-log','recap','insights','heatmap','roi','priority','keep-card','trends','digest','net-value','badges','fee-optimizer'];
+  const _analyticsViews=['compare','streaks','history-log','recap','heatmap','roi','priority','trends','digest','net-value','badges','fee-optimizer'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -1305,11 +1305,9 @@ export function render(){
   else if(state.activeView==='streaks') renderStreaks();
   else if(state.activeView==='history-log') renderHistoryLog();
   else if(state.activeView==='recap') renderRecap();
-  else if(state.activeView==='insights') renderInsights();
   else if(state.activeView==='heatmap') renderHeatmap();
   else if(state.activeView==='roi') renderROI();
   else if(state.activeView==='priority') renderPriorityQueue();
-  else if(state.activeView==='keep-card') renderKeepCard();
   else if(state.activeView==='trends') renderTrends();
   else if(state.activeView==='digest') renderDigest();
   else if(state.activeView==='net-value') renderNetValue();

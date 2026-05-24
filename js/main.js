@@ -11,7 +11,7 @@ import {
   setSnoozedBenefit, isGloballySnoozed, isUsed,
   loadCardMeta, setCardOpenedDate
 } from './storage.js';
-import { render, getVisibleCardKeys, renderCurrent, renderInsights, renderPriorityQueue, renderRecap, haptic, checkAllClaimed, animateCounters, renderFeeOptimizer } from './views.js';
+import { render, getVisibleCardKeys, renderCurrent, renderPriorityQueue, renderRecap, haptic, checkAllClaimed, animateCounters, renderFeeOptimizer } from './views.js';
 import { checkBadges, getEarnedBadges, getUnseenBadges, markAllSeen, BADGE_DEFS, TIER_COLORS } from './badges.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee, getBAmount, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
 
@@ -818,7 +818,7 @@ async function requestNotifications(){
     scheduleMonthlyReminder();
     new Notification('Perks Ledger',{body:'Notifications enabled! You\'ll be reminded before monthly, quarterly, and semi-annual benefits expire.',icon:'apple-touch-icon.png'});
     if(state.activeView==='settings') renderSettings();
-    else renderInsights();
+    else setActiveView('settings');
   }
 }
 function disableNotifications(){
@@ -1316,8 +1316,6 @@ function renderMore(){
     {view:'badges',label:'Achievements'},
     {view:'fee-optimizer',label:'Fee Optimizer'},
     {view:'priority',label:'Use It Now'},
-    {view:'insights',label:'Insights'},
-    {view:'keep-card',label:'Keep This Card?'},
     {view:'compare',label:'Compare Cards'},
     {view:'roi',label:'ROI Scores'},
     {view:'trends',label:'Trends'},
