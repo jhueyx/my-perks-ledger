@@ -1472,85 +1472,159 @@ function renderBadgesView(){
   const earnedCount=[...earned].filter(id=>defs.some(d=>d.id===id)).length;
   const pct=total>0?Math.round(earnedCount/total*100):0;
 
-  function fmtDate(ts){
-    if(!ts) return '';
-    return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  }
-  function gradient(tier){
-    return {
-      bronze:   'linear-gradient(145deg,#7A4010,#CD7F32,#E8A040)',
-      silver:   'linear-gradient(145deg,#5A6570,#9CAAB5,#C0D0DA)',
-      gold:     'linear-gradient(145deg,#7A5000,#C8922A,#F0BC40)',
-      platinum: 'linear-gradient(145deg,#1A3E5A,#4A7FA5,#70B0E0)',
-      legendary:'linear-gradient(145deg,#4A1070,#9B59B6,#C880E8)',
-    }[tier]||'linear-gradient(145deg,#444,#888)';
-  }
-  function glow(tier){
-    return {bronze:'#CD7F3255',silver:'#A0A8B040',gold:'#C8922A55',platinum:'#4A7FA555',legendary:'#9B59B665'}[tier]||'#88888840';
+  function fmtDate(ts){ if(!ts)return''; return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+
+  const CHAINS=[
+    {id:'streak',    label:'Claim Streak',   milestones:[{id:'streak_3',lbl:'3 mo'},{id:'streak_6',lbl:'6 mo'},{id:'streak_12',lbl:'12 mo'},{id:'streak_18',lbl:'18 mo'},{id:'streak_24',lbl:'24 mo'}]},
+    {id:'value',     label:'Value Captured',  milestones:[{id:'getting_started',lbl:'$100'},{id:'gaining_ground',lbl:'$500'},{id:'high_achiever',lbl:'$1K'},{id:'power_user',lbl:'$2.5K'},{id:'maximizer',lbl:'$5K'},{id:'true_maximizer',lbl:'$10K'}]},
+    {id:'fees',      label:'Fee Recovery',    milestones:[{id:'first_profit',lbl:'1 card'},{id:'double_dipper',lbl:'2 cards'},{id:'triple_threat',lbl:'3 cards'},{id:'fee_crusher',lbl:'all cards'}]},
+    {id:'portfolio', label:'Portfolio',        milestones:[{id:'collector',lbl:'3'},{id:'portfolio_pro',lbl:'5'},{id:'card_shark',lbl:'7'},{id:'whale',lbl:'10'}]},
+    {id:'volume',    label:'Claims',           milestones:[{id:'benefit_ninja',lbl:'25'},{id:'benefit_machine',lbl:'50'},{id:'century',lbl:'100'},{id:'claim_addict',lbl:'150'},{id:'claim_machine',lbl:'300'}]},
+    {id:'meta',      label:'Decorated',        milestones:[{id:'badge_20',lbl:'20'},{id:'badge_35',lbl:'35'},{id:'badge_50',lbl:'50'},{id:'badge_75',lbl:'75'},{id:'badge_100',lbl:'100'}]},
+  ];
+  const chainIds=new Set(CHAINS.flatMap(c=>c.milestones.map(m=>m.id)));
+
+  function tGrad(tier){return{bronze:'linear-gradient(145deg,#5C3310,#CD7F32,#E8A840)',silver:'linear-gradient(145deg,#3A4550,#8A9BB0,#C0CDD8)',gold:'linear-gradient(145deg,#5A3A00,#C8922A,#F0BC40)',platinum:'linear-gradient(145deg,#0A2A40,#2A7FA5,#60C0F0)',legendary:'linear-gradient(145deg,#3A0A60,#8A2BE2,#C060F0)'}[tier]||'linear-gradient(145deg,#252525,#333)';}
+  function tGlow(tier){return{bronze:'rgba(205,127,50,0.55)',silver:'rgba(138,155,176,0.4)',gold:'rgba(200,146,42,0.6)',platinum:'rgba(42,127,165,0.6)',legendary:'rgba(138,43,226,0.65)'}[tier]||'rgba(80,80,80,0.3)';}
+  function tColor(tier){return TIER_COLORS[tier]||'#888';}
+  function tLabel(tier){return{bronze:'Bronze',silver:'Silver',gold:'Gold',platinum:'Platinum',legendary:'Legendary'}[tier]||tier;}
+
+  const lockIcon=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none"><rect x="5" y="10" width="14" height="11" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+
+  function gem(def,isE,sizeClass,idx=0){
+    const isHidden=def.hidden&&!isE;
+    const icon=isHidden?lockIcon:(BADGE_ICONS[def.id]||'');
+    const tierCls=isE?`t-${def.tier}`:'t-locked';
+    const style=isE?`background:${tGrad(def.tier)};--sd:${((idx*0.41)%4).toFixed(2)}s`:'';
+    return `<div class="badge-gem ${sizeClass} ${tierCls}" style="${style}">${icon}</div>`;
   }
 
-  let html=`<div class="banner"><strong>Achievements</strong> — ${earnedCount} of ${total} unlocked</div>`;
-  html+=`<div class="badge-progress-row">
-    <span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">${earnedCount}/${total}</span>
-    <div class="badge-progress-bar-wrap"><div class="badge-progress-fill" style="width:${pct}%"></div></div>
-    <span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">${pct}%</span>
-  </div>`;
-  const lockSVG=`<svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="5" y="10" width="14" height="11" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  // Featured: highest-tier earned badge
+  const tierOrder=['legendary','platinum','gold','silver','bronze'];
+  let featuredDef=null;
+  for(const t of tierOrder){featuredDef=defs.find(d=>earned.has(d.id)&&d.tier===t);if(featuredDef)break;}
 
-  function badgeCard(def,i){
-    const isEarned=earned.has(def.id);
-    const isHidden=def.hidden&&!isEarned;
-    const color=TIER_COLORS[def.tier];
-    const icon=BADGE_ICONS[def.id]||'';
-    const grad=isEarned?gradient(def.tier):'linear-gradient(145deg,#1e1e1e,#2e2e2e)';
-    const shadow=isEarned?`0 0 20px ${glow(def.tier)},0 4px 12px rgba(0,0,0,0.3)`:'none';
-    const sd=`${((i*0.41)%4).toFixed(2)}s`;
-    const earnedDate=fmtDate(earnedAt[def.id]);
-    const displayName=isHidden?'???':def.name;
-    const displayDesc=isHidden?'Unlock to reveal this hidden achievement':def.desc;
-    return `<div class="badge-flip-wrap ${isEarned?'earned-badge':'locked-badge'}" onclick="window.flipBadge(this)">
-      <div class="badge-flip-inner">
-        <div class="badge-front ${isEarned?'earned-front':''}" ${isEarned?`style="border-color:${color}44"`:''}">
-          <div class="badge-medallion ${isEarned?'earned-medal':'locked-medal'}"
-               style="background:${grad};${isEarned?`box-shadow:${shadow};--sd:${sd}`:''}">
-            ${isEarned?icon:lockSVG}
-          </div>
-          <div class="badge-name">${displayName}</div>
-          ${isEarned
-            ?`<div class="badge-tier-pill" style="color:${color}">${def.tier}</div>`
-            :`<div style="font-size:8px;font-family:var(--mono);color:var(--text-tertiary);letter-spacing:0.15em;opacity:0.4">???</div>`
-          }
-          <div class="badge-tap-hint">tap to flip</div>
-        </div>
-        <div class="badge-back" style="${isEarned?`border-color:${color}44`:''}">
-          <div class="badge-back-status ${isEarned?'earned-status':'locked-status'}">${isEarned?'✓ Earned':isHidden?'Hidden':'Locked'}</div>
-          <div class="badge-back-name">${displayName}</div>
-          <div class="badge-back-desc">${displayDesc}</div>
-          ${earnedDate?`<div class="badge-back-date">Earned ${earnedDate}</div>`:''}
-          <div class="badge-tap-hint">tap to flip</div>
-        </div>
+  // Collection: non-chain badges, earned first then by tier
+  const tierRank={legendary:0,platinum:1,gold:2,silver:3,bronze:4};
+  const otherDefs=defs
+    .filter(d=>!chainIds.has(d.id))
+    .sort((a,b)=>{
+      const aE=earned.has(a.id)?0:1,bE=earned.has(b.id)?0:1;
+      if(aE!==bE)return aE-bE;
+      return(tierRank[a.tier]??5)-(tierRank[b.tier]??5);
+    });
+
+  let html='';
+
+  // Header + progress bar
+  html+=`<div class="ach-header">
+    <span class="ach-header-title">Achievements</span>
+    <span class="ach-header-count">${earnedCount}&thinsp;/&thinsp;${total}</span>
+  </div>
+  <div class="ach-progress-bar"><div class="ach-progress-fill" style="width:${pct}%"></div></div>`;
+
+  // Featured badge
+  if(featuredDef){
+    const color=tColor(featuredDef.tier);
+    const earnedDate=fmtDate(earnedAt[featuredDef.id]);
+    html+=`<div class="ach-featured" style="border-color:${color}30">
+      <div style="filter:drop-shadow(0 0 12px ${tGlow(featuredDef.tier)})">${gem(featuredDef,true,'badge-gem-lg',0)}</div>
+      <div class="ach-featured-info">
+        <div class="ach-featured-tier" style="color:${color}">${tLabel(featuredDef.tier)}</div>
+        <div class="ach-featured-name">${featuredDef.name}</div>
+        <div class="ach-featured-desc">${featuredDef.desc}</div>
+        ${earnedDate?`<div class="ach-featured-date">Earned ${earnedDate}</div>`:''}
       </div>
     </div>`;
   }
 
-  const streakDefs=defs.filter(def=>def.id.startsWith('streak_'));
-  const otherDefs=defs.filter(def=>!def.id.startsWith('streak_'));
-  if(streakDefs.length){
-    html+=`<div class="achievement-section-head"><strong>Streak Badges</strong><span>Best monthly streaks unlock these achievements</span></div>`;
-    html+=`<div class="badges-grid">`;
-    streakDefs.forEach((def,i)=>{ html+=badgeCard(def,i); });
+  // Progression chains
+  html+=`<div class="ach-section-label">Progression</div>`;
+  CHAINS.forEach(chain=>{
+    const applicable=chain.milestones.filter(m=>defs.some(d=>d.id===m.id));
+    if(!applicable.length)return;
+    const earnedN=applicable.filter(m=>earned.has(m.id)).length;
+    html+=`<div class="prog-chain">
+      <div class="prog-chain-header">
+        <span class="prog-chain-name">${chain.label}</span>
+        <span class="prog-chain-progress">${earnedN}/${applicable.length}</span>
+      </div>
+      <div class="prog-chain-row">`;
+    applicable.forEach((m,i)=>{
+      const def=defs.find(d=>d.id===m.id);if(!def)return;
+      const isE=earned.has(def.id);
+      const color=isE?tColor(def.tier):'';
+      const glowF=isE?`filter:drop-shadow(0 0 6px ${tGlow(def.tier)})`:'';
+      html+=`<div class="prog-milestone${isE?' pm-earned':''}" onclick="window.showBadgeDetail('${def.id}')">
+        <div style="${glowF}">${gem(def,isE,'badge-gem-sm',i)}</div>
+        <div class="prog-milestone-label" style="${color?`color:${color}`:''}">${m.lbl}</div>
+      </div>`;
+      if(i<applicable.length-1){
+        const nextE=earned.has(applicable[i+1]?.id);
+        const cls=isE&&nextE?'c-earned':isE?'c-partial':'';
+        html+=`<div class="prog-connector${cls?' '+cls:''}"></div>`;
+      }
+    });
+    html+=`</div></div>`;
+  });
+
+  // Collection
+  if(otherDefs.length){
+    html+=`<div class="ach-section-label">Collection</div><div class="ach-compact-grid">`;
+    otherDefs.forEach((def,i)=>{
+      const isE=earned.has(def.id);
+      const isHidden=def.hidden&&!isE;
+      const displayName=isHidden?'???':def.name;
+      const glowF=isE?`filter:drop-shadow(0 0 5px ${tGlow(def.tier)})`:'';
+      html+=`<div class="compact-badge${isE?' cb-earned':''}" onclick="window.showBadgeDetail('${def.id}')">
+        <div style="${glowF}">${gem(def,isE,'badge-gem-xs',i)}</div>
+        <div class="compact-badge-name">${displayName}</div>
+      </div>`;
+    });
     html+=`</div>`;
   }
-  html+=`<div class="achievement-section-head"><strong>All Badges</strong><span>Everything else in your portfolio</span></div>`;
-  html+=`<div class="badges-grid">`;
-  otherDefs.forEach((def,i)=>{ html+=badgeCard(def,i+streakDefs.length); });
-  html+=`</div>`;
-  html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:4px;padding-bottom:8px">Keep claiming benefits to unlock more achievements</div>`;
+
+  html+=`<div style="height:8px"></div>`;
   document.getElementById('main').innerHTML=html;
 }
 
-window.flipBadge=function(el){
-  el.querySelector('.badge-flip-inner').classList.toggle('flipped');
+window.showBadgeDetail=function(id){
+  const earned=new Set(getEarnedBadges());
+  const earnedAt=getEarnedAt();
+  const defs=getApplicableBadgeDefs();
+  const def=defs.find(d=>d.id===id);
+  if(!def)return;
+  const isE=earned.has(id);
+  const isHidden=def.hidden&&!isE;
+  const color=TIER_COLORS[def.tier]||'#888';
+  const displayName=isHidden?'???':def.name;
+  const displayDesc=isHidden?'Unlock to reveal this hidden achievement':def.desc;
+  const earnedDate=isE&&earnedAt[id]?new Date(earnedAt[id]).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'';
+
+  function tGrad2(tier){return{bronze:'linear-gradient(145deg,#5C3310,#CD7F32,#E8A840)',silver:'linear-gradient(145deg,#3A4550,#8A9BB0,#C0CDD8)',gold:'linear-gradient(145deg,#5A3A00,#C8922A,#F0BC40)',platinum:'linear-gradient(145deg,#0A2A40,#2A7FA5,#60C0F0)',legendary:'linear-gradient(145deg,#3A0A60,#8A2BE2,#C060F0)'}[tier]||'linear-gradient(145deg,#252525,#333)';}
+  function tGlow2(tier){return{bronze:'rgba(205,127,50,0.55)',silver:'rgba(138,155,176,0.4)',gold:'rgba(200,146,42,0.6)',platinum:'rgba(42,127,165,0.6)',legendary:'rgba(138,43,226,0.65)'}[tier]||'rgba(80,80,80,0.3)';}
+  const lockIcon=`<svg viewBox="0 0 24 24" width="36" height="36" fill="none"><rect x="5" y="10" width="14" height="11" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  const icon=isHidden?lockIcon:(BADGE_ICONS[id]||'');
+  const tierCls=isE?`t-${def.tier}`:'t-locked';
+  const bgStyle=isE?`background:${tGrad2(def.tier)};--sd:0.15s`:'';
+  const glowF=isE?`filter:drop-shadow(0 0 16px ${tGlow2(def.tier)})`:'';
+  const tierLabel={bronze:'Bronze',silver:'Silver',gold:'Gold',platinum:'Platinum',legendary:'Legendary'}[def.tier]||def.tier;
+
+  const existing=document.getElementById('badgeDetailOverlay');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='badgeDetailOverlay';
+  overlay.className='badge-detail-overlay';
+  overlay.innerHTML=`<div class="badge-detail-sheet">
+    <div class="badge-detail-handle"></div>
+    <div style="${glowF}"><div class="badge-gem badge-gem-lg ${tierCls}" style="${bgStyle}">${icon}</div></div>
+    <div class="badge-detail-tier" style="color:${color}">${tierLabel}</div>
+    <div class="badge-detail-name">${displayName}</div>
+    <div class="badge-detail-desc">${displayDesc}</div>
+    <div class="badge-detail-meta${isE?' dm-earned':''}">${isE?'✓ Earned':'Locked'}${earnedDate?` · ${earnedDate}`:''}</div>
+  </div>`;
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
 };
 
 // ── More page ─────────────────────────────────────────────────────────────
