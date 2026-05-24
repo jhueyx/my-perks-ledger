@@ -1301,10 +1301,9 @@ function initMobileInfiniteCarousel(){
   if(window.innerWidth>600) return;
   const sel=document.getElementById('cardSelector');
   sel.querySelectorAll('.card-clone').forEach(c=>c.remove());
-  const realBtns=[...sel.querySelectorAll('.card-btn[data-card]')].filter(b=>b.offsetWidth>0&&b.style.display!=='none');
+  const realBtns=[...sel.querySelectorAll('.card-btn[data-card]:not(.card-clone)')].filter(b=>b.style.display!=='none');
   const n=realBtns.length;
   if(n<2) return;
-  const CLONES=2;
   function mkClone(src){
     const cl=src.cloneNode(true);
     cl.classList.add('card-clone');
@@ -1313,41 +1312,50 @@ function initMobileInfiniteCarousel(){
     cl.addEventListener('click',()=>{ const real=sel.querySelector(`.card-btn[data-card="${card}"]:not(.card-clone)`); if(real) real.click(); });
     return cl;
   }
-  // Prepend clones of last CLONES real cards, append clones of first CLONES
-  for(let i=n-CLONES;i<n;i++) sel.insertBefore(mkClone(realBtns[i]),realBtns[0]);
-  for(let i=0;i<CLONES;i++) sel.appendChild(mkClone(realBtns[i]));
-  // Scroll active real card to the snap edge using getBoundingClientRect delta
+  // Clone the full set once before and once after — gives n cards of buffer in each direction
+  const frag=document.createDocumentFragment();
+  for(let i=0;i<n;i++) frag.appendChild(mkClone(realBtns[i]));
+  sel.insertBefore(frag, realBtns[0]);
+  for(let i=0;i<n;i++) sel.appendChild(mkClone(realBtns[i]));
+
+  // After layout: measure stride, compute safe zone bounds, scroll to active card
+  let _minSnap=0, _maxSnap=0, _stride=0, _totalW=0;
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const all=[...sel.querySelectorAll('.card-btn')].filter(b=>b.offsetWidth>0);
+    _stride=all.length>1 ? all[1].getBoundingClientRect().left-all[0].getBoundingClientRect().left : all[0].offsetWidth+12;
+    _totalW=n*_stride;
+    // snap positions for real cards: indices n..(2n-1) → scrollLeft = n*stride + k*stride
+    const padL=parseInt(getComputedStyle(sel).paddingLeft)||0;
+    const selLeft=sel.getBoundingClientRect().left;
+    const snapEdge=selLeft+padL;
+    _minSnap=sel.scrollLeft+(realBtns[0].getBoundingClientRect().left-snapEdge);
+    _maxSnap=_minSnap+(n-1)*_stride;
+    // Scroll to active card
     const activeBtn=sel.querySelector(`.card-btn[data-card="${state.activeCard}"]:not(.card-clone)`);
-    if(!activeBtn) return;
-    const padL=parseInt(getComputedStyle(sel).paddingLeft)||0;
-    const snapEdge=sel.getBoundingClientRect().left+padL;
-    sel.scrollLeft+=activeBtn.getBoundingClientRect().left-snapEdge;
+    const target=activeBtn||realBtns[0];
+    sel.style.scrollSnapType='none';
+    sel.scrollLeft+=target.getBoundingClientRect().left-snapEdge;
+    requestAnimationFrame(()=>{ sel.style.scrollSnapType='x mandatory'; });
   }));
+
   function checkBounds(){
-    if(_infJumping) return;
-    const padL=parseInt(getComputedStyle(sel).paddingLeft)||0;
-    const snapEdge=sel.getBoundingClientRect().left+padL;
-    const allBtns=[...sel.querySelectorAll('.card-btn')].filter(b=>b.offsetWidth>0);
-    let snapped=null,minDist=Infinity;
-    for(const btn of allBtns){
-      const d=Math.abs(btn.getBoundingClientRect().left-snapEdge);
-      if(d<minDist){ minDist=d; snapped=btn; }
-    }
-    if(snapped&&snapped.classList.contains('card-clone')){
-      const card=snapped.dataset.card;
-      const real=sel.querySelector(`.card-btn[data-card="${card}"]:not(.card-clone)`);
-      if(real){
-        _infJumping=true;
-        // Shift scrollLeft by the viewport distance between real and clone — seamless teleport
-        sel.scrollLeft+=real.getBoundingClientRect().left-snapped.getBoundingClientRect().left;
-        setTimeout(()=>{ _infJumping=false; },100);
-      }
-    }
+    if(_infJumping||!_stride) return;
+    const sl=sel.scrollLeft;
+    let delta=0;
+    if(sl<_minSnap-_stride*0.4) delta=_totalW;       // scrolled into prepend clones
+    else if(sl>_maxSnap+_stride*0.4) delta=-_totalW;  // scrolled into append clones
+    if(!delta) return;
+    _infJumping=true;
+    sel.style.scrollSnapType='none';
+    sel.scrollLeft+=delta;
+    requestAnimationFrame(()=>{
+      sel.style.scrollSnapType='x mandatory';
+      _infJumping=false;
+    });
   }
   sel.addEventListener('scrollend',checkBounds);
-  let _sbTimer=null;
-  sel.addEventListener('scroll',()=>{ clearTimeout(_sbTimer); _sbTimer=setTimeout(checkBounds,250); },{passive:true});
+  let _t=null;
+  sel.addEventListener('scroll',()=>{ clearTimeout(_t); _t=setTimeout(checkBounds,300); },{passive:true});
 }
 
 initCardSelector();
