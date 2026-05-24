@@ -105,10 +105,10 @@ function buildEmailHTML(cache: DigestCache): string {
       const headerColor = b.urgency ? '#C8922A' : '#888';
       return `
         <div style="background:#141414;border-radius:10px;padding:16px 18px;margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:${headerColor};font-family:monospace;font-weight:600">${b.label}</span>
-            <span style="font-size:13px;font-weight:700;font-family:monospace;color:#f0f0f0">$${total}</span>
-          </div>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:8px"><tr>
+            <td style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:${headerColor};font-family:monospace;font-weight:600">${b.label}</td>
+            <td style="font-size:13px;font-weight:700;font-family:monospace;color:#f0f0f0;text-align:right">$${total}</td>
+          </tr></table>
           <table style="width:100%;border-collapse:collapse">${rows}</table>
         </div>`;
     }).join('');
