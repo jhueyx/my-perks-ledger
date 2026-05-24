@@ -40,9 +40,9 @@ export const BADGE_DEFS = [
   { id:'fee_crusher',     tier:'platinum',  name:'Fee Crusher',              desc:'All your cards are simultaneously in profit' },
 
   // ── Card mastery ─────────────────────────────────────────────────────
-  { id:'gold_master',     tier:'silver',    name:'Gold Mastery',             desc:'Amex Gold annual fee fully offset' },
-  { id:'plat_master',     tier:'gold',      name:'Platinum Mastery',         desc:'Amex Platinum annual fee fully offset' },
-  { id:'csr_master',      tier:'gold',      name:'Sapphire Master',          desc:'Chase Sapphire Reserve annual fee fully offset' },
+  { id:'gold_master',     tier:'silver',    name:'Gold Mastery',             desc:'Amex Gold annual fee fully offset',                        cards:['gold'] },
+  { id:'plat_master',     tier:'gold',      name:'Platinum Mastery',         desc:'Amex Platinum annual fee fully offset',                    cards:['platinum'] },
+  { id:'csr_master',      tier:'gold',      name:'Sapphire Master',          desc:'Chase Sapphire Reserve annual fee fully offset',           cards:['csr'] },
 
   // ── Claim volume ─────────────────────────────────────────────────────
   { id:'benefit_ninja',   tier:'bronze',    name:'Benefit Ninja',            desc:'25+ total benefit claims across all cards' },
@@ -57,15 +57,15 @@ export const BADGE_DEFS = [
   { id:'all_in_2',        tier:'platinum',  name:'Completionist',            desc:'100% on every single tracked card — nothing left behind' },
 
   // ── Category specialists ─────────────────────────────────────────────
-  { id:'uber_loyalist',   tier:'bronze',    name:'Uber Loyalist',            desc:'6-month Uber credit streak' },
-  { id:'doordash_devotee',tier:'bronze',    name:'DoorDash Devotee',         desc:'6-month DoorDash credit streak' },
-  { id:'dining_devotee',  tier:'silver',    name:'Dining Devotee',           desc:'6-month dining credit streak' },
-  { id:'fitness_fan',     tier:'bronze',    name:'Fitness Fan',              desc:'Used a fitness credit (Peloton, Equinox, or Lululemon)' },
-  { id:'clear_member',    tier:'bronze',    name:'CLEAR Member',             desc:'Used a CLEAR Plus credit' },
-  { id:'global_traveler', tier:'bronze',    name:'Global Traveler',          desc:'Used a Global Entry / TSA PreCheck credit' },
-  { id:'hotel_hopper',    tier:'silver',    name:'Hotel Hopper',             desc:'Hotel credits used on 2+ different cards' },
-  { id:'lounge_lizard',   tier:'silver',    name:'Lounge Lizard',            desc:'United Club membership benefit claimed' },
-  { id:'jet_setter',      tier:'silver',    name:'Jet Setter',               desc:'Travel or airline credits used on 2+ cards' },
+  { id:'uber_loyalist',   tier:'bronze',    name:'Uber Loyalist',            desc:'6-month Uber credit streak',                               cards:['gold','platinum'] },
+  { id:'doordash_devotee',tier:'bronze',    name:'DoorDash Devotee',         desc:'6-month DoorDash credit streak',                           cards:['csr','chase_sapphire_pref'] },
+  { id:'dining_devotee',  tier:'silver',    name:'Dining Devotee',           desc:'6-month dining credit streak',                             cards:['gold'] },
+  { id:'fitness_fan',     tier:'bronze',    name:'Fitness Fan',              desc:'Used a fitness credit (Peloton, Equinox, or Lululemon)',   cards:['platinum','csr'] },
+  { id:'clear_member',    tier:'bronze',    name:'CLEAR Member',             desc:'Used a CLEAR Plus credit',                                 cards:['platinum','amex_green'] },
+  { id:'global_traveler', tier:'bronze',    name:'Global Traveler',          desc:'Used a Global Entry / TSA PreCheck credit',                cards:['platinum','cap1_venture_x','csr','amex_hilton_honors','amex_marriott_brill','chase_united_quest','chase_united_club','wf_premier_autograph'] },
+  { id:'hotel_hopper',    tier:'silver',    name:'Hotel Hopper',             desc:'Hotel credits used on 2+ different cards',                 cards:['platinum','cap1_venture_x','chase_sapphire_pref','csr','amex_hilton_honors','amex_marriott_brill'] },
+  { id:'lounge_lizard',   tier:'silver',    name:'Lounge Lizard',            desc:'United Club membership benefit claimed',                   cards:['chase_united_club'] },
+  { id:'jet_setter',      tier:'silver',    name:'Jet Setter',               desc:'Travel or airline credits used on 2+ cards',              cards:['cap1_venture_x','csr','platinum','amex_hilton_honors','wf_premier_autograph','chase_united_quest','chase_united_club'] },
 
   // ── Year-based ───────────────────────────────────────────────────────
   { id:'yr_2024',         tier:'bronze',    name:'Class of \'24',            desc:'Tracking benefits since 2024' },
@@ -75,59 +75,59 @@ export const BADGE_DEFS = [
   { id:'early_adopter',   tier:'silver',    name:'Early Adopter',            desc:'Using Perks Ledger since 2024 or earlier' },
 
   // ── Brand & bank loyalty ─────────────────────────────────────────────
-  { id:'amex_loyalist',   tier:'gold',      name:'Amex Loyalist',            desc:'Tracking 3+ American Express cards' },
-  { id:'chase_loyalist',  tier:'gold',      name:'Chase Loyalist',           desc:'Tracking 3+ Chase cards' },
-  { id:'cap1_loyalist',   tier:'silver',    name:'Capital One Fan',          desc:'Tracking 2+ Capital One cards' },
-  { id:'citi_loyalist',   tier:'bronze',    name:'Citi Cardmember',          desc:'Tracking any Citi card' },
-  { id:'wf_loyalist',     tier:'bronze',    name:'Wells Fargo Cardholder',   desc:'Tracking any Wells Fargo card' },
+  { id:'amex_loyalist',   tier:'gold',      name:'Amex Loyalist',            desc:'Tracking 3+ American Express cards',                       cards:['platinum','gold','amex_green','amex_biz_plat','amex_biz_gold','amex_hilton_honors','amex_marriott_brill'] },
+  { id:'chase_loyalist',  tier:'gold',      name:'Chase Loyalist',           desc:'Tracking 3+ Chase cards',                                  cards:['csr','chase_sapphire_pref','chase_world_of_hyatt','chase_united_quest','chase_united_club'] },
+  { id:'cap1_loyalist',   tier:'silver',    name:'Capital One Fan',          desc:'Tracking a Capital One card',                              cards:['cap1_venture_x'] },
+  { id:'citi_loyalist',   tier:'bronze',    name:'Citi Cardmember',          desc:'Tracking any Citi card',                                   cards:['citi_strata_prem'] },
+  { id:'wf_loyalist',     tier:'bronze',    name:'Wells Fargo Cardholder',   desc:'Tracking any Wells Fargo card',                            cards:['wf_premier_autograph'] },
   { id:'multi_bank',      tier:'platinum',  name:'Multi-Bank Master',        desc:'Cards from 3+ different banks in your portfolio' },
-  { id:'amex_trifecta',   tier:'gold',      name:'Amex Trifecta',            desc:'Platinum + Gold + Green all tracked simultaneously', hidden:true },
-  { id:'chase_trifecta',  tier:'gold',      name:'Chase Trifecta',           desc:'CSR + Sapphire Preferred + one more Chase card all tracked', hidden:true },
+  { id:'amex_trifecta',   tier:'gold',      name:'Amex Trifecta',            desc:'Platinum + Gold + Green all tracked simultaneously',       cards:['platinum','gold','amex_green'], hidden:true },
+  { id:'chase_trifecta',  tier:'gold',      name:'Chase Trifecta',           desc:'CSR + Sapphire Preferred + one more Chase card all tracked',cards:['csr','chase_sapphire_pref'], hidden:true },
 
   // ── Card-specific tracking ───────────────────────────────────────────
-  { id:'hilton_devotee',  tier:'bronze',    name:'Hilton Devotee',           desc:'Tracking the Hilton Honors Aspire card' },
-  { id:'marriott_fan',    tier:'bronze',    name:'Marriott Fan',             desc:'Tracking the Marriott Bonvoy Brilliant card' },
-  { id:'hyatt_explorer',  tier:'bronze',    name:'Hyatt Explorer',           desc:'Tracking the World of Hyatt card' },
-  { id:'hotel_portfolio', tier:'silver',    name:'Hotel Portfolio',          desc:'Tracking Hilton Aspire + Marriott Brilliant + Hyatt together', hidden:true },
-  { id:'csp_holder',      tier:'bronze',    name:'Preferred Member',         desc:'Tracking the Chase Sapphire Preferred card' },
-  { id:'green_carrier',   tier:'bronze',    name:'Going Green',              desc:'Tracking the Amex Green card' },
-  { id:'venture_x_holder',tier:'bronze',    name:'Venture X Holder',         desc:'Tracking the Capital One Venture X card' },
-  { id:'united_flyer',    tier:'bronze',    name:'United Flyer',             desc:'Tracking United Quest or United Club Infinite' },
-  { id:'strata_holder',   tier:'bronze',    name:'Strata Premier',           desc:'Tracking the Citi Strata Premier card' },
+  { id:'hilton_devotee',  tier:'bronze',    name:'Hilton Devotee',           desc:'Tracking the Hilton Honors Aspire card',                   cards:['amex_hilton_honors'] },
+  { id:'marriott_fan',    tier:'bronze',    name:'Marriott Fan',             desc:'Tracking the Marriott Bonvoy Brilliant card',              cards:['amex_marriott_brill'] },
+  { id:'hyatt_explorer',  tier:'bronze',    name:'Hyatt Explorer',           desc:'Tracking the World of Hyatt card',                         cards:['chase_world_of_hyatt'] },
+  { id:'hotel_portfolio', tier:'silver',    name:'Hotel Portfolio',          desc:'Tracking Hilton Aspire + Marriott Brilliant + Hyatt together', cards:['amex_hilton_honors','amex_marriott_brill','chase_world_of_hyatt'], hidden:true },
+  { id:'csp_holder',      tier:'bronze',    name:'Preferred Member',         desc:'Tracking the Chase Sapphire Preferred card',               cards:['chase_sapphire_pref'] },
+  { id:'green_carrier',   tier:'bronze',    name:'Going Green',              desc:'Tracking the Amex Green card',                             cards:['amex_green'] },
+  { id:'venture_x_holder',tier:'bronze',    name:'Venture X Holder',         desc:'Tracking the Capital One Venture X card',                  cards:['cap1_venture_x'] },
+  { id:'united_flyer',    tier:'bronze',    name:'United Flyer',             desc:'Tracking United Quest or United Club Infinite',            cards:['chase_united_quest','chase_united_club'] },
+  { id:'strata_holder',   tier:'bronze',    name:'Strata Premier',           desc:'Tracking the Citi Strata Premier card',                    cards:['citi_strata_prem'] },
 
   // ── Specific benefits used ───────────────────────────────────────────
-  { id:'saks_shopper',    tier:'bronze',    name:'Saks Fifth',               desc:'Used the Saks Fifth Avenue semi-annual credit' },
-  { id:'lulu_fan',        tier:'bronze',    name:'Lulu Loyalist',            desc:'Used the Lululemon quarterly credit' },
-  { id:'oura_owner',      tier:'bronze',    name:'Oura Owner',               desc:'Used the Oura Ring annual credit' },
-  { id:'uber_one_club',   tier:'bronze',    name:'Uber One Member',          desc:'Claimed the annual Uber One membership credit' },
-  { id:'equinox_devotee', tier:'bronze',    name:'Equinox Member',           desc:'Used the Equinox annual credit' },
-  { id:'resy_regular',    tier:'bronze',    name:'Resy Regular',             desc:'Used a Resy dining credit on any card' },
-  { id:'dec_bonus',       tier:'gold',      name:'December Ace',             desc:'Claimed the $35 December Platinum Uber bonus', hidden:true },
-  { id:'digital_devotee', tier:'silver',    name:'Digital Devotee',          desc:'6+ month streak on the Platinum Digital Entertainment credit' },
-  { id:'dunkin_addict',   tier:'silver',    name:'Dunkin\' Devotee',         desc:'6+ month streak on the Gold Dunkin\' credit' },
-  { id:'walmart_weekly',  tier:'silver',    name:'Walmart Warrior',          desc:'6+ month streak on the Platinum Walmart+ credit' },
-  { id:'peloton_rider',   tier:'bronze',    name:'Peloton Rider',            desc:'Used the CSR Peloton credit 3+ consecutive months' },
-  { id:'uber_vip',        tier:'gold',      name:'Uber VIP',                 desc:'18+ total Uber Cash claims across all cards' },
-  { id:'doordash_pro',    tier:'silver',    name:'DoorDash Pro',             desc:'12+ total DoorDash credit claims' },
+  { id:'saks_shopper',    tier:'bronze',    name:'Saks Fifth',               desc:'Used the Saks Fifth Avenue semi-annual credit',            cards:['platinum'] },
+  { id:'lulu_fan',        tier:'bronze',    name:'Lulu Loyalist',            desc:'Used the Lululemon quarterly credit',                      cards:['platinum'] },
+  { id:'oura_owner',      tier:'bronze',    name:'Oura Owner',               desc:'Used the Oura Ring annual credit',                         cards:['platinum'] },
+  { id:'uber_one_club',   tier:'bronze',    name:'Uber One Member',          desc:'Claimed the annual Uber One membership credit',            cards:['platinum'] },
+  { id:'equinox_devotee', tier:'bronze',    name:'Equinox Member',           desc:'Used the Equinox annual credit',                           cards:['platinum'] },
+  { id:'resy_regular',    tier:'bronze',    name:'Resy Regular',             desc:'Used a Resy dining credit on any card',                    cards:['gold','platinum'] },
+  { id:'dec_bonus',       tier:'gold',      name:'December Ace',             desc:'Claimed the $35 December Platinum Uber bonus',             cards:['platinum'], hidden:true },
+  { id:'digital_devotee', tier:'silver',    name:'Digital Devotee',          desc:'6+ month streak on the Platinum Digital Entertainment credit', cards:['platinum'] },
+  { id:'dunkin_addict',   tier:'silver',    name:'Dunkin\' Devotee',         desc:'6+ month streak on the Gold Dunkin\' credit',              cards:['gold'] },
+  { id:'walmart_weekly',  tier:'silver',    name:'Walmart Warrior',          desc:'6+ month streak on the Platinum Walmart+ credit',          cards:['platinum'] },
+  { id:'peloton_rider',   tier:'bronze',    name:'Peloton Rider',            desc:'Used the CSR Peloton credit 3+ consecutive months',        cards:['csr'] },
+  { id:'uber_vip',        tier:'gold',      name:'Uber VIP',                 desc:'18+ total Uber Cash claims across all cards',              cards:['gold','platinum'] },
+  { id:'doordash_pro',    tier:'silver',    name:'DoorDash Pro',             desc:'12+ total DoorDash credit claims',                         cards:['csr','chase_sapphire_pref'] },
 
   // ── Wellness ─────────────────────────────────────────────────────────
-  { id:'wellness_stack',  tier:'silver',    name:'Wellness Stack',           desc:'Used 2+ different wellness credits (Equinox, Lululemon, Peloton, Oura)' },
-  { id:'full_wellness',   tier:'gold',      name:'Wellness Maximizer',       desc:'Used all four wellness credits: Equinox, Lululemon, Peloton, and Oura', hidden:true },
+  { id:'wellness_stack',  tier:'silver',    name:'Wellness Stack',           desc:'Used 2+ different wellness credits (Equinox, Lululemon, Peloton, Oura)', cards:['platinum','csr'] },
+  { id:'full_wellness',   tier:'gold',      name:'Wellness Maximizer',       desc:'Used all four wellness credits: Equinox, Lululemon, Peloton, and Oura', cards:['platinum','csr'], hidden:true },
 
   // ── Travel combos ────────────────────────────────────────────────────
-  { id:'clear_and_ge',    tier:'silver',    name:'Double Cleared',           desc:'Both CLEAR Plus and Global Entry credits used' },
-  { id:'airport_royalty', tier:'gold',      name:'Airport Royalty',          desc:'CLEAR, Global Entry, and airport lounge — all three used', hidden:true },
-  { id:'airline_insider', tier:'silver',    name:'Airline Insider',          desc:'Airline fee credits used on 2+ different cards' },
-  { id:'hotel_connoisseur',tier:'gold',     name:'Hotel Connoisseur',        desc:'Hotel credits used on 3+ different cards' },
-  { id:'first_class_combo',tier:'silver',   name:'First Class',              desc:'Both airline and hotel credits in your portfolio', hidden:true },
-  { id:'lounge_regular',  tier:'gold',      name:'Lounge Regular',           desc:'United Club membership and CLEAR Plus both claimed' },
-  { id:'saks_both',       tier:'silver',    name:'Full Saks Season',         desc:'Claimed both H1 and H2 Saks credits in the same year', hidden:true },
+  { id:'clear_and_ge',    tier:'silver',    name:'Double Cleared',           desc:'Both CLEAR Plus and Global Entry credits used',            cards:['platinum','amex_green'] },
+  { id:'airport_royalty', tier:'gold',      name:'Airport Royalty',          desc:'CLEAR, Global Entry, and airport lounge — all three used', cards:['platinum','amex_green','chase_united_club'], hidden:true },
+  { id:'airline_insider', tier:'silver',    name:'Airline Insider',          desc:'Airline fee credits used on 2+ different cards',           cards:['platinum','amex_hilton_honors','wf_premier_autograph','chase_united_quest','chase_united_club'] },
+  { id:'hotel_connoisseur',tier:'gold',     name:'Hotel Connoisseur',        desc:'Hotel credits used on 3+ different cards',                 cards:['platinum','cap1_venture_x','chase_sapphire_pref','csr','amex_hilton_honors','amex_marriott_brill'] },
+  { id:'first_class_combo',tier:'silver',   name:'First Class',              desc:'Both airline and hotel credits in your portfolio',         cards:['platinum','amex_hilton_honors','wf_premier_autograph','chase_united_quest'], hidden:true },
+  { id:'lounge_regular',  tier:'gold',      name:'Lounge Regular',           desc:'United Club membership and CLEAR Plus both claimed',       cards:['chase_united_club'] },
+  { id:'saks_both',       tier:'silver',    name:'Full Saks Season',         desc:'Claimed both H1 and H2 Saks credits in the same year',     cards:['platinum'], hidden:true },
 
   // ── Benefit combos ───────────────────────────────────────────────────
-  { id:'food_combo',      tier:'bronze',    name:'Food Lover',               desc:'Both Uber Cash and DoorDash credits in your portfolio' },
-  { id:'commuter_pack',   tier:'bronze',    name:'Commuter',                 desc:'Both Uber and Lyft credits used', hidden:true },
-  { id:'dining_trifecta', tier:'silver',    name:'Dining Trifecta',          desc:'Three or more distinct dining credit types used', hidden:true },
-  { id:'entertainment_bundle', tier:'bronze', name:'Entertainment Bundle',   desc:'Both Digital Entertainment and Peloton credits used' },
+  { id:'food_combo',      tier:'bronze',    name:'Food Lover',               desc:'Both Uber Cash and DoorDash credits in your portfolio',    cards:['gold','platinum','csr','chase_sapphire_pref'] },
+  { id:'commuter_pack',   tier:'bronze',    name:'Commuter',                 desc:'Both Uber and Lyft credits used',                          cards:['csr'], hidden:true },
+  { id:'dining_trifecta', tier:'silver',    name:'Dining Trifecta',          desc:'Three or more distinct dining credit types used',          cards:['gold','platinum','csr','amex_marriott_brill'], hidden:true },
+  { id:'entertainment_bundle', tier:'bronze', name:'Entertainment Bundle',   desc:'Both Digital Entertainment and Peloton credits used',      cards:['platinum','csr'] },
 
   // ── Dollar milestones ─────────────────────────────────────────────────
   { id:'silver_bullet',   tier:'bronze',    name:'Silver Bullet',            desc:'$750+ captured on a single card' },
@@ -153,6 +153,11 @@ export const BADGE_DEFS = [
   { id:'hacker',          tier:'legendary', name:'Credit Card Benefit Hacker', desc:'Mastered the art of extracting every dollar from every card', special:true },
   { id:'obsessive',       tier:'legendary', name:'Obsessive',                desc:'Tracks, optimizes, and agonizes over every single benefit', special:true },
 ];
+
+export function getApplicableBadgeDefs(){
+  const cardKeys=new Set(getVisibleCardKeys());
+  return BADGE_DEFS.filter(def=>!def.cards||def.cards.some(k=>cardKeys.has(k)));
+}
 
 export const TIER_COLORS = {
   bronze:   '#CD7F32',
@@ -459,7 +464,7 @@ export function checkBadges(){
   // Brand & bank loyalty
   maybe('amex_loyalist',     (issuerCounts['American Express']||0)>=3);
   maybe('chase_loyalist',    (issuerCounts['Chase']||0)>=3);
-  maybe('cap1_loyalist',     (issuerCounts['Capital One']||0)>=2);
+  maybe('cap1_loyalist',     (issuerCounts['Capital One']||0)>=1);
   maybe('citi_loyalist',     (issuerCounts['Citi']||0)>=1);
   maybe('wf_loyalist',       (issuerCounts['Wells Fargo']||0)>=1);
   maybe('multi_bank',        uniqueIssuers>=3);

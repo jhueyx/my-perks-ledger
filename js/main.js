@@ -12,7 +12,7 @@ import {
   loadCardMeta, setCardOpenedDate
 } from './storage.js';
 import { render, getVisibleCardKeys, renderCurrent, renderRecap, haptic, checkAllClaimed, animateCounters, renderFeeOptimizer } from './views.js';
-import { checkBadges, getEarnedBadges, getEarnedAt, getUnseenBadges, markAllSeen, BADGE_DEFS, TIER_COLORS, backfill2025Badges } from './badges.js';
+import { checkBadges, getEarnedBadges, getEarnedAt, getUnseenBadges, markAllSeen, BADGE_DEFS, getApplicableBadgeDefs, TIER_COLORS, backfill2025Badges } from './badges.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee, getBAmount, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
 
 // ── Splash: show login only if no cached session ──────────────────────────
@@ -1414,9 +1414,10 @@ function renderBadgesView(){
   const earned=new Set(getEarnedBadges());
   const earnedAt=getEarnedAt();
   markAllSeen();
-  const total=BADGE_DEFS.length;
-  const earnedCount=earned.size;
-  const pct=Math.round(earnedCount/total*100);
+  const defs=getApplicableBadgeDefs();
+  const total=defs.length;
+  const earnedCount=[...earned].filter(id=>defs.some(d=>d.id===id)).length;
+  const pct=total>0?Math.round(earnedCount/total*100):0;
 
   function fmtDate(ts){
     if(!ts) return '';
@@ -1444,7 +1445,7 @@ function renderBadgesView(){
   const lockSVG=`<svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="5" y="10" width="14" height="11" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 
   html+=`<div class="badges-grid">`;
-  BADGE_DEFS.forEach((def,i)=>{
+  defs.forEach((def,i)=>{
     const isEarned=earned.has(def.id);
     const isHidden=def.hidden&&!isEarned;
     const color=TIER_COLORS[def.tier];

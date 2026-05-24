@@ -1783,13 +1783,29 @@
   .more-pill:active { background: var(--gold); color: #fff; border-color: var(--gold); }
   .more-pill-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-  /* ── Phone landscape — keep bottom nav visible on touch screens ── */
+  /* ── Phone landscape — side rail nav ── */
   @media (pointer: coarse) and (max-width: 900px) and (orientation: landscape) {
-    .bottom-tab-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 700; padding-bottom: env(safe-area-inset-bottom); }
-    .container { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
-    .menu-btn { display: none; }
-    .bottom-tab { padding: 5px 2px; }
+    .bottom-tab-bar {
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; bottom: 0; left: 0;
+      width: 52px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      border-top: none;
+      z-index: 700;
+      padding: 0;
+      justify-content: center;
+      gap: 6px;
+    }
+    .bottom-tab { padding: 12px 0; width: 52px; flex: 0 0 auto; }
     .bottom-tab-label { display: none; }
+    .menu-btn { display: none; }
+    .app-header { margin-left: 52px; }
+    .container { padding-bottom: 12px; margin-left: 52px; }
+    .bottom-sheet { left: 52px; bottom: 0 !important; transform: translateY(110%) !important; }
+    .bottom-sheet.open { transform: translateY(0) !important; }
   }
 
   /* ── iOS PWA standalone mode — ensure bottom nav always shows ── */
