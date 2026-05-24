@@ -205,9 +205,11 @@ function doUnlock(){
   syncFromSupabase();
   setTimeout(saveDigestCache,3000);
   setTimeout(()=>{
+    checkBadges();
     const newOnes=backfill2025Badges();
-    if(newOnes.length) setTimeout(()=>showBadgeToast(newOnes[0]),1000);
-  },2000);
+    if(newOnes.length) showBadgeToast(newOnes[0]);
+    if(state.activeView==='badges') renderBadgesView();
+  },500);
 }
 
 // ── Session restore ───────────────────────────────────────────────────────
@@ -1528,6 +1530,7 @@ window.closeFeeDateModal=closeFeeDateModal;
 window.goToCardPeriod=goToCardPeriod;
 window.skipBenefit=skipBenefit;
 window.unskipBenefit=unskipBenefit;
+window.backfill2025Badges=()=>{ localStorage.removeItem('perks-badges-2025-backfill'); checkBadges(); backfill2025Badges(); renderBadgesView(); };
 window.clearAllSkipped=clearAllSkipped;
 window.requestNotifications=requestNotifications;
 window.setSelectedYear=(y)=>{ state.selectedYear=y; };
