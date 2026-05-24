@@ -9,9 +9,6 @@ export const CARDS={
     {label:'Semi-annual (calendar)',cadence:'cal-semi-annual',benefits:[
       {id:'g_resy',name:'Resy Dining Credit',desc:'Any U.S. Resy restaurant — no reservation required',amount:50,startsFrom:2025},
     ]},
-    {label:'Annual',cadence:'annual',benefits:[
-      {id:'g_hotel',name:'Hotel Collection Credit',desc:'$100 on eligible charges, 2-night min via AMEX Travel',amount:100,partial:true,startsFrom:2025},
-    ]},
   ]},
   platinum:{name:'AMEX Platinum',fee:895,historicalFees:{2025:695},feeMonth:8,feeDay:17,openedYear:2025,sections:[
     {label:'Monthly',cadence:'monthly',benefits:[
