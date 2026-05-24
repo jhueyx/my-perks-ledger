@@ -375,7 +375,7 @@ export function renderDigest(){
           <div style="font-size:14px;font-weight:700;font-family:var(--mono);color:var(--green)">$${item.amt}</div>
           <span class="priority-urgency ${item.urgencyCls}">${item.urgencyLabel}</span>
         </div>
-        <button onclick="skipBenefit('${item.cardKey}','${item.benefitId}','${item.pk}')" title="Dismiss" style="margin-left:10px;background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:16px;padding:4px;line-height:1;opacity:0.5" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.5'">×</button>
+        <button onclick="skipBenefit('${item.cardKey}','${item.benefitId}','${item.pk}')" title="Dismiss" style="margin-left:10px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-secondary);font-size:14px;padding:4px 8px;line-height:1;flex-shrink:0">×</button>
       </div>`;
     });
   }
