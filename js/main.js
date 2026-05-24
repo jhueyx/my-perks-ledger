@@ -1530,7 +1530,7 @@ window.closeFeeDateModal=closeFeeDateModal;
 window.goToCardPeriod=goToCardPeriod;
 window.skipBenefit=skipBenefit;
 window.unskipBenefit=unskipBenefit;
-window.backfill2025Badges=()=>{ localStorage.removeItem('perks-badges-2025-backfill'); checkBadges(); backfill2025Badges(); renderBadgesView(); };
+window.backfill2025Badges=()=>{ localStorage.removeItem('perks-badges-2025-backfill'); localStorage.removeItem('perks-badges-2025-backfill-v2'); checkBadges(); backfill2025Badges(); renderBadgesView(); };
 window.clearAllSkipped=clearAllSkipped;
 window.requestNotifications=requestNotifications;
 window.setSelectedYear=(y)=>{ state.selectedYear=y; };
