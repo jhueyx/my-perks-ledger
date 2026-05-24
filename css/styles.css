@@ -1472,67 +1472,8 @@
   @media (max-width: 600px) {
     .container { padding: 12px 12px 72px; }
 
-    /* ── Transform-based infinite carousel ── */
-    .card-selector {
-      display: block;
-      position: relative;
-      overflow: hidden;
-      padding: 0;
-      margin-bottom: 0;
-      cursor: default;
-      touch-action: pan-y; /* allow vertical scroll, JS intercepts horizontal */
-    }
-    .card-selector::before,
-    .card-selector::after {
-      content: '';
-      position: absolute;
-      top: 0; bottom: 20px;
-      width: 32px;
-      pointer-events: none;
-      z-index: 4;
-    }
-    .card-selector::before { left: 0;  background: linear-gradient(to right, var(--bg) 20%, transparent); }
-    .card-selector::after  { right: 0; background: linear-gradient(to left,  var(--bg) 20%, transparent); }
-
-    .carousel-track {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: nowrap;
-      gap: 12px;
-      padding: 4px 0 0;
-      will-change: transform;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    .carousel-track .card-btn {
-      flex: 0 0 78vw;
-      width: 78vw;
-      scroll-snap-align: unset;
-      cursor: pointer;
-    }
-
-    /* Pagination dots */
-    .carousel-dots {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 5px;
-      padding: 8px 0 6px;
-    }
-    .carousel-dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--text-secondary);
-      opacity: 0.28;
-      transition: opacity 0.22s ease, transform 0.22s ease;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .carousel-dot.active {
-      opacity: 1;
-      transform: scale(1.55);
-      background: var(--text-primary);
-    }
+    .card-selector { cursor: default; padding: 4px 12px 10px; }
+    .card-selector .card-btn { flex: 0 0 120px; }
     .card-visual { border-radius: 8px; }
     .card-btn { border-radius: 8px; }
     .active-ring { border-radius: 11px !important; }
