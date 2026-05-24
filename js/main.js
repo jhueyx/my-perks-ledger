@@ -12,7 +12,7 @@ import {
   loadCardMeta, setCardOpenedDate
 } from './storage.js';
 import { render, getVisibleCardKeys, renderCurrent, renderRecap, haptic, checkAllClaimed, animateCounters, renderFeeOptimizer } from './views.js';
-import { checkBadges, getEarnedBadges, getUnseenBadges, markAllSeen, BADGE_DEFS, TIER_COLORS } from './badges.js';
+import { checkBadges, getEarnedBadges, getUnseenBadges, markAllSeen, BADGE_DEFS, TIER_COLORS, backfill2025Badges } from './badges.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee, getBAmount, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
 
 // ── Splash: show login only if no cached session ──────────────────────────
@@ -204,6 +204,10 @@ function doUnlock(){
   setTimeout(initCardFlip,200);
   syncFromSupabase();
   setTimeout(saveDigestCache,3000);
+  setTimeout(()=>{
+    const newOnes=backfill2025Badges();
+    if(newOnes.length) setTimeout(()=>showBadgeToast(newOnes[0]),1000);
+  },2000);
 }
 
 // ── Session restore ───────────────────────────────────────────────────────

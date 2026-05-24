@@ -7,18 +7,21 @@ import { getVisibleCardKeys } from './views.js';
 const BADGES_KEY = 'perks-badges';
 
 export const BADGE_DEFS = [
-  { id:'first_profit',   tier:'gold',     name:'Fee Slayer',      desc:'Offset a card\'s full annual fee' },
-  { id:'fee_crusher',    tier:'platinum', name:'Fee Crusher',     desc:'All your cards are simultaneously in profit' },
-  { id:'grand_slam',     tier:'gold',     name:'Grand Slam',      desc:'Every current benefit claimed across all cards' },
-  { id:'early_bird',     tier:'bronze',   name:'Early Bird',      desc:'All monthly benefits claimed before the 15th' },
-  { id:'streak_3',       tier:'bronze',   name:'On Fire',         desc:'3-month streak on any monthly benefit' },
-  { id:'streak_6',       tier:'silver',   name:'Blazing',         desc:'6-month streak on any monthly benefit' },
-  { id:'streak_12',      tier:'gold',     name:'Unstoppable',     desc:'12-month streak on any monthly benefit' },
-  { id:'collector',      tier:'bronze',   name:'Collector',       desc:'Tracking 3 or more cards' },
-  { id:'portfolio_pro',  tier:'silver',   name:'Portfolio Pro',   desc:'Tracking 5 or more cards' },
-  { id:'big_win',        tier:'silver',   name:'Big Win',         desc:'$1,000+ captured on a single card' },
-  { id:'maximizer',      tier:'platinum', name:'Maximizer',       desc:'$5,000+ total value captured across all cards' },
-  { id:'all_in',         tier:'gold',     name:'All In',          desc:'100% of all benefits claimed on any single card this card year' },
+  { id:'first_profit',   tier:'gold',      name:'Fee Slayer',             desc:'Offset a card\'s full annual fee' },
+  { id:'fee_crusher',    tier:'platinum',  name:'Fee Crusher',            desc:'All your cards are simultaneously in profit' },
+  { id:'grand_slam',     tier:'gold',      name:'Grand Slam',             desc:'Every current benefit claimed across all cards' },
+  { id:'early_bird',     tier:'bronze',    name:'Early Bird',             desc:'All monthly benefits claimed before the 15th' },
+  { id:'streak_3',       tier:'bronze',    name:'On Fire',                desc:'3-month streak on any monthly benefit' },
+  { id:'streak_6',       tier:'silver',    name:'Blazing',                desc:'6-month streak on any monthly benefit' },
+  { id:'streak_12',      tier:'gold',      name:'Unstoppable',            desc:'12-month streak on any monthly benefit' },
+  { id:'collector',      tier:'bronze',    name:'Collector',              desc:'Tracking 3 or more cards' },
+  { id:'portfolio_pro',  tier:'silver',    name:'Portfolio Pro',          desc:'Tracking 5 or more cards' },
+  { id:'big_win',        tier:'silver',    name:'Big Win',                desc:'$1,000+ captured on a single card' },
+  { id:'maximizer',      tier:'platinum',  name:'Maximizer',              desc:'$5,000+ total value captured across all cards' },
+  { id:'all_in',         tier:'gold',      name:'All In',                 desc:'100% of all benefits claimed on any single card this card year' },
+  { id:'founder',        tier:'legendary', name:'Founder',                desc:'Built this — no one else gets this badge', special:true },
+  { id:'hacker',         tier:'legendary', name:'Credit Card Benefit Hacker', desc:'Mastered the art of extracting every dollar from every card', special:true },
+  { id:'obsessive',      tier:'legendary', name:'Obsessive',              desc:'Tracks, optimizes, and agonizes over every single benefit', special:true },
 ];
 
 export const TIER_COLORS = {
@@ -26,6 +29,7 @@ export const TIER_COLORS = {
   silver:   '#A0A8B0',
   gold:     '#C8922A',
   platinum: '#4A7FA5',
+  legendary:'#9B59B6',
 };
 
 function loadState(){ try{ return JSON.parse(localStorage.getItem(BADGES_KEY)||'{"earned":[],"seen":[]}'); }catch(e){ return {earned:[],seen:[]}; } }
@@ -34,6 +38,24 @@ function saveState(s){ localStorage.setItem(BADGES_KEY,JSON.stringify(s)); }
 export function getEarnedBadges(){ return loadState().earned; }
 export function getUnseenBadges(){ const s=loadState(); const seen=new Set(s.seen); return s.earned.filter(id=>!seen.has(id)); }
 export function markAllSeen(){ const s=loadState(); s.seen=[...s.earned]; saveState(s); }
+
+export function awardBadges(ids){
+  const s=loadState();
+  const earned=new Set(s.earned);
+  ids.forEach(id=>earned.add(id));
+  s.earned=[...earned];
+  saveState(s);
+  return ids.filter(id=>!new Set(loadState().seen).has(id));
+}
+
+export function backfill2025Badges(){
+  const FLAG='perks-badges-2025-backfill';
+  if(localStorage.getItem(FLAG)) return [];
+  const earned=['collector','streak_3','streak_6','streak_12','first_profit','big_win','founder','hacker','obsessive'];
+  const newOnes=awardBadges(earned);
+  localStorage.setItem(FLAG,'1');
+  return newOnes;
+}
 
 export function checkBadges(){
   const s=loadState();
