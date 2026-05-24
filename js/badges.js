@@ -78,7 +78,75 @@ export const BADGE_DEFS = [
   { id:'amex_loyalist',   tier:'gold',      name:'Amex Loyalist',            desc:'Tracking 3+ American Express cards' },
   { id:'chase_loyalist',  tier:'gold',      name:'Chase Loyalist',           desc:'Tracking 3+ Chase cards' },
   { id:'cap1_loyalist',   tier:'silver',    name:'Capital One Fan',          desc:'Tracking 2+ Capital One cards' },
+  { id:'citi_loyalist',   tier:'bronze',    name:'Citi Cardmember',          desc:'Tracking any Citi card' },
+  { id:'wf_loyalist',     tier:'bronze',    name:'Wells Fargo Cardholder',   desc:'Tracking any Wells Fargo card' },
   { id:'multi_bank',      tier:'platinum',  name:'Multi-Bank Master',        desc:'Cards from 3+ different banks in your portfolio' },
+  { id:'amex_trifecta',   tier:'gold',      name:'Amex Trifecta',            desc:'Platinum + Gold + Green all tracked simultaneously', hidden:true },
+  { id:'chase_trifecta',  tier:'gold',      name:'Chase Trifecta',           desc:'CSR + Sapphire Preferred + one more Chase card all tracked', hidden:true },
+
+  // ── Card-specific tracking ───────────────────────────────────────────
+  { id:'hilton_devotee',  tier:'bronze',    name:'Hilton Devotee',           desc:'Tracking the Hilton Honors Aspire card' },
+  { id:'marriott_fan',    tier:'bronze',    name:'Marriott Fan',             desc:'Tracking the Marriott Bonvoy Brilliant card' },
+  { id:'hyatt_explorer',  tier:'bronze',    name:'Hyatt Explorer',           desc:'Tracking the World of Hyatt card' },
+  { id:'hotel_portfolio', tier:'silver',    name:'Hotel Portfolio',          desc:'Tracking Hilton Aspire + Marriott Brilliant + Hyatt together', hidden:true },
+  { id:'csp_holder',      tier:'bronze',    name:'Preferred Member',         desc:'Tracking the Chase Sapphire Preferred card' },
+  { id:'green_carrier',   tier:'bronze',    name:'Going Green',              desc:'Tracking the Amex Green card' },
+  { id:'venture_x_holder',tier:'bronze',    name:'Venture X Holder',         desc:'Tracking the Capital One Venture X card' },
+  { id:'united_flyer',    tier:'bronze',    name:'United Flyer',             desc:'Tracking United Quest or United Club Infinite' },
+  { id:'strata_holder',   tier:'bronze',    name:'Strata Premier',           desc:'Tracking the Citi Strata Premier card' },
+
+  // ── Specific benefits used ───────────────────────────────────────────
+  { id:'saks_shopper',    tier:'bronze',    name:'Saks Fifth',               desc:'Used the Saks Fifth Avenue semi-annual credit' },
+  { id:'lulu_fan',        tier:'bronze',    name:'Lulu Loyalist',            desc:'Used the Lululemon quarterly credit' },
+  { id:'oura_owner',      tier:'bronze',    name:'Oura Owner',               desc:'Used the Oura Ring annual credit' },
+  { id:'uber_one_club',   tier:'bronze',    name:'Uber One Member',          desc:'Claimed the annual Uber One membership credit' },
+  { id:'equinox_devotee', tier:'bronze',    name:'Equinox Member',           desc:'Used the Equinox annual credit' },
+  { id:'resy_regular',    tier:'bronze',    name:'Resy Regular',             desc:'Used a Resy dining credit on any card' },
+  { id:'dec_bonus',       tier:'gold',      name:'December Ace',             desc:'Claimed the $35 December Platinum Uber bonus', hidden:true },
+  { id:'digital_devotee', tier:'silver',    name:'Digital Devotee',          desc:'6+ month streak on the Platinum Digital Entertainment credit' },
+  { id:'dunkin_addict',   tier:'silver',    name:'Dunkin\' Devotee',         desc:'6+ month streak on the Gold Dunkin\' credit' },
+  { id:'walmart_weekly',  tier:'silver',    name:'Walmart Warrior',          desc:'6+ month streak on the Platinum Walmart+ credit' },
+  { id:'peloton_rider',   tier:'bronze',    name:'Peloton Rider',            desc:'Used the CSR Peloton credit 3+ consecutive months' },
+  { id:'uber_vip',        tier:'gold',      name:'Uber VIP',                 desc:'18+ total Uber Cash claims across all cards' },
+  { id:'doordash_pro',    tier:'silver',    name:'DoorDash Pro',             desc:'12+ total DoorDash credit claims' },
+
+  // ── Wellness ─────────────────────────────────────────────────────────
+  { id:'wellness_stack',  tier:'silver',    name:'Wellness Stack',           desc:'Used 2+ different wellness credits (Equinox, Lululemon, Peloton, Oura)' },
+  { id:'full_wellness',   tier:'gold',      name:'Wellness Maximizer',       desc:'Used all four wellness credits: Equinox, Lululemon, Peloton, and Oura', hidden:true },
+
+  // ── Travel combos ────────────────────────────────────────────────────
+  { id:'clear_and_ge',    tier:'silver',    name:'Double Cleared',           desc:'Both CLEAR Plus and Global Entry credits used' },
+  { id:'airport_royalty', tier:'gold',      name:'Airport Royalty',          desc:'CLEAR, Global Entry, and airport lounge — all three used', hidden:true },
+  { id:'airline_insider', tier:'silver',    name:'Airline Insider',          desc:'Airline fee credits used on 2+ different cards' },
+  { id:'hotel_connoisseur',tier:'gold',     name:'Hotel Connoisseur',        desc:'Hotel credits used on 3+ different cards' },
+  { id:'first_class_combo',tier:'silver',   name:'First Class',              desc:'Both airline and hotel credits in your portfolio', hidden:true },
+  { id:'lounge_regular',  tier:'gold',      name:'Lounge Regular',           desc:'United Club membership and CLEAR Plus both claimed' },
+  { id:'saks_both',       tier:'silver',    name:'Full Saks Season',         desc:'Claimed both H1 and H2 Saks credits in the same year', hidden:true },
+
+  // ── Benefit combos ───────────────────────────────────────────────────
+  { id:'food_combo',      tier:'bronze',    name:'Food Lover',               desc:'Both Uber Cash and DoorDash credits in your portfolio' },
+  { id:'commuter_pack',   tier:'bronze',    name:'Commuter',                 desc:'Both Uber and Lyft credits used', hidden:true },
+  { id:'dining_trifecta', tier:'silver',    name:'Dining Trifecta',          desc:'Three or more distinct dining credit types used', hidden:true },
+  { id:'entertainment_bundle', tier:'bronze', name:'Entertainment Bundle',   desc:'Both Digital Entertainment and Peloton credits used' },
+
+  // ── Dollar milestones ─────────────────────────────────────────────────
+  { id:'silver_bullet',   tier:'bronze',    name:'Silver Bullet',            desc:'$750+ captured on a single card' },
+  { id:'gold_mine',       tier:'silver',    name:'Gold Mine',                desc:'$3,000+ total value captured' },
+  { id:'platinum_tier',   tier:'gold',      name:'Platinum Tier',            desc:'$7,000+ total value captured' },
+
+  // ── High-volume claims ───────────────────────────────────────────────
+  { id:'claim_addict',    tier:'bronze',    name:'Claim Addict',             desc:'150+ total benefit claims across all cards' },
+  { id:'claim_machine',   tier:'silver',    name:'Claim Machine',            desc:'300+ total benefit claims — relentlessly consistent' },
+
+  // ── Misc / seasonal ──────────────────────────────────────────────────
+  { id:'new_year_start',  tier:'bronze',    name:'New Year Starter',         desc:'Claimed a benefit in January' },
+
+  // ── Meta / progression ───────────────────────────────────────────────
+  { id:'badge_20',        tier:'bronze',    name:'Decorated',                desc:'Earned 20 or more badges' },
+  { id:'badge_35',        tier:'silver',    name:'Overachiever',             desc:'Earned 35 or more badges' },
+  { id:'badge_50',        tier:'gold',      name:'Hall of Famer',            desc:'Earned 50 or more badges' },
+  { id:'badge_75',        tier:'platinum',  name:'Legend Status',            desc:'Earned 75 or more badges' },
+  { id:'badge_100',       tier:'legendary', name:'The Complete Package',     desc:'Earned 100 or more badges — truly the top 1%', hidden:true },
 
   // ── Legendary ────────────────────────────────────────────────────────
   { id:'founder',         tier:'legendary', name:'Founder',                  desc:'Built this — no one else gets this badge', special:true },
@@ -164,14 +232,39 @@ export function checkBadges(){
 
   let uberMaxStreak=0, ddMaxStreak=0, diningMaxStreak=0;
   let fitnessUsed=false, clearUsed=false, geUsed=false, loungeUsed=false;
-  let travelCardCount=0, hotelCardCount=0;
+  let travelCardCount=0, hotelCardCount=0, airlineCardCount=0;
   let goldProfit=false, platProfit=false, csrProfit=false;
+  let uberEverUsed=false, ddEverUsed=false, lyftUsed=false, anyAirlineUsed=false;
+  let uberTotalUses=0, ddTotalUses=0;
+  const wellnessTypes=new Set();
+  const diningTypes=new Set();
 
   // Brand/bank loyalty — count by issuer
   const issuerMap=Object.fromEntries(PREMIUM_CARD_CATALOG.map(c=>[c.id,c.issuer]));
   const issuerCounts={};
   cardKeys.forEach(ck=>{ const iss=issuerMap[ck]; if(iss) issuerCounts[iss]=(issuerCounts[iss]||0)+1; });
   const uniqueIssuers=Object.keys(issuerCounts).length;
+
+  // Dec bonus: Platinum Uber claimed in any December
+  const decBonus=Object.entries(state.DATA['platinum']||{})
+    .some(([k,v])=>k.startsWith('p_uber__')&&k.endsWith('-12')&&v===true);
+
+  // Saks both halves in same year
+  const saksBoth=(()=>{
+    const byYr={};
+    Object.entries(state.DATA['platinum']||{}).forEach(([k,v])=>{
+      if(!v||!k.startsWith('p_saks__')) return;
+      const yr=k.split('__')[1].split('-')[0]; byYr[yr]=(byYr[yr]||0)+1;
+    });
+    return Object.values(byYr).some(c=>c>=2);
+  })();
+
+  // Has January data in any year
+  const hasJanData=Object.values(state.DATA).some(d=>
+    Object.entries(d).some(([k,v])=>v===true&&/^\d{4}-01$/.test((k.split('__')[1])||''))
+  );
+
+  const airlineBenefitIds=['p_airline','ah_airline','wfpa_airline','uq_miles'];
 
   // Count total benefit claims across all state.DATA
   let totalClaims=0;
@@ -249,11 +342,9 @@ export function checkBadges(){
     // Category: CLEAR
     if(['p_clear','ag_clear'].some(id=>everUsed(ck,id))) clearUsed=true;
 
-    // Category: Global Entry (any benefit id ending in _ge)
+    // Category: Global Entry
     CARDS[ck].sections.forEach(sec=>{
-      sec.benefits.forEach(b=>{
-        if(b.id.endsWith('_ge')&&everUsed(ck,b.id)) geUsed=true;
-      });
+      sec.benefits.forEach(b=>{ if(b.id.endsWith('_ge')&&everUsed(ck,b.id)) geUsed=true; });
     });
 
     // Category: lounge
@@ -264,6 +355,33 @@ export function checkBadges(){
 
     // Category: hotel cards
     if(hotelBenefitIds.some(id=>everUsed(ck,id))) hotelCardCount++;
+
+    // Airline cards
+    if(airlineBenefitIds.some(id=>everUsed(ck,id))){ anyAirlineUsed=true; airlineCardCount++; }
+
+    // Uber/DD ever used + total count
+    if(['g_uber','p_uber'].some(id=>everUsed(ck,id))) uberEverUsed=true;
+    if(['c_dd_restaurant','c_dd_nonrest1','c_dd_nonrest2'].some(id=>everUsed(ck,id))) ddEverUsed=true;
+    if(everUsed(ck,'c_lyft')) lyftUsed=true;
+    const d=state.DATA[ck]||{};
+    Object.entries(d).forEach(([k,v])=>{
+      if(!v) return;
+      if(k.startsWith('g_uber__')||k.startsWith('p_uber__')) uberTotalUses++;
+      if(k.startsWith('c_dd_restaurant__')||k.startsWith('c_dd_nonrest1__')||k.startsWith('c_dd_nonrest2__')) ddTotalUses++;
+    });
+
+    // Wellness types
+    if(everUsed(ck,'p_equinox')) wellnessTypes.add('equinox');
+    if(everUsed(ck,'p_lulu'))    wellnessTypes.add('lulu');
+    if(everUsed(ck,'c_peloton')) wellnessTypes.add('peloton');
+    if(everUsed(ck,'p_oura'))    wellnessTypes.add('oura');
+
+    // Dining types
+    if(everUsed(ck,'g_dining'))   diningTypes.add('g_dining');
+    if(everUsed(ck,'g_resy'))     diningTypes.add('g_resy');
+    if(everUsed(ck,'p_resy'))     diningTypes.add('p_resy');
+    if(everUsed(ck,'c_dining'))   diningTypes.add('c_dining');
+    if(everUsed(ck,'amb_dining')) diningTypes.add('amb_dining');
   });
 
   const day=new Date().getDate();
@@ -342,7 +460,80 @@ export function checkBadges(){
   maybe('amex_loyalist',     (issuerCounts['American Express']||0)>=3);
   maybe('chase_loyalist',    (issuerCounts['Chase']||0)>=3);
   maybe('cap1_loyalist',     (issuerCounts['Capital One']||0)>=2);
+  maybe('citi_loyalist',     (issuerCounts['Citi']||0)>=1);
+  maybe('wf_loyalist',       (issuerCounts['Wells Fargo']||0)>=1);
   maybe('multi_bank',        uniqueIssuers>=3);
+  maybe('amex_trifecta',     ['platinum','gold','amex_green'].every(k=>cardKeys.includes(k)));
+  maybe('chase_trifecta',    ['csr','chase_sapphire_pref'].every(k=>cardKeys.includes(k))&&(issuerCounts['Chase']||0)>=3);
+
+  // Card-specific tracking
+  maybe('hilton_devotee',    cardKeys.includes('amex_hilton_honors'));
+  maybe('marriott_fan',      cardKeys.includes('amex_marriott_brill'));
+  maybe('hyatt_explorer',    cardKeys.includes('chase_world_of_hyatt'));
+  maybe('hotel_portfolio',   ['amex_hilton_honors','amex_marriott_brill','chase_world_of_hyatt'].every(k=>cardKeys.includes(k)));
+  maybe('csp_holder',        cardKeys.includes('chase_sapphire_pref'));
+  maybe('green_carrier',     cardKeys.includes('amex_green'));
+  maybe('venture_x_holder',  cardKeys.includes('cap1_venture_x'));
+  maybe('united_flyer',      cardKeys.includes('chase_united_quest')||cardKeys.includes('chase_united_club'));
+  maybe('strata_holder',     cardKeys.includes('citi_strata_prem'));
+
+  // Specific benefits — one-time use
+  maybe('saks_shopper',      everUsed('platinum','p_saks'));
+  maybe('lulu_fan',          everUsed('platinum','p_lulu'));
+  maybe('oura_owner',        everUsed('platinum','p_oura'));
+  maybe('uber_one_club',     everUsed('platinum','p_uberone'));
+  maybe('equinox_devotee',   everUsed('platinum','p_equinox'));
+  maybe('resy_regular',      everUsed('gold','g_resy')||everUsed('platinum','p_resy'));
+  maybe('dec_bonus',         decBonus);
+
+  // Specific benefits — streaks
+  maybe('digital_devotee',   getStreak('platinum','p_digital')>=6);
+  maybe('dunkin_addict',     getStreak('gold','g_dunkin')>=6);
+  maybe('walmart_weekly',    getStreak('platinum','p_walmart')>=6);
+  maybe('peloton_rider',     getStreak('csr','c_peloton')>=3);
+
+  // Specific benefits — volume
+  maybe('uber_vip',          uberTotalUses>=18);
+  maybe('doordash_pro',      ddTotalUses>=12);
+
+  // Wellness
+  maybe('wellness_stack',    wellnessTypes.size>=2);
+  maybe('full_wellness',     wellnessTypes.size>=4);
+
+  // Travel combos
+  maybe('clear_and_ge',      clearUsed&&geUsed);
+  maybe('airport_royalty',   clearUsed&&geUsed&&loungeUsed);
+  maybe('airline_insider',   airlineCardCount>=2);
+  maybe('hotel_connoisseur', hotelCardCount>=3);
+  maybe('first_class_combo', anyAirlineUsed&&hotelCardCount>=1);
+  maybe('lounge_regular',    loungeUsed&&clearUsed);
+  maybe('saks_both',         saksBoth);
+
+  // Benefit combos
+  maybe('food_combo',        uberEverUsed&&ddEverUsed);
+  maybe('commuter_pack',     uberEverUsed&&lyftUsed);
+  maybe('dining_trifecta',   diningTypes.size>=3);
+  maybe('entertainment_bundle', everUsed('platinum','p_digital')&&everUsed('csr','c_peloton'));
+
+  // Dollar milestones
+  maybe('silver_bullet',     maxSingleCard>=750);
+  maybe('gold_mine',         totalCaptured>=3000);
+  maybe('platinum_tier',     totalCaptured>=7000);
+
+  // Volume milestones
+  maybe('claim_addict',      totalClaims>=150);
+  maybe('claim_machine',     totalClaims>=300);
+
+  // Misc
+  maybe('new_year_start',    hasJanData);
+
+  // Meta — must come last, uses current earned count
+  const earnedCount=earned.length;
+  maybe('badge_20',  earnedCount>=20);
+  maybe('badge_35',  earnedCount>=35);
+  maybe('badge_50',  earnedCount>=50);
+  maybe('badge_75',  earnedCount>=75);
+  maybe('badge_100', earnedCount>=100);
 
   s.earned=earned;
   saveState(s);
