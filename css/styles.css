@@ -1801,7 +1801,8 @@
       justify-content: center;
       gap: 6px;
     }
-    .bottom-tab { padding: 12px 0; width: 52px; flex: 0 0 auto; }
+    .bottom-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 0; width: 52px; flex: 0 0 auto; background: none !important; border: none !important; -webkit-appearance: none; appearance: none; color: var(--text-tertiary); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .bottom-tab.active { color: var(--gold); }
     .bottom-tab-label { display: none; }
     .menu-btn { display: none; }
     .app-header { margin-left: 52px; }
@@ -1819,7 +1820,8 @@
   /* ── iOS PWA standalone mode — landscape → side rail ── */
   @media (display-mode: standalone) and (orientation: landscape) {
     .bottom-tab-bar { display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; right: auto; width: 52px; background: var(--surface); border-right: 1px solid var(--border); border-top: none; z-index: 700; padding: 0; justify-content: center; gap: 6px; }
-    .bottom-tab { padding: 12px 0 !important; width: 52px !important; flex: 0 0 auto !important; }
+    .bottom-tab { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 12px 0 !important; width: 52px !important; flex: 0 0 auto !important; background: none !important; border: none !important; -webkit-appearance: none; appearance: none; color: var(--text-tertiary); -webkit-tap-highlight-color: transparent; }
+    .bottom-tab.active { color: var(--gold) !important; }
     .bottom-tab-label { display: none !important; }
     .menu-btn { display: none; }
     .app-header { margin-left: 52px; }
@@ -1836,7 +1838,8 @@
   /* ── PWA class landscape → side rail ── */
   @media (orientation: landscape) {
     body.pwa-mode .bottom-tab-bar { display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; right: auto; width: 52px; background: var(--surface); border-right: 1px solid var(--border); border-top: none; z-index: 700; padding: 0; justify-content: center; gap: 6px; }
-    body.pwa-mode .bottom-tab { padding: 12px 0 !important; width: 52px !important; flex: 0 0 auto !important; }
+    body.pwa-mode .bottom-tab { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 12px 0 !important; width: 52px !important; flex: 0 0 auto !important; background: none !important; border: none !important; -webkit-appearance: none; appearance: none; color: var(--text-tertiary); -webkit-tap-highlight-color: transparent; }
+    body.pwa-mode .bottom-tab.active { color: var(--gold) !important; }
     body.pwa-mode .bottom-tab-label { display: none !important; }
     body.pwa-mode .menu-btn { display: none; }
     body.pwa-mode .app-header { margin-left: 52px; }

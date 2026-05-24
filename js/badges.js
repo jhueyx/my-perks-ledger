@@ -148,6 +148,36 @@ export const BADGE_DEFS = [
   { id:'badge_75',        tier:'platinum',  name:'Legend Status',            desc:'Earned 75 or more badges' },
   { id:'badge_100',       tier:'legendary', name:'The Complete Package',     desc:'Earned 100 or more badges — truly the top 1%', hidden:true },
 
+  // ── CSR-specific ─────────────────────────────────────────────────────
+  { id:'stubhub_fan',        tier:'bronze',    name:'Live Nation',              desc:'Used the CSR StubHub/Viagogo event credit',                cards:['csr'] },
+  { id:'csr_traveler',       tier:'bronze',    name:'Road Warrior',             desc:'Claimed the CSR $300 travel credit',                       cards:['csr'] },
+  { id:'exclusive_tables',   tier:'bronze',    name:'Top Table',                desc:'Used the CSR Exclusive Tables dining credit',              cards:['csr'] },
+  { id:'apple_insider',      tier:'bronze',    name:'Apple Insider',            desc:'Claimed the CSR Apple TV+ & Apple Music credit',           cards:['csr'] },
+  { id:'the_edit_guest',     tier:'silver',    name:'The Edit',                 desc:'Stayed at a Chase Travel The Edit property via CSR',       cards:['csr'], hidden:true },
+  { id:'lyft_rider',         tier:'silver',    name:'Lyft Regular',             desc:'6-month Lyft credit streak on the Sapphire Reserve',       cards:['csr'] },
+  { id:'csr_month_sweep',    tier:'silver',    name:'CSR Sweep',                desc:'DoorDash, Lyft, and Peloton all claimed in the same month', cards:['csr'] },
+  { id:'stub_season',        tier:'silver',    name:'Event Season',             desc:'StubHub credit claimed in both H1 and H2 of the same year', cards:['csr'], hidden:true },
+
+  // ── Gold-specific ─────────────────────────────────────────────────────
+  { id:'gold_sweep',         tier:'silver',    name:'Gold Sweep',               desc:'Dining, Uber, and Dunkin credits all claimed in one month', cards:['gold'] },
+  { id:'dunkin_power',       tier:'gold',      name:'Coffee Connoisseur',       desc:'12+ consecutive months of the Dunkin credit on Amex Gold',  cards:['gold'] },
+
+  // ── Platinum-specific ────────────────────────────────────────────────
+  { id:'plat_trifecta_month',tier:'silver',    name:'Platinum Triple',          desc:'Uber, Digital Entertainment, and Walmart+ all in one month', cards:['platinum'] },
+  { id:'hotel_twice',        tier:'silver',    name:'Fine Hotels Regular',      desc:'Platinum Fine Hotels + Resorts credit used 2+ times',      cards:['platinum'] },
+  { id:'plat_mega',          tier:'platinum',  name:'Platinum Legend',          desc:'$3,000+ total captured on Amex Platinum alone',            cards:['platinum'] },
+
+  // ── WF Premier Autograph-specific ────────────────────────────────────
+  { id:'wf_airline_user',    tier:'bronze',    name:'WF Flyer',                 desc:'Used the WF Premier Autograph airline credit',             cards:['wf_premier_autograph'] },
+  { id:'wf_ge_user',         tier:'bronze',    name:'WF Cleared',               desc:'Used the WF Premier Autograph Global Entry credit',        cards:['wf_premier_autograph'] },
+
+  // ── Cross-card combos ────────────────────────────────────────────────
+  { id:'chase_amex_duo',     tier:'bronze',    name:'Chase × Amex',             desc:'Both CSR and Amex Platinum in your portfolio',             cards:['csr','platinum'] },
+  { id:'double_airline',     tier:'silver',    name:'Dual Runway',              desc:'Both Platinum and WF Premier airline credits claimed',     cards:['platinum','wf_premier_autograph'] },
+  { id:'both_resy',          tier:'bronze',    name:'Resy Devotee',             desc:'Both Gold and Platinum Resy credits used',                 cards:['gold','platinum'], hidden:true },
+  { id:'uber_double_month',  tier:'gold',      name:'Uber Everything',          desc:'Uber credits claimed on both Gold and Platinum in the same month', cards:['gold','platinum'], hidden:true },
+  { id:'four_kings',         tier:'legendary', name:'The Quad',                 desc:'CSR, Gold, Platinum, and WF Premier — all four tracked',   cards:['csr','gold','platinum','wf_premier_autograph'], hidden:true },
+
   // ── Legendary ────────────────────────────────────────────────────────
   { id:'founder',         tier:'legendary', name:'Founder',                  desc:'Built this — no one else gets this badge', special:true },
   { id:'hacker',          tier:'legendary', name:'Credit Card Benefit Hacker', desc:'Mastered the art of extracting every dollar from every card', special:true },
@@ -271,6 +301,33 @@ export function checkBadges(){
 
   const airlineBenefitIds=['p_airline','ah_airline','wfpa_airline','uq_miles'];
 
+  // ── Card-specific pre-computed checks ────────────────────────────────
+  const monthSweep=(cardKey,ids)=>{
+    const d=state.DATA[cardKey]||{};
+    const pks=new Set(Object.entries(d).filter(([,v])=>v).map(([k])=>k.split('__')[1]));
+    return [...pks].some(pk=>ids.every(id=>d[`${id}__${pk}`]===true));
+  };
+  const csrMonthFull=monthSweep('csr',['c_dd_restaurant','c_lyft','c_peloton']);
+  const goldMonthFull=monthSweep('gold',['g_dining','g_uber','g_dunkin']);
+  const platMonthFull=monthSweep('platinum',['p_uber','p_digital','p_walmart']);
+  const platHotelCount=Object.entries(state.DATA['platinum']||{}).filter(([k,v])=>v&&k.startsWith('p_hotel__')).length;
+  const stubBoth=(()=>{
+    const byYr={};
+    Object.entries(state.DATA['csr']||{}).forEach(([k,v])=>{
+      if(!v||!k.startsWith('c_stub__')) return;
+      const yr=k.split('__')[1].split('-')[0]; byYr[yr]=(byYr[yr]||0)+1;
+    });
+    return Object.values(byYr).some(c=>c>=2);
+  })();
+  const uberDoubleMonth=(()=>{
+    const gd=state.DATA['gold']||{};
+    const pd=state.DATA['platinum']||{};
+    const gPks=new Set(Object.entries(gd).filter(([k,v])=>v&&k.startsWith('g_uber__')).map(([k])=>k.split('__')[1]));
+    return [...gPks].some(pk=>pd[`p_uber__${pk}`]===true);
+  })();
+  const wfAirlineUsed=everUsed('wf_premier_autograph','wfpa_airline');
+  const wfGeUsed=everUsed('wf_premier_autograph','wfpa_ge');
+
   // Count total benefit claims across all state.DATA
   let totalClaims=0;
   Object.values(state.DATA).forEach(d=>{
@@ -291,10 +348,12 @@ export function checkBadges(){
   const travelBenefitIds=['vx_travel','c_travel','p_airline','ah_airline','wfpa_airline','uq_miles'];
   const hotelBenefitIds=['p_hotel','vx_hotel','csp_hotel','ah_resort','amb_propcredit','amb_freenight'];
 
+  let platCaptured=0;
   cardKeys.forEach(ck=>{
     const fee=getFee(ck,CY);
     const {captured}=calcStats(ck,c=>getCardYearPeriods(ck,c),isPCurrent);
     totalCaptured+=captured;
+    if(ck==='platinum') platCaptured=captured;
     if(captured>=fee&&fee>0){
       anyProfit=true; profitCount++;
       if(ck==='gold') goldProfit=true;
@@ -531,6 +590,36 @@ export function checkBadges(){
 
   // Misc
   maybe('new_year_start',    hasJanData);
+
+  // CSR-specific
+  maybe('stubhub_fan',       everUsed('csr','c_stub'));
+  maybe('csr_traveler',      everUsed('csr','c_travel'));
+  maybe('exclusive_tables',  everUsed('csr','c_dining'));
+  maybe('apple_insider',     everUsed('csr','c_apple'));
+  maybe('the_edit_guest',    everUsed('csr','c_edit1')||everUsed('csr','c_edit2'));
+  maybe('lyft_rider',        getStreak('csr','c_lyft')>=6);
+  maybe('csr_month_sweep',   csrMonthFull);
+  maybe('stub_season',       stubBoth);
+
+  // Gold-specific
+  maybe('gold_sweep',        goldMonthFull);
+  maybe('dunkin_power',      getStreak('gold','g_dunkin')>=12);
+
+  // Platinum-specific
+  maybe('plat_trifecta_month', platMonthFull);
+  maybe('hotel_twice',       platHotelCount>=2);
+  maybe('plat_mega',         platCaptured>=3000);
+
+  // WF Premier-specific
+  maybe('wf_airline_user',   wfAirlineUsed);
+  maybe('wf_ge_user',        wfGeUsed);
+
+  // Cross-card combos
+  maybe('chase_amex_duo',    cardKeys.includes('csr')&&cardKeys.includes('platinum'));
+  maybe('double_airline',    everUsed('platinum','p_airline')&&wfAirlineUsed);
+  maybe('both_resy',         everUsed('gold','g_resy')&&everUsed('platinum','p_resy'));
+  maybe('uber_double_month', uberDoubleMonth);
+  maybe('four_kings',        ['csr','gold','platinum','wf_premier_autograph'].every(k=>cardKeys.includes(k)));
 
   // Meta — must come last, uses current earned count
   const earnedCount=earned.length;
