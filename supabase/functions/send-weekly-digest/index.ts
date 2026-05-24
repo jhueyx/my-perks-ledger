@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 const RESEND_KEY = Deno.env.get('RESEND_API_KEY')!;
-const FROM = 'Perks Ledger <onboarding@resend.dev>';
+const FROM = 'Perks Ledger <digest@perks.hueyventures.org>';
 
 Deno.serve(async () => {
   const { data: profiles, error } = await supabase
