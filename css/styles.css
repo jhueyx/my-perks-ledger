@@ -2361,3 +2361,133 @@
     box-shadow: 0 4px 24px rgba(0,0,0,0.22);
     cursor: pointer;
   }
+
+  /* ── Card Simulator ── */
+  .sim-picker {
+    display: flex; gap: 8px; overflow-x: auto; padding: 0 0 12px;
+    scrollbar-width: none; -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sim-picker::-webkit-scrollbar { display: none; }
+  .sim-pill {
+    flex-shrink: 0; padding: 6px 14px; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-secondary); font-size: 11px; font-family: var(--mono);
+    cursor: pointer; transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .sim-pill:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+  .sim-pill.sp-active {
+    border-color: var(--gold); color: var(--gold);
+    background: rgba(200,146,42,0.08);
+  }
+  .sim-hero {
+    display: flex; align-items: flex-start; gap: 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; margin-bottom: 14px;
+  }
+  .sim-grade {
+    flex-shrink: 0; width: 52px; height: 52px;
+    border-radius: 50%; border: 2px solid;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700; font-family: var(--mono);
+  }
+  .sim-hero-name {
+    font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 2px;
+  }
+  .sim-hero-fee {
+    font-size: 10px; font-family: var(--mono); color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+  }
+  .sim-verdict {
+    font-size: 12px; font-family: var(--mono); line-height: 1.4;
+  }
+  .sim-metrics {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; margin-bottom: 10px;
+  }
+  .sim-m {
+    background: var(--surface); padding: 12px 10px; text-align: center;
+  }
+  .sim-m-val {
+    font-size: 20px; font-weight: 700; font-family: var(--mono);
+    line-height: 1; margin-bottom: 4px;
+  }
+  .sim-m-lbl {
+    font-size: 9px; font-family: var(--mono); color: var(--text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .sim-bar-bg {
+    height: 6px; background: var(--border); border-radius: 3px;
+    position: relative; overflow: hidden; margin-bottom: 5px;
+  }
+  .sim-bar-max {
+    position: absolute; top: 0; left: 0; height: 100%;
+    background: rgba(255,255,255,0.1); border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .sim-bar-proj {
+    position: absolute; top: 0; left: 0; height: 100%;
+    border-radius: 3px; transition: width 0.4s ease;
+  }
+  .sim-bar-labels {
+    display: flex; justify-content: space-between;
+    font-size: 9px; font-family: var(--mono); color: var(--text-tertiary);
+    margin-bottom: 4px;
+  }
+  .sim-profile {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 4px;
+  }
+  .sim-prof-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+  }
+  .sim-prof-row:last-child { margin-bottom: 0; }
+  .sim-prof-cat {
+    width: 86px; flex-shrink: 0;
+    font-size: 11px; font-family: var(--mono); font-weight: 500;
+  }
+  .sim-prof-bar {
+    flex: 1; height: 4px; background: var(--border); border-radius: 2px;
+    overflow: hidden;
+  }
+  .sim-prof-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+  .sim-prof-pct {
+    width: 32px; text-align: right;
+    font-size: 11px; font-family: var(--mono); color: var(--text-secondary);
+  }
+  .sim-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 8px;
+  }
+  .sim-sec-hdr {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: var(--bg);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .sim-sec-lbl {
+    font-size: 10px; font-family: var(--mono); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary);
+  }
+  .sim-sec-max {
+    font-size: 11px; font-family: var(--mono); color: var(--text-tertiary);
+  }
+  .sim-ben {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-bottom: 1px solid var(--border-light);
+  }
+  .sim-ben:last-child { border-bottom: none; }
+  .sim-ben-name {
+    font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px;
+  }
+  .sim-ben-sub {
+    font-size: 10px; font-family: var(--mono);
+  }
+  .sim-ben-vals {
+    flex-shrink: 0; text-align: right;
+    font-family: var(--mono); white-space: nowrap;
+  }
+  .sim-ben-proj { font-size: 14px; font-weight: 600; }
+  .sim-ben-max { font-size: 11px; color: var(--text-tertiary); }

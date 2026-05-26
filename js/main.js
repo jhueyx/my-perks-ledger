@@ -1282,6 +1282,7 @@ const _DRAWER_ICONS={
   'net-value':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/></svg>`,
   'badges':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3 3.5.5-2.5 2.4.6 3.6L8 10l-3.1 1.5.6-3.6L3 5.5l3.5-.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   'fee-optimizer':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M5.5 11.5C6.3 12.4 7 13 8 13s2-.5 2-1.5-1-1.5-2-1.5-2-.5-2-1.5S6 7 8 7s1.5.5 2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  'card-simulator':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="4.5" width="13" height="8.5" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="7" x2="8" y2="10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="6.25" y1="8.75" x2="9.75" y2="8.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 4.5V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
 };
 
@@ -1712,6 +1713,7 @@ function renderMore(){
     {view:'net-value',label:'Portfolio Value'},
     {view:'badges',label:'Achievements'},
     {view:'fee-optimizer',label:'Fee Optimizer'},
+    {view:'card-simulator',label:'Card Simulator'},
     {view:'compare',label:'Compare Cards'},
     {view:'roi',label:'ROI Scores'},
     {view:'trends',label:'Trends'},

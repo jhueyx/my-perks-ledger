@@ -1374,9 +1374,158 @@ export function renderFeeOptimizer(){
   set(html);
 }
 
+// ── Render: card simulator ─────────────────────────────────────────────────
+export function renderCardSimulator(){
+  const userKeys=new Set(getVisibleCardKeys());
+  const unowned=Object.keys(CARDS).filter(k=>!userKeys.has(k));
+
+  if(!unowned.length){
+    set(`<div class="banner"><strong>Card Simulator</strong></div>
+      <div style="text-align:center;padding:40px 16px;color:var(--text-tertiary);font-size:13px">You already own all cards in the database.</div>`);
+    return;
+  }
+  if(!state._simCard||!unowned.includes(state._simCard)) state._simCard=unowned[0];
+  const simKey=state._simCard;
+  const simCard=CARDS[simKey];
+  const simFee=simCard.fee;
+
+  // Derive category capture rates from owned cards (past periods only)
+  const catD={},cadD={};
+  userKeys.forEach(ck=>{
+    CARDS[ck].sections.forEach(s=>{
+      getCardYearPeriods(ck,s.cadence).forEach(p=>{
+        if(isPFuture(p)) return;
+        s.benefits.forEach(b=>{
+          if(isBExpired(b,p)||isBNotAvailable(b,CY,p)||isGloballySnoozed(ck,b.id)) return;
+          const cat=BENEFIT_CATEGORIES[b.id]||'other';
+          const amt=getBAmount(b,p);
+          const used=isUsed(ck,b.id,p.pk);
+          if(!catD[cat]) catD[cat]={c:0,t:0};
+          catD[cat].t+=amt; if(used) catD[cat].c+=amt;
+          if(!cadD[s.cadence]) cadD[s.cadence]={c:0,t:0};
+          cadD[s.cadence].t+=amt; if(used) cadD[s.cadence].c+=amt;
+        });
+      });
+    });
+  });
+
+  const catRate=cat=>{const d=catD[cat]; return(d&&d.t>0)?d.c/d.t:null;};
+  const cadRate=cad=>{const d=cadD[cad]; return(d&&d.t>0)?d.c/d.t:null;};
+  const DEFAULT_RATE=0.55;
+
+  // Annual max for a benefit (full 12-month year)
+  function annMax(b,cadence){
+    if(cadence==='monthly') return b.amount*11+(b.decAmount||b.amount);
+    if(cadence==='quarterly') return b.amount*4;
+    if(cadence==='cal-semi-annual'||cadence==='semi-annual') return b.amount*2;
+    return b.amount;
+  }
+
+  let totalMax=0,totalProj=0;
+  const sections=simCard.sections.map(s=>{
+    const rows=s.benefits.filter(b=>!isBNotAvailable(b,CY)).map(b=>{
+      const cat=BENEFIT_CATEGORIES[b.id]||'other';
+      const max=annMax(b,s.cadence);
+      const cr=catRate(cat), cadr=cadRate(s.cadence);
+      const rate=cr!==null?cr:(cadr!==null?cadr:DEFAULT_RATE);
+      const hasData=cr!==null||cadr!==null;
+      const proj=max*rate;
+      return{b,cat,max,rate,proj,hasData};
+    });
+    const sMax=rows.reduce((a,r)=>a+r.max,0);
+    const sProj=rows.reduce((a,r)=>a+r.proj,0);
+    totalMax+=sMax; totalProj+=sProj;
+    return{s,rows,sMax,sProj};
+  });
+
+  const net=totalProj-simFee;
+  const covPct=Math.min(100,Math.round(totalProj/simFee*100));
+  const maxPct=Math.min(100,Math.round(totalMax/simFee*100));
+  const grade=net>=0?'A':net>=-250?'B':net>=-500?'C':'D';
+  const netColor=net>=0?'var(--green)':net>=-250?'var(--blue)':net>=-500?'var(--gold)':'var(--red)';
+  const verdict=net>=0?'Projects to pay for itself at your claim rate'
+    :net>=-250?'Nearly breaks even — one or two habits away'
+    :net>=-500?'Marginal — worth it only if you improve capture'
+    :'Likely not worth the fee at your current pace';
+
+  const CAT_NAMES={dining:'Dining',travel:'Travel',shopping:'Shopping',fitness:'Fitness',entertainment:'Entertainment',other:'Other'};
+  const CAT_COLORS_SIM={dining:'#C86428',travel:'var(--blue)',shopping:'var(--gold)',fitness:'var(--green)',entertainment:'#9333ea',other:'var(--text-tertiary)'};
+
+  // Card picker
+  const picker=`<div class="sim-picker">${unowned.map(k=>`<button class="sim-pill${k===simKey?' sp-active':''}" onclick="window.setSimCard('${k}')">${CARD_LABELS[k]}</button>`).join('')}</div>`;
+
+  // Hero card
+  const hero=`<div class="sim-hero">
+    <div class="sim-grade" style="color:${netColor};border-color:${netColor}3A">${grade}</div>
+    <div>
+      <div class="sim-hero-name">${simCard.name}</div>
+      <div class="sim-hero-fee">$${simFee}/yr annual fee</div>
+      <div class="sim-verdict" style="color:${netColor}">${verdict}</div>
+    </div>
+  </div>
+  <div class="sim-metrics">
+    <div class="sim-m"><div class="sim-m-val" style="color:${netColor}">${net>=0?'+':''}$${net.toFixed(0)}</div><div class="sim-m-lbl">net projected</div></div>
+    <div class="sim-m"><div class="sim-m-val green">$${totalProj.toFixed(0)}</div><div class="sim-m-lbl">you'd capture</div></div>
+    <div class="sim-m"><div class="sim-m-val" style="color:var(--text-secondary)">$${totalMax.toFixed(0)}</div><div class="sim-m-lbl">max possible</div></div>
+  </div>
+  <div class="sim-bar-bg">
+    <div class="sim-bar-max" style="width:${maxPct}%"></div>
+    <div class="sim-bar-proj" style="width:${covPct}%;background:${net>=0?'var(--green)':'var(--gold)'}"></div>
+  </div>
+  <div class="sim-bar-labels"><span>$0</span><span style="color:${netColor}">$${totalProj.toFixed(0)} projected · $${totalMax.toFixed(0)} max · $${simFee} fee</span></div>`;
+
+  // Behavior profile
+  const profileRows=Object.entries(catD).filter(([,d])=>d.t>0).sort((a,b)=>b[1].t-a[1].t);
+  let profile='';
+  if(profileRows.length){
+    profile=`<div class="section-header" style="margin-top:16px"><span class="section-title">Your claim profile</span><span class="section-period">from ${userKeys.size} owned card${userKeys.size!==1?'s':''}</span></div><div class="sim-profile">`;
+    profileRows.forEach(([cat,d])=>{
+      const pct=Math.round(d.c/d.t*100);
+      const col=CAT_COLORS_SIM[cat]||'var(--text-tertiary)';
+      profile+=`<div class="sim-prof-row">
+        <div class="sim-prof-cat" style="color:${col}">${CAT_NAMES[cat]||cat}</div>
+        <div class="sim-prof-bar"><div class="sim-prof-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div class="sim-prof-pct">${pct}%</div>
+      </div>`;
+    });
+    profile+=`</div>`;
+  }
+
+  // Benefit breakdown
+  const CADENCE_LBL={monthly:'Monthly',quarterly:'Quarterly','cal-semi-annual':'Semi-Annual','semi-annual':'Semi-Annual','cal-annual':'Annual',annual:'Annual','feb-annual':'Annual'};
+  let breakdown=`<div class="section-header" style="margin-top:16px"><span class="section-title">Benefit breakdown</span><span class="section-period">max → your projected</span></div>`;
+  sections.forEach(({s,rows,sMax,sProj})=>{
+    if(!rows.length) return;
+    breakdown+=`<div class="sim-section">
+      <div class="sim-sec-hdr">
+        <span class="sim-sec-lbl">${CADENCE_LBL[s.cadence]||s.label}</span>
+        <span><span class="green" style="font-family:var(--mono);font-size:12px;font-weight:600">$${sProj.toFixed(0)}</span><span class="sim-sec-max"> / $${sMax.toFixed(0)}</span></span>
+      </div>`;
+    rows.forEach(({b,cat,max,rate,proj,hasData})=>{
+      const col=CAT_COLORS_SIM[cat]||'var(--text-tertiary)';
+      const rateLbl=`${Math.round(rate*100)}%${hasData?'':' est.'}`;
+      breakdown+=`<div class="sim-ben">
+        <div style="flex:1;min-width:0">
+          <div class="sim-ben-name">${b.name}</div>
+          <div class="sim-ben-sub" style="color:${col}">${CAT_NAMES[cat]||cat} · ${rateLbl} claim rate</div>
+        </div>
+        <div class="sim-ben-vals"><span class="green sim-ben-proj">$${proj.toFixed(0)}</span><span class="sim-ben-max"> / $${max.toFixed(0)}</span></div>
+      </div>`;
+    });
+    breakdown+=`</div>`;
+  });
+
+  const totalPts=Object.values(catD).reduce((a,d)=>a+d.t,0);
+  const footer=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:16px;padding-bottom:8px">Projected value uses your historical claim rate per category${totalPts>0?` · $${totalPts.toFixed(0)} in past benefits analyzed`:' · no prior data, using '+Math.round(DEFAULT_RATE*100)+'% default'}</div>`;
+
+  set(`<div class="banner"><strong>Card Simulator</strong> — what if you added this card?</div>${picker}${hero}${profile}${breakdown}${footer}`);
+}
+
+window.setSimCard=function(k){state._simCard=k;renderCardSimulator();};
+
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','history-log','recap','heatmap','roi','trends','digest','net-value','badges','fee-optimizer'];
+  const _analyticsViews=['compare','history-log','recap','heatmap','roi','trends','digest','net-value','badges','fee-optimizer','card-simulator'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -1409,5 +1558,6 @@ export function render(){
   else if(state.activeView==='digest') renderDigest();
   else if(state.activeView==='net-value') renderNetValue();
   else if(state.activeView==='fee-optimizer') renderFeeOptimizer();
+  else if(state.activeView==='card-simulator') renderCardSimulator();
   setTimeout(()=>{ updateTabBadge(); updateCardBadges(); },200);
 }
