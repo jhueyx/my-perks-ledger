@@ -1501,7 +1501,7 @@ function renderBadgesView(){
   ];
   const chainIds=new Set(CHAINS.flatMap(c=>c.milestones.map(m=>m.id)));
 
-  function tGrad(t){return{bronze:'linear-gradient(145deg,#3A2510,#9A5820,#B87830)',silver:'linear-gradient(145deg,#252E35,#607080,#90A8B8)',gold:'linear-gradient(145deg,#5A3A00,#C8922A,#F0BC40)',platinum:'linear-gradient(145deg,#0A2A40,#2A7FA5,#60C0F0)',legendary:'linear-gradient(145deg,#3A0A60,#8A2BE2,#C060F0)'}[t]||'linear-gradient(145deg,#1C1C1C,#252525)';}
+  function tGrad(t){return{bronze:'radial-gradient(circle at 38% 28%,#D07848,#8A3A14)',silver:'radial-gradient(circle at 38% 28%,#7A9CB8,#355070)',gold:'radial-gradient(circle at 38% 28%,#F0B430,#A86010)',platinum:'radial-gradient(circle at 38% 28%,#4898D8,#165090)',legendary:'radial-gradient(circle at 38% 28%,#C050E8,#5010A8)'}[t]||'radial-gradient(circle at 38% 28%,#444,#1C1C1C)';}
   function tColor(t){return TIER_COLORS[t]||'#888';}
   function tLabel(t){return{bronze:'Bronze',silver:'Silver',gold:'Gold',platinum:'Platinum',legendary:'Legendary'}[t]||t;}
 
@@ -1672,13 +1672,11 @@ window.showBadgeDetail=function(id){
   const displayDesc=isHidden?'Unlock to reveal this hidden achievement':def.desc;
   const earnedDate=isE&&earnedAt[id]?new Date(earnedAt[id]).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'';
 
-  function tGrad2(tier){return{bronze:'linear-gradient(145deg,#5C3310,#CD7F32,#E8A840)',silver:'linear-gradient(145deg,#3A4550,#8A9BB0,#C0CDD8)',gold:'linear-gradient(145deg,#5A3A00,#C8922A,#F0BC40)',platinum:'linear-gradient(145deg,#0A2A40,#2A7FA5,#60C0F0)',legendary:'linear-gradient(145deg,#3A0A60,#8A2BE2,#C060F0)'}[tier]||'linear-gradient(145deg,#252525,#333)';}
-  function tGlow2(tier){return{bronze:'rgba(205,127,50,0.55)',silver:'rgba(138,155,176,0.4)',gold:'rgba(200,146,42,0.6)',platinum:'rgba(42,127,165,0.6)',legendary:'rgba(138,43,226,0.65)'}[tier]||'rgba(80,80,80,0.3)';}
+  function tGrad2(tier){return{bronze:'radial-gradient(circle at 38% 28%,#D07848,#8A3A14)',silver:'radial-gradient(circle at 38% 28%,#7A9CB8,#355070)',gold:'radial-gradient(circle at 38% 28%,#F0B430,#A86010)',platinum:'radial-gradient(circle at 38% 28%,#4898D8,#165090)',legendary:'radial-gradient(circle at 38% 28%,#C050E8,#5010A8)'}[tier]||'radial-gradient(circle at 38% 28%,#444,#1C1C1C)';}
   const lockIcon=`<svg viewBox="0 0 24 24" width="36" height="36" fill="none"><rect x="5" y="10" width="14" height="11" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`;
   const icon=isHidden?lockIcon:(BADGE_ICONS[id]||'');
   const tierCls=isE?`t-${def.tier}`:'t-locked';
   const bgStyle=isE?`background:${tGrad2(def.tier)};--sd:0.15s`:'';
-  const glowF=isE?`filter:drop-shadow(0 0 16px ${tGlow2(def.tier)})`:'';
   const tierLabel={bronze:'Bronze',silver:'Silver',gold:'Gold',platinum:'Platinum',legendary:'Legendary'}[def.tier]||def.tier;
 
   const existing=document.getElementById('badgeDetailOverlay');
@@ -1688,7 +1686,7 @@ window.showBadgeDetail=function(id){
   overlay.className='badge-detail-overlay';
   overlay.innerHTML=`<div class="badge-detail-sheet">
     <div class="badge-detail-handle"></div>
-    <div style="${glowF}"><div class="badge-gem badge-gem-lg ${tierCls}" style="${bgStyle}">${icon}</div></div>
+    <div class="badge-gem badge-gem-lg ${tierCls}" style="${bgStyle}">${icon}</div>
     <div class="badge-detail-tier" style="color:${color}">${tierLabel}</div>
     <div class="badge-detail-name">${displayName}</div>
     <div class="badge-detail-desc">${displayDesc}</div>

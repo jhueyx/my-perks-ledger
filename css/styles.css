@@ -2013,21 +2013,24 @@
 
   /* ── Achievement System ── */
 
-  /* Hexagonal badge gem */
+  /* Circle badge — Apple Watch fitness ring style */
   .badge-gem {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    clip-path: polygon(50% 0%, 94% 25%, 94% 75%, 50% 100%, 6% 75%, 6% 25%);
+    border-radius: 50%;
+    overflow: hidden;
     flex-shrink: 0;
   }
+  /* Specular glass highlight — top-center radial gloss creates 3D orb */
   .badge-gem::before {
     content: '';
     position: absolute;
-    inset: 5px;
-    background: #0C0C10;
-    z-index: 0;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.07) 58%, transparent 100%);
+    z-index: 2;
+    pointer-events: none;
   }
   .badge-gem > * { position: relative; z-index: 1; }
 
@@ -2043,31 +2046,27 @@
   .badge-gem-sm svg { width: 20px; height: 20px; }
   .badge-gem-xs svg { width: 15px; height: 15px; }
 
-  /* Tier backgrounds */
-  .badge-gem.t-bronze   { background: linear-gradient(145deg,#3A2510,#9A5820,#B87830); }
-  .badge-gem.t-silver   { background: linear-gradient(145deg,#252E35,#607080,#90A8B8); }
-  .badge-gem.t-gold     { background: linear-gradient(145deg,#5A3A00,#C8922A,#F0BC40); }
-  .badge-gem.t-platinum { background: linear-gradient(145deg,#0A2A40,#2A7FA5,#60C0F0); }
-  .badge-gem.t-legendary { background: linear-gradient(145deg,#3A0A60,#8A2BE2,#C060F0); }
-  .badge-gem.t-locked   { background: linear-gradient(145deg,#1C1C1C,#252525); opacity: 0.28; filter: grayscale(1); }
+  /* Tier backgrounds — radial sphere for Apple Watch orb feel */
+  .badge-gem.t-bronze   { background: radial-gradient(circle at 38% 28%, #D07848, #8A3A14); }
+  .badge-gem.t-silver   { background: radial-gradient(circle at 38% 28%, #7A9CB8, #355070); }
+  .badge-gem.t-gold     { background: radial-gradient(circle at 38% 28%, #F0B430, #A86010); }
+  .badge-gem.t-platinum { background: radial-gradient(circle at 38% 28%, #4898D8, #165090); }
+  .badge-gem.t-legendary { background: radial-gradient(circle at 38% 28%, #C050E8, #5010A8); }
+  .badge-gem.t-locked   { background: radial-gradient(circle at 38% 28%, #444, #1C1C1C); opacity: 0.28; filter: grayscale(1); }
 
-  /* Rarity glow hierarchy — restraint is the design */
-  /* Common (bronze): matte, no glow */
-  .badge-gem.t-bronze { filter: none; }
-  /* Rare (silver): whisper-quiet edge lighting */
-  .badge-gem.t-silver { filter: drop-shadow(0 0 5px rgba(144,168,184,0.22)); }
-  /* Epic (gold): warm amber presence */
-  .badge-gem.t-gold { filter: drop-shadow(0 0 10px rgba(200,146,42,0.48)); }
-  /* Platinum: cool blue-steel aura */
-  .badge-gem.t-platinum { filter: drop-shadow(0 0 12px rgba(74,127,165,0.55)); }
-  /* Legendary: pulsing purple corona — immediately stands out */
+  /* Rarity glow hierarchy — box-shadow works with border-radius */
+  .badge-gem.t-bronze   { box-shadow: 0 3px 10px rgba(0,0,0,0.45); }
+  .badge-gem.t-silver   { box-shadow: 0 3px 12px rgba(100,140,168,0.32), inset 0 0 0 1px rgba(255,255,255,0.12); }
+  .badge-gem.t-gold     { box-shadow: 0 4px 18px rgba(168,96,16,0.65), inset 0 0 0 1px rgba(255,255,255,0.16); }
+  .badge-gem.t-platinum { box-shadow: 0 4px 20px rgba(42,110,180,0.6), inset 0 0 0 1px rgba(255,255,255,0.18); }
+  /* Legendary: pulsing purple corona */
   @keyframes legendaryPulse {
-    0%, 100% { filter: drop-shadow(0 0 12px rgba(155,89,182,0.62)); }
-    50%      { filter: drop-shadow(0 0 26px rgba(180,100,220,0.9)); }
+    0%, 100% { box-shadow: 0 4px 22px rgba(80,16,168,0.75), inset 0 0 0 1px rgba(255,255,255,0.2); }
+    50%      { box-shadow: 0 4px 36px rgba(140,40,220,0.95), inset 0 0 0 1px rgba(255,255,255,0.3); }
   }
   .badge-gem.t-legendary { animation: legendaryPulse 2.8s ease-in-out infinite; }
 
-  /* Shimmer sweep — gold and platinum only */
+  /* Shimmer sweep — gold and platinum only (clipped to circle by overflow:hidden) */
   @keyframes badgeShimmer {
     0%   { transform: translateX(-150%) rotate(-15deg); }
     100% { transform: translateX(230%) rotate(-15deg); }
@@ -2077,10 +2076,10 @@
     position: absolute;
     top: -20%; left: -15%;
     width: 28%; height: 140%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
     animation: badgeShimmer 5s ease-in-out infinite;
     animation-delay: var(--sd, 0s);
-    z-index: 2;
+    z-index: 3;
     pointer-events: none;
   }
 
