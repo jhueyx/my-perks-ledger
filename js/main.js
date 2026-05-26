@@ -706,6 +706,7 @@ function setActiveView(primary){
   else if(primary==='net-value') state.activeView='net-value';
   else if(primary==='badges') state.activeView='badges';
   else if(primary==='fee-optimizer') state.activeView='fee-optimizer';
+  else if(primary==='card-simulator') state.activeView='card-simulator';
   else if(primary==='settings') state.activeView='settings';
   else if(primary==='more') state.activeView='more';
   else if(primary==='my-cards'){ openMyCards(); return; }
