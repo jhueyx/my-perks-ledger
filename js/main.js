@@ -1472,31 +1472,47 @@ function renderBadgesView(){
   const earnedCount=[...earned].filter(id=>defs.some(d=>d.id===id)).length;
   const pct=total>0?Math.round(earnedCount/total*100):0;
 
-  function fmtDate(ts){ if(!ts)return''; return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+  // Short display names for compact grid
+  const SHORT={
+    multi_year:'Veteran', multi_bank:'Multi-Bank', hotel_connoisseur:'Connoisseur',
+    hotel_portfolio:'Hotel Stack', entertainment_bundle:'Ent. Bundle',
+    dining_trifecta:'Triple Stack', global_traveler:'Globetrotter',
+    wf_loyalist:'WF Card', badge_100:'Complete', new_year_start:'New Year',
+    digital_devotee:'Digital', first_class_combo:'First Class',
+    plat_trifecta_month:'Plat Triple', csr_month_sweep:'CSR Sweep',
+    uber_double_month:'Uber Double', chase_amex_duo:'Chase×Amex',
+    wellness_stack:'Wellness', full_wellness:'Wellness Max',
+    double_airline:'Dual Runway', airport_royalty:'Air Royalty',
+    airline_insider:'Airline Pro', lounge_regular:'Lounge Pro',
+    plat_mega:'Plat Legend', early_adopter:'Early Bird',
+    both_resy:'Resy Duo', dec_bonus:'Dec Bonus',
+  };
+  const dName=d=>SHORT[d.id]||d.name;
+  function fmtDate(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+  function fmtDateShort(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 
   const CHAINS=[
-    {id:'streak',    label:'Claim Streak',   milestones:[{id:'streak_3',lbl:'3 mo'},{id:'streak_6',lbl:'6 mo'},{id:'streak_12',lbl:'12 mo'},{id:'streak_18',lbl:'18 mo'},{id:'streak_24',lbl:'24 mo'}]},
-    {id:'value',     label:'Value Captured',  milestones:[{id:'getting_started',lbl:'$100'},{id:'gaining_ground',lbl:'$500'},{id:'high_achiever',lbl:'$1K'},{id:'power_user',lbl:'$2.5K'},{id:'maximizer',lbl:'$5K'},{id:'true_maximizer',lbl:'$10K'}]},
-    {id:'fees',      label:'Fee Recovery',    milestones:[{id:'first_profit',lbl:'1 card'},{id:'double_dipper',lbl:'2 cards'},{id:'triple_threat',lbl:'3 cards'},{id:'fee_crusher',lbl:'all cards'}]},
-    {id:'portfolio', label:'Portfolio',        milestones:[{id:'collector',lbl:'3'},{id:'portfolio_pro',lbl:'5'},{id:'card_shark',lbl:'7'},{id:'whale',lbl:'10'}]},
-    {id:'volume',    label:'Claims',           milestones:[{id:'benefit_ninja',lbl:'25'},{id:'benefit_machine',lbl:'50'},{id:'century',lbl:'100'},{id:'claim_addict',lbl:'150'},{id:'claim_machine',lbl:'300'}]},
-    {id:'meta',      label:'Decorated',        milestones:[{id:'badge_20',lbl:'20'},{id:'badge_35',lbl:'35'},{id:'badge_50',lbl:'50'},{id:'badge_75',lbl:'75'},{id:'badge_100',lbl:'100'}]},
+    {id:'streak',   label:'Claim Streak',  milestones:[{id:'streak_3',lbl:'3 mo'},{id:'streak_6',lbl:'6 mo'},{id:'streak_12',lbl:'12 mo'},{id:'streak_18',lbl:'18 mo'},{id:'streak_24',lbl:'24 mo'}]},
+    {id:'value',    label:'Value Captured', milestones:[{id:'getting_started',lbl:'$100'},{id:'gaining_ground',lbl:'$500'},{id:'high_achiever',lbl:'$1K'},{id:'power_user',lbl:'$2.5K'},{id:'maximizer',lbl:'$5K'},{id:'true_maximizer',lbl:'$10K'}]},
+    {id:'fees',     label:'Fee Recovery',   milestones:[{id:'first_profit',lbl:'1 card'},{id:'double_dipper',lbl:'2 cards'},{id:'triple_threat',lbl:'3 cards'},{id:'fee_crusher',lbl:'all cards'}]},
+    {id:'portfolio',label:'Portfolio',       milestones:[{id:'collector',lbl:'3'},{id:'portfolio_pro',lbl:'5'},{id:'card_shark',lbl:'7'},{id:'whale',lbl:'10'}]},
+    {id:'volume',   label:'Claims',          milestones:[{id:'benefit_ninja',lbl:'25'},{id:'benefit_machine',lbl:'50'},{id:'century',lbl:'100'},{id:'claim_addict',lbl:'150'},{id:'claim_machine',lbl:'300'}]},
+    {id:'meta',     label:'Decorated',       milestones:[{id:'badge_20',lbl:'20'},{id:'badge_35',lbl:'35'},{id:'badge_50',lbl:'50'},{id:'badge_75',lbl:'75'},{id:'badge_100',lbl:'100'}]},
   ];
   const chainIds=new Set(CHAINS.flatMap(c=>c.milestones.map(m=>m.id)));
 
-  function tGrad(tier){return{bronze:'linear-gradient(145deg,#5C3310,#CD7F32,#E8A840)',silver:'linear-gradient(145deg,#3A4550,#8A9BB0,#C0CDD8)',gold:'linear-gradient(145deg,#5A3A00,#C8922A,#F0BC40)',platinum:'linear-gradient(145deg,#0A2A40,#2A7FA5,#60C0F0)',legendary:'linear-gradient(145deg,#3A0A60,#8A2BE2,#C060F0)'}[tier]||'linear-gradient(145deg,#252525,#333)';}
-  function tGlow(tier){return{bronze:'rgba(205,127,50,0.55)',silver:'rgba(138,155,176,0.4)',gold:'rgba(200,146,42,0.6)',platinum:'rgba(42,127,165,0.6)',legendary:'rgba(138,43,226,0.65)'}[tier]||'rgba(80,80,80,0.3)';}
-  function tColor(tier){return TIER_COLORS[tier]||'#888';}
-  function tLabel(tier){return{bronze:'Bronze',silver:'Silver',gold:'Gold',platinum:'Platinum',legendary:'Legendary'}[tier]||tier;}
+  function tGrad(t){return{bronze:'linear-gradient(145deg,#3A2510,#9A5820,#B87830)',silver:'linear-gradient(145deg,#252E35,#607080,#90A8B8)',gold:'linear-gradient(145deg,#5A3A00,#C8922A,#F0BC40)',platinum:'linear-gradient(145deg,#0A2A40,#2A7FA5,#60C0F0)',legendary:'linear-gradient(145deg,#3A0A60,#8A2BE2,#C060F0)'}[t]||'linear-gradient(145deg,#1C1C1C,#252525)';}
+  function tColor(t){return TIER_COLORS[t]||'#888';}
+  function tLabel(t){return{bronze:'Bronze',silver:'Silver',gold:'Gold',platinum:'Platinum',legendary:'Legendary'}[t]||t;}
 
-  const lockIcon=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none"><rect x="5" y="10" width="14" height="11" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  const lockSVG=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none"><rect x="5" y="10" width="14" height="11" rx="2" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.1"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 
-  function gem(def,isE,sizeClass,idx=0){
-    const isHidden=def.hidden&&!isE;
-    const icon=isHidden?lockIcon:(BADGE_ICONS[def.id]||'');
-    const tierCls=isE?`t-${def.tier}`:'t-locked';
-    const style=isE?`background:${tGrad(def.tier)};--sd:${((idx*0.41)%4).toFixed(2)}s`:'';
-    return `<div class="badge-gem ${sizeClass} ${tierCls}" style="${style}">${icon}</div>`;
+  function gem(def,isE,sz,idx=0){
+    const hidden=def.hidden&&!isE;
+    const icon=hidden?lockSVG:(BADGE_ICONS[def.id]||'');
+    const tc=isE?`t-${def.tier}`:'t-locked';
+    const st=isE?`background:${tGrad(def.tier)};--sd:${((idx*0.41)%4).toFixed(2)}s`:'';
+    return `<div class="badge-gem ${sz} ${tc}" style="${st}">${icon}</div>`;
   }
 
   // Featured: highest-tier earned badge
@@ -1504,87 +1520,142 @@ function renderBadgesView(){
   let featuredDef=null;
   for(const t of tierOrder){featuredDef=defs.find(d=>earned.has(d.id)&&d.tier===t);if(featuredDef)break;}
 
-  // Collection: non-chain badges, earned first then by tier
+  // Recently unlocked: last 5 by earnedAt timestamp
+  const recent=defs
+    .filter(d=>earned.has(d.id)&&earnedAt[d.id])
+    .sort((a,b)=>(earnedAt[b.id]||0)-(earnedAt[a.id]||0))
+    .slice(0,5);
+
+  // Legendary badges — always shown separately
+  const legendaryDefs=defs.filter(d=>d.tier==='legendary');
+
+  // Collection: non-chain, non-legendary
   const tierRank={legendary:0,platinum:1,gold:2,silver:3,bronze:4};
-  const otherDefs=defs
-    .filter(d=>!chainIds.has(d.id))
+  const collDefs=defs
+    .filter(d=>!chainIds.has(d.id)&&d.tier!=='legendary')
     .sort((a,b)=>{
-      const aE=earned.has(a.id)?0:1,bE=earned.has(b.id)?0:1;
-      if(aE!==bE)return aE-bE;
+      const ae=earned.has(a.id)?0:1,be=earned.has(b.id)?0:1;
+      if(ae!==be)return ae-be;
       return(tierRank[a.tier]??5)-(tierRank[b.tier]??5);
     });
+  const collEarned=collDefs.filter(d=>earned.has(d.id));
+  const collLocked=collDefs.filter(d=>!earned.has(d.id));
 
   let html='';
 
-  // Header + progress bar
+  // Header + progress
   html+=`<div class="ach-header">
     <span class="ach-header-title">Achievements</span>
     <span class="ach-header-count">${earnedCount}&thinsp;/&thinsp;${total}</span>
   </div>
   <div class="ach-progress-bar"><div class="ach-progress-fill" style="width:${pct}%"></div></div>`;
 
-  // Featured badge
+  // Featured
   if(featuredDef){
-    const color=tColor(featuredDef.tier);
-    const earnedDate=fmtDate(earnedAt[featuredDef.id]);
-    html+=`<div class="ach-featured" style="border-color:${color}30">
-      <div style="filter:drop-shadow(0 0 12px ${tGlow(featuredDef.tier)})">${gem(featuredDef,true,'badge-gem-lg',0)}</div>
+    const c=tColor(featuredDef.tier);
+    const ed=fmtDate(earnedAt[featuredDef.id]);
+    const isLeg=featuredDef.tier==='legendary';
+    html+=`<div class="ach-featured${isLeg?' featured-legendary':''}" style="border-color:${c}26" onclick="window.showBadgeDetail('${featuredDef.id}')">
+      ${gem(featuredDef,true,'badge-gem-lg',0)}
       <div class="ach-featured-info">
-        <div class="ach-featured-tier" style="color:${color}">${tLabel(featuredDef.tier)}</div>
+        <div class="ach-featured-tier" style="color:${c}">${tLabel(featuredDef.tier)}</div>
         <div class="ach-featured-name">${featuredDef.name}</div>
         <div class="ach-featured-desc">${featuredDef.desc}</div>
-        ${earnedDate?`<div class="ach-featured-date">Earned ${earnedDate}</div>`:''}
+        ${ed?`<div class="ach-featured-date">Earned ${ed}</div>`:''}
       </div>
     </div>`;
+  }
+
+  // Recently Unlocked
+  if(recent.length){
+    html+=`<div class="ach-section-label">Recently Unlocked</div>
+    <div class="ach-recent-strip">`;
+    recent.forEach((def,i)=>{
+      html+=`<div class="ach-recent-badge" onclick="window.showBadgeDetail('${def.id}')">
+        ${gem(def,true,'badge-gem-md',i)}
+        <div class="ach-recent-name">${dName(def)}</div>
+        <div class="ach-recent-date">${fmtDateShort(earnedAt[def.id])}</div>
+      </div>`;
+    });
+    html+=`</div>`;
   }
 
   // Progression chains
   html+=`<div class="ach-section-label">Progression</div>`;
   CHAINS.forEach(chain=>{
-    const applicable=chain.milestones.filter(m=>defs.some(d=>d.id===m.id));
-    if(!applicable.length)return;
-    const earnedN=applicable.filter(m=>earned.has(m.id)).length;
+    const app=chain.milestones.filter(m=>defs.some(d=>d.id===m.id));
+    if(!app.length)return;
+    const en=app.filter(m=>earned.has(m.id)).length;
     html+=`<div class="prog-chain">
       <div class="prog-chain-header">
         <span class="prog-chain-name">${chain.label}</span>
-        <span class="prog-chain-progress">${earnedN}/${applicable.length}</span>
+        <span class="prog-chain-progress">${en}/${app.length}</span>
       </div>
       <div class="prog-chain-row">`;
-    applicable.forEach((m,i)=>{
+    app.forEach((m,i)=>{
       const def=defs.find(d=>d.id===m.id);if(!def)return;
       const isE=earned.has(def.id);
-      const color=isE?tColor(def.tier):'';
-      const glowF=isE?`filter:drop-shadow(0 0 6px ${tGlow(def.tier)})`:'';
-      html+=`<div class="prog-milestone${isE?' pm-earned':''}" onclick="window.showBadgeDetail('${def.id}')">
-        <div style="${glowF}">${gem(def,isE,'badge-gem-sm',i)}</div>
-        <div class="prog-milestone-label" style="${color?`color:${color}`:''}">${m.lbl}</div>
+      const prevE=i===0||earned.has(app[i-1]?.id);
+      const isNext=!isE&&prevE;
+      html+=`<div class="prog-milestone${isE?' pm-earned':''}${isNext?' pm-next':''}" onclick="window.showBadgeDetail('${def.id}')">
+        ${gem(def,isE,'badge-gem-sm',i)}
+        <div class="prog-milestone-label">${m.lbl}</div>
+        ${isNext?`<div class="prog-next-pip"></div>`:''}
       </div>`;
-      if(i<applicable.length-1){
-        const nextE=earned.has(applicable[i+1]?.id);
-        const cls=isE&&nextE?'c-earned':isE?'c-partial':'';
+      if(i<app.length-1){
+        const nxtE=earned.has(app[i+1]?.id);
+        const cls=isE&&nxtE?'c-earned':isE?'c-partial':'';
         html+=`<div class="prog-connector${cls?' '+cls:''}"></div>`;
       }
     });
     html+=`</div></div>`;
   });
 
-  // Collection
-  if(otherDefs.length){
-    html+=`<div class="ach-section-label">Collection</div><div class="ach-compact-grid">`;
-    otherDefs.forEach((def,i)=>{
+  // Legendary — trophy case
+  if(legendaryDefs.length){
+    html+=`<div class="ach-section-label">Legendary</div>
+    <div class="ach-legendary-grid">`;
+    legendaryDefs.forEach((def,i)=>{
       const isE=earned.has(def.id);
-      const isHidden=def.hidden&&!isE;
-      const displayName=isHidden?'???':def.name;
-      const glowF=isE?`filter:drop-shadow(0 0 5px ${tGlow(def.tier)})`:'';
-      html+=`<div class="compact-badge${isE?' cb-earned':''}" onclick="window.showBadgeDetail('${def.id}')">
-        <div style="${glowF}">${gem(def,isE,'badge-gem-xs',i)}</div>
-        <div class="compact-badge-name">${displayName}</div>
+      const hidden=def.hidden&&!isE;
+      html+=`<div class="ach-legendary-item${isE?'':' lg-locked'}" onclick="window.showBadgeDetail('${def.id}')">
+        ${gem(def,isE,'badge-gem-md',i)}
+        <div class="ach-legendary-name">${hidden?'???':def.name}</div>
       </div>`;
     });
     html+=`</div>`;
   }
 
-  html+=`<div style="height:8px"></div>`;
+  // Collection
+  if(collDefs.length){
+    html+=`<div class="ach-section-label">Collection <span style="font-size:8px;letter-spacing:0.06em;opacity:0.55">${collEarned.length}/${collDefs.length}</span></div>`;
+    if(collEarned.length){
+      html+=`<div class="ach-compact-grid">`;
+      collEarned.forEach((def,i)=>{
+        html+=`<div class="compact-badge cb-earned" onclick="window.showBadgeDetail('${def.id}')">
+          ${gem(def,true,'badge-gem-xs',i)}
+          <div class="compact-badge-name">${dName(def)}</div>
+        </div>`;
+      });
+      html+=`</div>`;
+    }
+    if(collLocked.length){
+      html+=`<div class="ach-locked-toggle" onclick="window.toggleAchLocked(this)">
+        <span>Locked · ${collLocked.length}</span>
+        <span class="ach-locked-chevron">▾</span>
+      </div>
+      <div class="ach-compact-grid" id="achLockedGrid" style="display:none">`;
+      collLocked.forEach((def,i)=>{
+        html+=`<div class="compact-badge" onclick="window.showBadgeDetail('${def.id}')">
+          ${gem(def,false,'badge-gem-xs',i)}
+          <div class="compact-badge-name">${def.hidden?'???':dName(def)}</div>
+        </div>`;
+      });
+      html+=`</div>`;
+    }
+  }
+
+  html+=`<div style="height:16px"></div>`;
   document.getElementById('main').innerHTML=html;
 }
 
@@ -1625,6 +1696,15 @@ window.showBadgeDetail=function(id){
   </div>`;
   overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
   document.body.appendChild(overlay);
+};
+
+window.toggleAchLocked=function(el){
+  const grid=document.getElementById('achLockedGrid');
+  const chevron=el.querySelector('.ach-locked-chevron');
+  if(!grid)return;
+  const open=grid.style.display!=='none';
+  grid.style.display=open?'none':'grid';
+  if(chevron)chevron.textContent=open?'▾':'▴';
 };
 
 // ── More page ─────────────────────────────────────────────────────────────

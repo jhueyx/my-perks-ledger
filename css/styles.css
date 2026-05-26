@@ -2037,34 +2037,48 @@
   .badge-gem-sm { width: 50px; height: 50px; }
   .badge-gem-xs { width: 40px; height: 40px; }
 
-  /* Icon scaling per size */
+  /* Icon scaling */
   .badge-gem-lg svg { width: 36px; height: 36px; }
   .badge-gem-md svg { width: 26px; height: 26px; }
   .badge-gem-sm svg { width: 20px; height: 20px; }
   .badge-gem-xs svg { width: 15px; height: 15px; }
 
   /* Tier backgrounds */
-  .badge-gem.t-bronze   { background: linear-gradient(145deg,#5C3310,#CD7F32,#E8A840); }
-  .badge-gem.t-silver   { background: linear-gradient(145deg,#3A4550,#8A9BB0,#C0CDD8); }
+  .badge-gem.t-bronze   { background: linear-gradient(145deg,#3A2510,#9A5820,#B87830); }
+  .badge-gem.t-silver   { background: linear-gradient(145deg,#252E35,#607080,#90A8B8); }
   .badge-gem.t-gold     { background: linear-gradient(145deg,#5A3A00,#C8922A,#F0BC40); }
   .badge-gem.t-platinum { background: linear-gradient(145deg,#0A2A40,#2A7FA5,#60C0F0); }
   .badge-gem.t-legendary { background: linear-gradient(145deg,#3A0A60,#8A2BE2,#C060F0); }
-  .badge-gem.t-locked   { background: linear-gradient(145deg,#252525,#333); opacity:0.3; filter:grayscale(1); }
+  .badge-gem.t-locked   { background: linear-gradient(145deg,#1C1C1C,#252525); opacity: 0.28; filter: grayscale(1); }
 
-  /* Shimmer sweep on earned badges */
+  /* Rarity glow hierarchy — restraint is the design */
+  /* Common (bronze): matte, no glow */
+  .badge-gem.t-bronze { filter: none; }
+  /* Rare (silver): whisper-quiet edge lighting */
+  .badge-gem.t-silver { filter: drop-shadow(0 0 5px rgba(144,168,184,0.22)); }
+  /* Epic (gold): warm amber presence */
+  .badge-gem.t-gold { filter: drop-shadow(0 0 10px rgba(200,146,42,0.48)); }
+  /* Platinum: cool blue-steel aura */
+  .badge-gem.t-platinum { filter: drop-shadow(0 0 12px rgba(74,127,165,0.55)); }
+  /* Legendary: pulsing purple corona — immediately stands out */
+  @keyframes legendaryPulse {
+    0%, 100% { filter: drop-shadow(0 0 12px rgba(155,89,182,0.62)); }
+    50%      { filter: drop-shadow(0 0 26px rgba(180,100,220,0.9)); }
+  }
+  .badge-gem.t-legendary { animation: legendaryPulse 2.8s ease-in-out infinite; }
+
+  /* Shimmer sweep — gold and platinum only */
   @keyframes badgeShimmer {
     0%   { transform: translateX(-150%) rotate(-15deg); }
     100% { transform: translateX(230%) rotate(-15deg); }
   }
-  .badge-gem.t-bronze::after, .badge-gem.t-silver::after,
-  .badge-gem.t-gold::after, .badge-gem.t-platinum::after,
-  .badge-gem.t-legendary::after {
+  .badge-gem.t-gold::after, .badge-gem.t-platinum::after {
     content: '';
     position: absolute;
     top: -20%; left: -15%;
     width: 28%; height: 140%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    animation: badgeShimmer 4.5s ease-in-out infinite;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+    animation: badgeShimmer 5s ease-in-out infinite;
     animation-delay: var(--sd, 0s);
     z-index: 2;
     pointer-events: none;
@@ -2081,53 +2095,86 @@
   }
   .ach-header-count {
     font-size: 10px; font-family: var(--mono); color: var(--text-tertiary);
-    letter-spacing: 0.04em;
   }
   .ach-progress-bar {
     height: 2px; background: var(--border); border-radius: 1px;
-    margin-bottom: 14px; overflow: hidden;
+    margin-bottom: 20px; overflow: hidden;
   }
   .ach-progress-fill {
     height: 100%; border-radius: 1px; background: var(--gold);
     transition: width 0.5s ease;
   }
 
-  /* Featured badge */
+  /* Featured badge — hero card */
   .ach-featured {
-    display: flex; align-items: center; gap: 16px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 18px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px; padding: 20px 20px; margin-bottom: 28px;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .ach-featured:hover { border-color: rgba(255,255,255,0.12); }
+  .ach-featured.featured-legendary {
+    border-color: rgba(155,89,182,0.28);
+    background: rgba(155,89,182,0.04);
   }
   .ach-featured-info { flex: 1; min-width: 0; }
   .ach-featured-tier {
     font-size: 9px; font-family: var(--mono); text-transform: uppercase;
-    letter-spacing: 0.18em; font-weight: 700; margin-bottom: 3px;
+    letter-spacing: 0.22em; font-weight: 700; margin-bottom: 4px;
   }
   .ach-featured-name {
-    font-size: 16px; font-weight: 700; color: var(--text);
-    line-height: 1.2; margin-bottom: 5px;
+    font-size: 17px; font-weight: 700; color: var(--text);
+    line-height: 1.2; margin-bottom: 6px;
   }
   .ach-featured-desc {
     font-size: 11px; color: var(--text-secondary);
-    font-family: var(--mono); line-height: 1.4;
+    font-family: var(--mono); line-height: 1.45;
   }
   .ach-featured-date {
     font-size: 9px; color: var(--text-tertiary);
-    font-family: var(--mono); margin-top: 5px;
+    font-family: var(--mono); margin-top: 6px;
   }
 
   /* Section labels */
   .ach-section-label {
     font-size: 9px; font-family: var(--mono); color: var(--text-tertiary);
     letter-spacing: 0.2em; text-transform: uppercase;
-    margin: 16px 0 8px; padding-left: 1px;
+    margin: 22px 0 10px; padding-left: 1px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* Recently unlocked horizontal strip */
+  .ach-recent-strip {
+    display: flex; gap: 14px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; padding-bottom: 4px; margin-bottom: 4px;
+  }
+  .ach-recent-strip::-webkit-scrollbar { display: none; }
+  .ach-recent-badge {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 5px; flex-shrink: 0; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ach-recent-name {
+    font-size: 9px; font-family: var(--mono); color: var(--text-secondary);
+    text-align: center; max-width: 64px;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .ach-recent-date {
+    font-size: 8px; font-family: var(--mono); color: var(--text-tertiary);
+    text-align: center;
   }
 
   /* Progression chains */
-  .prog-chain { margin-bottom: 10px; }
+  .prog-chain {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+  }
   .prog-chain-header {
     display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 6px;
+    justify-content: space-between; margin-bottom: 10px;
   }
   .prog-chain-name {
     font-size: 11px; font-weight: 600; color: var(--text-secondary);
@@ -2144,55 +2191,89 @@
   .prog-milestone {
     display: flex; flex-direction: column; align-items: center;
     gap: 4px; flex-shrink: 0; cursor: pointer;
-    -webkit-tap-highlight-color: transparent; padding: 0 2px;
+    -webkit-tap-highlight-color: transparent; padding: 0 3px;
   }
   .prog-milestone-label {
     font-size: 8px; font-family: var(--mono); color: var(--text-tertiary);
     text-align: center; line-height: 1.2; white-space: nowrap;
   }
   .prog-milestone.pm-earned .prog-milestone-label { color: var(--text-secondary); }
+  .prog-milestone.pm-next .prog-milestone-label { color: var(--gold); }
+  .prog-next-pip {
+    width: 4px; height: 4px; border-radius: 50%; background: var(--gold);
+    animation: nextPip 1.6s ease-in-out infinite;
+  }
+  @keyframes nextPip {
+    0%, 100% { opacity: 0.35; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.3); }
+  }
   .prog-connector {
-    height: 2px; min-width: 14px; max-width: 26px; flex: 1;
-    background: var(--border); border-radius: 1px;
-    margin-top: 24px; flex-shrink: 0;
+    height: 2px; min-width: 10px; max-width: 20px; flex: 1;
+    background: rgba(255,255,255,0.07); border-radius: 1px;
+    margin-top: 23px; flex-shrink: 0;
   }
   .prog-connector.c-earned { background: var(--gold); }
   .prog-connector.c-partial {
-    background: linear-gradient(90deg, var(--gold) 50%, var(--border) 100%);
+    background: linear-gradient(90deg, var(--gold) 50%, rgba(255,255,255,0.07) 100%);
   }
 
-  /* Compact badge grid */
-  .ach-compact-grid {
-    display: grid; grid-template-columns: repeat(5, 1fr);
-    gap: 10px 4px; margin-bottom: 24px;
+  /* Legendary section */
+  .ach-legendary-grid {
+    display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 4px;
   }
-  @media (min-width: 380px) {
-    .ach-compact-grid { grid-template-columns: repeat(6, 1fr); }
+  .ach-legendary-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; cursor: pointer; flex: 0 0 auto;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ach-legendary-name {
+    font-size: 9px; font-family: var(--mono); color: var(--text-secondary);
+    text-align: center; max-width: 68px; line-height: 1.2;
+  }
+  .ach-legendary-item.lg-locked .ach-legendary-name { color: rgba(255,255,255,0.2); }
+
+  /* Compact badge grid — 4 columns, restrained density */
+  .ach-compact-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 16px 8px; margin-bottom: 12px;
+  }
+  @media (min-width: 440px) {
+    .ach-compact-grid { grid-template-columns: repeat(5, 1fr); }
   }
   .compact-badge {
     display: flex; flex-direction: column; align-items: center;
-    gap: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+    gap: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent;
   }
   .compact-badge-name {
     font-size: 7.5px; font-family: var(--mono); color: var(--text-tertiary);
-    text-align: center; line-height: 1.2; max-width: 50px;
+    text-align: center; line-height: 1.2; max-width: 52px;
     overflow: hidden; display: -webkit-box;
     -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   }
   .compact-badge.cb-earned .compact-badge-name { color: var(--text-secondary); }
 
+  /* Locked collection toggle */
+  .ach-locked-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 9px; font-family: var(--mono); color: rgba(255,255,255,0.22);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    margin: 14px 0 8px; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   /* Badge detail overlay */
   .badge-detail-overlay {
     position: fixed; inset: 0; z-index: 1000;
-    background: rgba(0,0,0,0.65);
+    background: rgba(0,0,0,0.72);
     display: flex; align-items: flex-end;
-    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
     animation: bdFadeIn 0.15s ease;
   }
   @keyframes bdFadeIn { from { opacity:0; } to { opacity:1; } }
   .badge-detail-sheet {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 16px 16px 0 0; padding: 8px 24px 40px;
+    background: #111116;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px 20px 0 0; padding: 8px 28px 44px;
     width: 100%; display: flex; flex-direction: column;
     align-items: center; gap: 8px;
     animation: bdSlideUp 0.22s ease;
@@ -2202,15 +2283,15 @@
     to   { transform: translateY(0); opacity:1; }
   }
   .badge-detail-handle {
-    width: 36px; height: 4px; background: var(--border);
-    border-radius: 2px; margin-bottom: 6px;
+    width: 36px; height: 4px; background: rgba(255,255,255,0.15);
+    border-radius: 2px; margin-bottom: 8px;
   }
   .badge-detail-tier {
     font-size: 9px; font-family: var(--mono); text-transform: uppercase;
-    letter-spacing: 0.18em; font-weight: 700;
+    letter-spacing: 0.2em; font-weight: 700;
   }
   .badge-detail-name {
-    font-size: 18px; font-weight: 700; color: var(--text);
+    font-size: 20px; font-weight: 700; color: var(--text);
     text-align: center; line-height: 1.2;
   }
   .badge-detail-desc {
@@ -2222,7 +2303,7 @@
     padding: 5px 14px; border-radius: 100px;
     border: 1px solid var(--border);
     font-size: 10px; font-family: var(--mono); color: var(--text-tertiary);
-    margin-top: 2px;
+    margin-top: 4px;
   }
   .badge-detail-meta.dm-earned { border-color: rgba(74,207,125,0.35); color: #4ACF7D; }
 

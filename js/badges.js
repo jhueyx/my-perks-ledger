@@ -180,7 +180,7 @@ export const BADGE_DEFS = [
 
   // ── Legendary ────────────────────────────────────────────────────────
   { id:'founder',         tier:'legendary', name:'Founder',                  desc:'Built this — no one else gets this badge', special:true },
-  { id:'hacker',          tier:'legendary', name:'Credit Card Benefit Hacker', desc:'Mastered the art of extracting every dollar from every card', special:true },
+  { id:'hacker',          tier:'legendary', name:'Benefit Hacker',           desc:'Mastered the art of extracting every dollar from every card', special:true },
   { id:'obsessive',       tier:'legendary', name:'Obsessive',                desc:'Tracks, optimizes, and agonizes over every single benefit', special:true },
 ];
 
