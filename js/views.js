@@ -956,6 +956,104 @@ export function renderROI(){
   set(html);
 }
 
+// ── Render: performance (ROI + Trends combined) ───────────────────────────
+export function renderPerformance(){
+  const tab=state._performanceTab||'roi';
+  const tabBtn=(key,label)=>`<button onclick="switchPerfTab('${key}')" style="padding:4px 16px;border-radius:20px;border:1px solid ${key===tab?'var(--blue)':'var(--border)'};background:${key===tab?'var(--blue)':'transparent'};color:${key===tab?'#fff':'var(--text-secondary)'};font-size:12px;font-family:var(--mono);cursor:pointer;transition:all 0.15s">${label}</button>`;
+  const tabs=`<div style="display:flex;gap:6px;padding:0 0 14px">${tabBtn('roi','ROI Grades')}${tabBtn('trends','Trends')}</div>`;
+  let html='';
+  if(tab==='roi'){
+    const CARD_KEYS=getVisibleCardKeys();
+    html+=`<div class="banner"><strong>Card ROI scores</strong> — graded on annual fee coverage</div>`;
+    html+=`<p style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin:0 0 10px">drag cards to reorder</p>`;
+    html+=`<div class="comparison-grid">`;
+    CARD_KEYS.forEach(cardKey=>{
+      const fee=getFee(cardKey,CY);
+      const {captured}=calcStats(cardKey,c=>getCardYearPeriods(cardKey,c),isPCurrent);
+      const projected=getProjectedCapture(cardKey);
+      const elapsed=getCardYearMonthsElapsed(cardKey);
+      const grade=getROIGrade(fee,cardKey);
+      const effectiveFee=fee-captured;
+      const projGap=fee-projected;
+      const verdict=projGap<=0?'→ Keep: in profit'
+        :projGap<=250?`→ Keep: $${projGap.toFixed(0)} short of break-even`
+        :projGap<=500?`→ Reconsider if habits don't improve`
+        :`→ Consider canceling ($${projGap.toFixed(0)} gap)`;
+      const verdictColor=projGap<=0?'var(--green)':projGap<=250?'var(--gold)':'var(--red)';
+      const gradeDesc={A:`Projecting $${projected.toFixed(0)} — fully covering the $${fee} fee`,B:`Projecting $${projected.toFixed(0)} — $${projGap.toFixed(0)} short but within acceptable range`,C:`Projecting $${projected.toFixed(0)} — need to claim more benefits`,D:`Projecting $${projected.toFixed(0)} — well below the $${fee} fee`}[grade];
+      html+=`<div class="comparison-card ${CARD_CLS[cardKey]}" data-drag-card="${cardKey}" draggable="true">
+        <div class="drag-handle">⠿</div>
+        <div class="comp-card-name">${CARD_LABELS[cardKey]}</div>
+        <div class="roi-grade ${grade}">${grade}</div>
+        <div class="roi-label">${effectiveFee<=0?'$'+Math.abs(effectiveFee).toFixed(0)+' profit so far':'$'+captured.toFixed(0)+' of $'+fee+' captured'}</div>
+        <div class="roi-desc">${gradeDesc}</div>
+        <div style="font-size:11px;font-family:var(--mono);font-weight:600;color:${verdictColor};margin:6px 0 2px">${verdict}</div>
+        <div class="comp-divider"></div>
+        <div style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary)">Month ${elapsed} of 12 · $${projected.toFixed(0)} projected</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  } else {
+    const CARD_KEYS=getVisibleCardKeys();
+    const years=[CY-1,CY];
+    const yearRange=years.length>1?`${years[0]}–${years[years.length-1]}`:`${years[0]}`;
+    html+=`<div class="banner"><strong>Multi-year trends</strong> — ${yearRange} comparison</div>`;
+    function capturedForYear(cardKey,y){
+      const card=CARDS[cardKey];
+      const openedYear=state.cardMeta?.[cardKey]?.openedYear??card.openedYear;
+      if(openedYear&&y<openedYear) return 0;
+      let total=0;
+      const lastMonth=y<CY?11:CM;
+      card.sections.forEach(s=>{
+        const periods=[];
+        if(s.cadence==='monthly'){
+          for(let m=0;m<=lastMonth;m++) periods.push({pk:`${y}-m${m}`,m,calY:y,calM:m});
+        } else if(s.cadence==='quarterly'){
+          const seen=new Set();
+          for(let m=0;m<=lastMonth;m++){ const pk=`${y}-q${Math.floor(m/3)}`; if(!seen.has(pk)){seen.add(pk);periods.push({pk,m,calY:y,calM:m});} }
+        } else if(s.cadence==='cal-semi-annual'){
+          periods.push({pk:`${y}-h0`,m:0,calY:y,calM:0,endM:5,endY:y});
+          if(lastMonth>=6) periods.push({pk:`${y}-h1`,m:6,calY:y,calM:6,endM:11,endY:y});
+        } else if(s.cadence==='cal-annual'){
+          periods.push({pk:`${y}-annual`,m:0,calY:y,calM:0});
+        } else if(s.cadence==='semi-annual'){
+          const fm=getCardFeeMonth(cardKey);
+          periods.push({pk:`cy-${y}-${fm}-h1`,m:fm,calY:y,calM:fm,endM:(fm+5)%12,endY:fm+5>=12?y+1:y});
+          periods.push({pk:`cy-${y}-${fm}-h2`,m:(fm+6)%12,calY:y,calM:(fm+6)%12,endM:(fm+11)%12,endY:fm+11>=12?y+1:y});
+        } else if(s.cadence==='annual'){
+          const fm=getCardFeeMonth(cardKey);
+          periods.push({pk:`cy-${y}-${fm}-annual`,m:fm,calY:y,calM:fm});
+        } else if(s.cadence==='feb-annual'){
+          periods.push({pk:`feb-${y}`,m:1,calY:y,calM:1,endM:0,endY:y+1});
+        }
+        s.benefits.forEach(b=>{
+          if(isBNotAvailable(b,y)) return;
+          periods.forEach(p=>{
+            if(isBExpired(b,p)) return;
+            if(isUsed(cardKey,b.id,p.pk)) total+=getBAmount(b,p);
+            else if(b.partial){ const partial=getPartialUsed(cardKey,b.id,p.pk); if(partial>0) total+=partial; }
+          });
+        });
+      });
+      return total;
+    }
+    html+=`<p style="font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin:0 0 10px">drag cards to reorder</p>`;
+    CARD_KEYS.forEach(cardKey=>{
+      html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:grab" data-drag-card="${cardKey}" draggable="true">`;
+      html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="drag-handle" style="font-size:16px">⠿</span><span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em">${CARD_LABELS[cardKey]}</span></div>`;
+      const vals=years.map(y=>({y,captured:capturedForYear(cardKey,y),fee:getFee(cardKey,y)}));
+      vals.forEach(({y,captured,fee})=>{
+        const barPct=Math.min(100,Math.round(captured/fee*100));
+        const isCurrent=y===CY,profit=captured-fee;
+        const label=isCurrent?`${y} YTD`:String(y);
+        html+=`<div class="trend-row"><div class="trend-year" style="color:${isCurrent?'var(--text)':'var(--text-tertiary)'}">${label}</div><div style="flex:1;position:relative"><div class="trend-bar-wrap"><div class="trend-bar-fill" style="width:${barPct}%;background:${captured>fee?'var(--blue)':captured>=fee?'var(--green)':'var(--gold)'}"></div></div></div><div class="trend-val" style="color:${profit>0?'var(--blue)':profit===0?'var(--green)':'var(--text-secondary)'}">$${captured.toFixed(0)}<span style="font-size:9px;color:var(--text-tertiary)"> / $${fee}</span></div></div>`;
+      });
+      html+=`</div>`;
+    });
+  }
+  set(tabs+html);
+}
+
 // ── Render: insights ──────────────────────────────────────────────────────
 export function renderInsights(){
   const notifEnabled=localStorage.getItem('perks-notif')==='1';
@@ -1249,6 +1347,34 @@ export function renderRecap(){
   if(topBenefit.name&&topBenefit.amt>0) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">★</div><div><div class="recap-highlight-label">Top benefit</div><div class="recap-highlight-val">${topBenefit.name} — $${topBenefit.amt.toFixed(0)} captured · ${topBenefit.card}</div></div></div>`;
   if(biggestMiss.name) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">!</div><div><div class="recap-highlight-label">Biggest miss</div><div class="recap-highlight-val">${biggestMiss.name} — $${biggestMiss.amt.toFixed(0)} left on table · ${biggestMiss.card}</div></div></div>`;
   if(longestStreak.streak>=2&&longestStreakCount===1) html+=`<div class="recap-highlight"><div class="recap-highlight-icon">${longestStreak.streak}mo</div><div><div class="recap-highlight-label">Best streak</div><div class="recap-highlight-val">${longestStreak.name} — ${longestStreak.streak} months in a row · ${longestStreak.card}</div></div></div>`;
+
+  // Per-card export table
+  const savedYearEx=state.selectedYear; state.selectedYear=year;
+  const exportRows=CARD_KEYS.map(ck=>{
+    const fee=getFee(ck,year);
+    const {captured:ec,missed:em,total:et}=calcStats(ck,c=>getYTDPeriods(c),isYTDCurrent);
+    return {ck,label:CARD_LABELS[ck],fee,captured:ec,missed:em,total:et,net:ec-fee,grade:getROIGrade(fee,ck)};
+  });
+  state.selectedYear=savedYearEx;
+  const totEx=exportRows.reduce((a,r)=>({fee:a.fee+r.fee,captured:a.captured+r.captured,missed:a.missed+r.missed,total:a.total+r.total,net:a.net+r.net}),{fee:0,captured:0,missed:0,total:0,net:0});
+  const totPct=totEx.total>0?Math.round(totEx.captured/totEx.total*100):0;
+  state._exportRows=exportRows; state._exportYear=year;
+  html+=`<div class="section-header" style="margin-top:20px"><span class="section-title">Per-card breakdown</span><span class="section-period">${year===CY?year+' YTD':year}</span></div>`;
+  html+=`<div class="export-actions">
+    <button class="settings-btn settings-btn-primary" onclick="downloadBenefitsCSV()">Download CSV</button>
+    <button class="settings-btn" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+  <div class="export-report">
+    <div class="export-head"><h2>Benefits Report — ${year}</h2><p>Perks Ledger · generated ${new Date().toLocaleDateString()}</p></div>
+    <table class="export-table">
+      <thead><tr><th>Card</th><th>Annual Fee</th><th>Captured</th><th>Missed</th><th>Net vs Fee</th><th>Capture</th><th>ROI</th></tr></thead>
+      <tbody>
+        ${exportRows.map(r=>{const pct=r.total>0?Math.round(r.captured/r.total*100):0;return `<tr><td>${r.label}</td><td>$${r.fee.toLocaleString()}</td><td>$${r.captured.toFixed(0)}</td><td>$${r.missed.toFixed(0)}</td><td class="${r.net>=0?'pos':'neg'}">${r.net>=0?'+':'−'}$${Math.abs(r.net).toFixed(0)}</td><td>${pct}%</td><td>${r.grade}</td></tr>`;}).join('')}
+        <tr class="export-total"><td>Total</td><td>$${totEx.fee.toLocaleString()}</td><td>$${totEx.captured.toFixed(0)}</td><td>$${totEx.missed.toFixed(0)}</td><td class="${totEx.net>=0?'pos':'neg'}">${totEx.net>=0?'+':'−'}$${Math.abs(totEx.net).toFixed(0)}</td><td>${totPct}%</td><td></td></tr>
+      </tbody>
+    </table>
+    <p class="export-foot">Captured and Missed reflect calendar-year-to-date. Net vs Fee = captured − annual fee. ROI grade is the projected full-card-year capture vs fee.</p>
+  </div>`;
   set(html);
 }
 
@@ -1637,7 +1763,7 @@ window.downloadBenefitsCSV=function(){
 
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','history-log','recap','heatmap','roi','trends','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar','export-report'];
+  const _analyticsViews=['compare','history-log','recap','heatmap','performance','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -1661,17 +1787,14 @@ export function render(){
   else if(state.activeView==='ytd-history') renderHistBase(c=>getYTDPeriods(c),isYTDCurrent,ytdBanner);
   else if(state.activeView==='ytd') renderSummBase(c=>getYTDPeriods(c),isYTDCurrent,ytdBanner,state.selectedYear===CY?'YTD':state.selectedYear+' full year');
   else if(state.activeView==='compare') renderComparison();
-  else if(state.activeView==='streaks') renderStreaks();
   else if(state.activeView==='history-log') renderHistoryLog();
   else if(state.activeView==='recap') renderRecap();
   else if(state.activeView==='heatmap') renderHeatmap();
-  else if(state.activeView==='roi') renderROI();
-  else if(state.activeView==='trends') renderTrends();
+  else if(state.activeView==='performance') renderPerformance();
   else if(state.activeView==='digest') renderDigest();
   else if(state.activeView==='net-value') renderNetValue();
   else if(state.activeView==='fee-optimizer') renderFeeOptimizer();
   else if(state.activeView==='card-simulator') renderCardSimulator();
   else if(state.activeView==='renewal-calendar') renderRenewalCalendar();
-  else if(state.activeView==='export-report') renderExport();
   setTimeout(()=>{ updateTabBadge(); updateCardBadges(); },200);
 }

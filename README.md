@@ -20,12 +20,14 @@ A personal credit card perks and benefits tracker. Track monthly credits, annual
 - **Multi-year Trends** — fee-relative bar chart showing captured vs fee across years
 - **Annual Recap** — total captured, biggest miss, card streaks
 - **Keep / Cancel** — data-driven renewal recommendation per card
-- **Priority Queue** — unclaimed benefits ranked by urgency × value; taps directly to that card; dismiss individual items with ×; shake phone or tap Undo to restore the last dismissal; "Show N dismissed" button resets all at once
+- **Benefit Digest** — unified urgency dashboard: "Act now" list ranked by urgency × value (dismiss with ×, restore with shake/Undo), collapsed "By Deadline" buckets (monthly / quarterly / semi-annual / annual), and a collapsed "Dismissed" section with per-item Restore
+- **Portfolio Value** — hero summary of total captured vs projected vs fees across all cards; per-card breakdown sorted by capture %; layered captured + projected progress bar
+- **Fee Optimizer** — shows net impact of canceling each card (fee saved minus projected benefits lost), sorted by cancel-impact; portfolio-level net position + fee-coverage bar
 - **Card Simulator** — "what if I added this card?" Projects annual value for any unowned card using *your* actual category capture rates (derived from existing card history), not a naive 100%. Shows grade A–D, net projected vs fee, a layered max-vs-projected progress bar, per-category behavior profile, and a per-benefit breakdown with claim-rate annotations
 - **Renewal Calendar + Fee Tracker** — unified 12-month timeline of every card's annual-fee/anniversary date, grouped by month with days-until + a ▲ marker when a card raised its fee this year, plus a top alert ("⚠ N cards raised fees…") and a per-card mini fee-history sparkline
 - **Export Report** — year-end benefits report with per-card Captured/Missed/Net vs Fee/Capture %/ROI grade, plus a one-click CSV download and a print stylesheet for "Save as PDF"
+- **Achievements** — gamified badge system with 100+ badges across 5 tiers (Bronze / Silver / Gold / Platinum / Legendary). Categories: streaks, portfolio size, value captured, fee mastery, card mastery, claim volume, completionist, category specialists, and card-specific loyalty badges. Flip-card UI with locked/unlocked states; retroactive backfill on first sign-in; toast on unlock
 - **Compare Cards** — side-by-side captured / projected / missed metrics
-- **Streaks** — consecutive months claimed for each monthly benefit
 - **Heatmap** — benefit claim density view by month
 
 ### Benefit control
@@ -44,8 +46,10 @@ A personal credit card perks and benefits tracker. Track monthly credits, annual
 - **Fee date overrides** — set a custom anniversary month + day per card via the ✎ button
 - **Settings screen** — profile name, password change, card selection
 - **Notifications** — reminders before benefits expire: aggregate by cadence (monthly/quarterly/semi-annual) plus an opt-in **per-benefit** mode (e.g. "$10 Peloton Credit — 3 days left"). Local notifications, fire while the app is open; deduped per benefit/period
-- **Background push** (optional) — opt-in toggle delivers reminders even when the app is closed, via a Supabase Edge Function on cron (requires VAPID keys + migration — see `KNOWLEDGE.md`)
-- **Installable PWA** — add to home screen on iOS / Android
+- **Email Digest** (optional) — opt-in weekly email summary of unclaimed benefits, sent via Supabase Edge Function (`send-weekly-digest`) using Resend. Toggle in Settings → Notifications
+- **Background push** (optional) — opt-in toggle delivers reminders even when the app is closed, via Supabase Edge Function (`send-push`) on daily cron (requires VAPID keys + migration — see `KNOWLEDGE.md`)
+- **Card flip** — tap a card image to flip to the back side showing points multipliers and current capture progress
+- **Installable PWA** — add to home screen on iOS / Android; portrait lock; landscape side-rail nav
 
 ---
 
@@ -124,7 +128,7 @@ Snoozed benefits are excluded from: card-year captured, monthly available, year-
 
 ```
 index.html          — app shell, modals, PWA meta
-css/styles.css      — all styles (dark + light mode, responsive)
+css/styles.css      — all styles (dark + light mode, responsive, landscape)
 js/
   cards.js          — card definitions: sections, benefits, amounts, cadences
   state.js          — shared state object, Supabase client, constants (CY, CM, CD)
@@ -132,10 +136,21 @@ js/
                        notes, credited, skipped, snoozed, fee overrides
   periods.js        — period math: card year start, period generation, isPCurrent,
                        calcStats, projections, ROI grade, streaks
-  views.js          — all render functions (renderCurrent, renderROI, buildProjection, …)
-  main.js           — auth flow, event handlers, navigation, modals, confetti
+  badges.js         — achievement badge definitions (100+ badges, 5 tiers),
+                       check/earn/persist/backfill logic, TIER_COLORS
+  views.js          — all render functions (renderCurrent, renderROI, renderDigest,
+                       renderNetValue, renderFeeOptimizer, renderCardSimulator, …)
+  main.js           — auth flow, event handlers, navigation, modals, confetti,
+                       renderBadgesView, email digest toggle, push subscribe
 manifest.json       — PWA manifest
-sw.js               — service worker (offline cache)
+sw.js               — service worker (offline cache, currently v35)
+supabase/
+  functions/send-weekly-digest/  — weekly email digest (Resend)
+  functions/send-push/           — web push notifications (web-push npm)
+  digest_migration.sql           — adds digest_cache + digest_enabled to user_profiles
+  push_migration.sql             — creates perks_push_subscriptions table
+  cron_schedule.sql              — pg_cron for weekly digest
+  push_cron.sql                  — pg_cron for daily push at 16:00 UTC
 ```
 
 ## Data & sync

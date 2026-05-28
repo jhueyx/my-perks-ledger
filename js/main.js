@@ -117,10 +117,6 @@ function updateDrawerGreeting(){
   const emailEl=document.getElementById('drawerUserEmail');
   if(greetEl) greetEl.textContent=name?`Hi, ${name}`:'';
   if(emailEl) emailEl.textContent=user.email||'';
-  const sg=document.getElementById('sheetGreeting');
-  const se=document.getElementById('sheetUserEmail');
-  if(sg) sg.textContent=name?`Hi, ${name}`:'';
-  if(se) se.textContent=user.email||'';
 }
 
 // ── Email digest cache ────────────────────────────────────────────────────
@@ -713,22 +709,16 @@ function setActiveView(primary){
   else if(primary==='card-year') state.activeView=state.activeSecondary['card-year']||'history';
   else if(primary==='ytd') state.activeView=state.activeSecondary['ytd']||'ytd-history';
   else if(primary==='compare') state.activeView='compare';
-  else if(primary==='streaks') state.activeView='badges';
   else if(primary==='history-log') state.activeView='history-log';
   else if(primary==='recap') state.activeView='recap';
-  else if(primary==='insights') state.activeView='insights';
   else if(primary==='heatmap') state.activeView='heatmap';
-  else if(primary==='roi') state.activeView='roi';
-  else if(primary==='priority') state.activeView='priority';
-  else if(primary==='keep-card') state.activeView='keep-card';
-  else if(primary==='trends') state.activeView='trends';
+  else if(primary==='performance') state.activeView='performance';
   else if(primary==='digest') state.activeView='digest';
   else if(primary==='net-value') state.activeView='net-value';
   else if(primary==='badges') state.activeView='badges';
   else if(primary==='fee-optimizer') state.activeView='fee-optimizer';
   else if(primary==='card-simulator') state.activeView='card-simulator';
   else if(primary==='renewal-calendar') state.activeView='renewal-calendar';
-  else if(primary==='export-report') state.activeView='export-report';
   else if(primary==='settings') state.activeView='settings';
   else if(primary==='more') state.activeView='more';
   else if(primary==='my-cards'){ openMyCards(); return; }
@@ -760,19 +750,6 @@ function openDrawer(){
 function closeDrawer(){
   document.getElementById('navExtras').classList.remove('open');
   document.getElementById('drawerOverlay').classList.remove('open');
-}
-function _preventBodyScroll(e){ if(!e.target.closest('#bottomSheet')) e.preventDefault(); }
-function openMenuSheet(){
-  document.documentElement.style.overflow='hidden';
-  document.body.addEventListener('touchmove',_preventBodyScroll,{passive:false});
-  document.getElementById('bottomSheet').classList.add('open');
-  document.getElementById('bottomSheetOverlay').classList.add('open');
-}
-function closeMenuSheet(){
-  document.documentElement.style.overflow='';
-  document.body.removeEventListener('touchmove',_preventBodyScroll);
-  document.getElementById('bottomSheet').classList.remove('open');
-  document.getElementById('bottomSheetOverlay').classList.remove('open');
 }
 function updateBottomTabBar(primary){
   document.querySelectorAll('.bottom-tab[data-bottom]').forEach(b=>b.classList.toggle('active',b.dataset.bottom===primary));
@@ -1153,15 +1130,11 @@ document.getElementById('menuBtn').addEventListener('click',openDrawer);
 document.getElementById('drawerClose').addEventListener('click',closeDrawer);
 document.getElementById('drawerOverlay').addEventListener('click',closeDrawer);
 
-// ── Bottom tab bar + menu sheet ───────────────────────────────────────────
+// ── Bottom tab bar ────────────────────────────────────────────────────────
 document.getElementById('bottomMenuBtn').addEventListener('click',()=>setActiveView('more'));
-document.getElementById('bottomHomeBtn').addEventListener('click',()=>{ closeMenuSheet(); setActiveView('this-period'); });
-document.getElementById('bottomSheetOverlay').addEventListener('click',closeMenuSheet);
+document.getElementById('bottomHomeBtn').addEventListener('click',()=>setActiveView('this-period'));
 document.getElementById('bottomTabBar').querySelectorAll('.bottom-tab[data-bottom]').forEach(btn=>{
-  btn.addEventListener('click',()=>{ closeMenuSheet(); setActiveView(btn.dataset.bottom); });
-});
-document.getElementById('bottomSheetItems').querySelectorAll('.drawer-item[data-sheet]').forEach(btn=>{
-  btn.addEventListener('click',()=>{ closeMenuSheet(); setActiveView(btn.dataset.sheet); });
+  btn.addEventListener('click',()=>setActiveView(btn.dataset.bottom));
 });
 
 document.getElementById('navPrimary').querySelectorAll('.nav-primary-btn').forEach(btn=>{
@@ -1397,18 +1370,16 @@ const _DRAWER_ICONS={
   'insights':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 0 1 4 4c0 1.6-.9 3-2.2 3.7V11H6.2V9.7A4 4 0 0 1 4 6a4 4 0 0 1 4-4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="6.2" y1="12.5" x2="9.8" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="6.8" y1="14" x2="9.2" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   'keep-card':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="4" width="13" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 8.5L7 10l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'compare':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="5.5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="3.5" width="5.5" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>`,
-  'roi':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="9" width="2.5" height="5" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="6" y="6" width="2.5" height="8" rx="0.75" fill="currentColor" opacity="0.85"/><rect x="10" y="3" width="2.5" height="11" rx="0.75" fill="currentColor"/><line x1="1.5" y1="14.5" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
   'heatmap':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.3"/><rect x="6.5" y="2" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="11" y="2" width="3" height="3" rx="0.75" fill="currentColor"/><rect x="2" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="6.5" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.4"/><rect x="11" y="6.5" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.85"/><rect x="2" y="11" width="3" height="3" rx="0.75" fill="currentColor"/><rect x="6.5" y="11" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.5"/><rect x="11" y="11" width="3" height="3" rx="0.75" fill="currentColor" opacity="0.25"/></svg>`,
   'history-log':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><polyline points="8,5 8,8.5 10.5,10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'recap':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/><line x1="10.5" y1="1.5" x2="10.5" y2="4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="5.5" y1="1.5" x2="5.5" y2="4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="2" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.4"/></svg>`,
-  'trends':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,13 6,9 9,11 13,5 14,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'digest':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="3" rx="1" fill="currentColor" opacity="0.9"/><rect x="2" y="6.5" width="8" height="3" rx="1" fill="currentColor" opacity="0.7"/><rect x="2" y="11" width="5" height="3" rx="1" fill="currentColor" opacity="0.45"/></svg>`,
   'net-value':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/></svg>`,
   'badges':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3 3.5.5-2.5 2.4.6 3.6L8 10l-3.1 1.5.6-3.6L3 5.5l3.5-.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+  'performance':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="9" width="2.5" height="5" rx="0.75" fill="currentColor" opacity="0.7"/><rect x="6" y="6" width="2.5" height="8" rx="0.75" fill="currentColor" opacity="0.85"/><rect x="10" y="3" width="2.5" height="11" rx="0.75" fill="currentColor"/><line x1="1.5" y1="14.5" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M3.5 7.5l3.5-2.5 2.5 1.5 3-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   'fee-optimizer':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M5.5 11.5C6.3 12.4 7 13 8 13s2-.5 2-1.5-1-1.5-2-1.5-2-.5-2-1.5S6 7 8 7s1.5.5 2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
   'card-simulator':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="4.5" width="13" height="8.5" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="7" x2="8" y2="10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="6.25" y1="8.75" x2="9.75" y2="8.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 4.5V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   'renewal-calendar':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="2" y1="6.5" x2="14" y2="6.5" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="1.5" x2="5" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="1.5" x2="11" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  'export-report':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 1.5h5l3 3V14a.5.5 0 0 1-.5.5h-7A.5.5 0 0 1 4 14V2a.5.5 0 0 1 .5-.5z" stroke="currentColor" stroke-width="1.4"/><path d="M9 1.5V4.5h3" stroke="currentColor" stroke-width="1.4"/><line x1="6" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="6" y1="10.5" x2="10" y2="10.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
   'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
 };
 
@@ -1835,16 +1806,11 @@ window.toggleAchLocked=function(el){
 // ── More page ─────────────────────────────────────────────────────────────
 function renderMore(){
   const items=[
-    {view:'digest',label:'Benefit Digest'},
     {view:'net-value',label:'Portfolio Value'},
-    {view:'badges',label:'Achievements'},
-    {view:'fee-optimizer',label:'Fee Optimizer'},
     {view:'card-simulator',label:'Card Simulator'},
     {view:'renewal-calendar',label:'Renewal Calendar'},
-    {view:'export-report',label:'Export Report'},
     {view:'compare',label:'Compare Cards'},
-    {view:'roi',label:'ROI Scores'},
-    {view:'trends',label:'Trends'},
+    {view:'performance',label:'Performance'},
     {view:'heatmap',label:'Heatmap'},
     {view:'history-log',label:'History'},
     {view:'recap',label:'Annual Recap'},
@@ -1866,7 +1832,7 @@ function renderMore(){
 
   const drawerIconMap=_DRAWER_ICONS;
   Object.entries(drawerIconMap).forEach(([primary,svg])=>{
-    [`.drawer-item[data-primary="${primary}"]`,`.drawer-item[data-sheet="${primary}"]`].forEach(sel=>{
+    [`.drawer-item[data-primary="${primary}"]`].forEach(sel=>{
       const btn=document.querySelector(sel);
       if(!btn) return;
       const icon=btn.querySelector('.drawer-icon');
@@ -2054,6 +2020,7 @@ window.backfill2025Badges=()=>{ localStorage.removeItem('perks-badges-2025-backf
 window.clearAllSkipped=clearAllSkipped;
 window.requestNotifications=requestNotifications;
 window.setSelectedYear=(y)=>{ state.selectedYear=y; };
+window.switchPerfTab=(t)=>{ state._performanceTab=t; render(); };
 window.openNoteModal=openNoteModal;
 window.closeNoteModal=closeNoteModal;
 window.setPartialUsed=setPartialUsed;

@@ -1,7 +1,7 @@
 # Perks Ledger — Knowledge & Changelog
 
 ## Overview
-Vanilla JS SPA deployed via GitHub Pages (public repo) at **perks.hueyventures.org**. No build step, no framework. ES modules loaded directly in the browser. Supabase for auth and cloud sync.
+Vanilla JS SPA deployed via **Vercel** (with `vercel.json` cache headers) at **perks.hueyventures.org**. No build step, no framework. ES modules loaded directly in the browser. Supabase for auth and cloud sync.
 
 ## Architecture
 
@@ -12,8 +12,9 @@ Vanilla JS SPA deployed via GitHub Pages (public repo) at **perks.hueyventures.o
 | `js/state.js` | Shared mutable `state` object, Supabase client (`sb`), date constants (`CY`, `CM`, `CD`) |
 | `js/storage.js` | localStorage + Supabase sync, toggle, partial use, notes, snooze, credited, skipped |
 | `js/periods.js` | Period math, stats, ROI calculations, streak logic |
-| `js/views.js` | All render functions — `render()`, `renderCurrent()`, `renderAllCards()`, etc. |
-| `js/main.js` | Event listeners, auth flow, navigation, modal logic, `window.*` exports for inline handlers |
+| `js/badges.js` | 100+ achievement badge definitions (`BADGE_DEFS`), tier system (bronze→legendary), `checkBadges()`, `getEarnedBadges()`, `backfill2025Badges()`, `TIER_COLORS` |
+| `js/views.js` | All render functions — `render()`, `renderCurrent()`, `renderAllCards()`, `renderDigest()`, `renderNetValue()`, `renderFeeOptimizer()`, `renderCardSimulator()`, `renderRenewalCalendar()`, `renderExport()`, etc. |
+| `js/main.js` | Event listeners, auth flow, navigation, modal logic, `renderBadgesView()`, email digest toggle, push subscribe, `window.*` exports for inline handlers |
 
 ### Key Patterns
 - **Inline onclick handlers** in rendered HTML must use `window.*` exports (set at bottom of `main.js`)
@@ -41,14 +42,24 @@ Everything bundled into one Supabase row per user in `tracker_data`.
 ---
 
 ## Deployment
-Push to `origin main` → GitHub Pages auto-deploys to perks.hueyventures.org.
-Cache-bust: increment version in `index.html` CSS/JS query strings (`?v=...`) and bump SW version.
+Push to `origin main` → Vercel auto-deploys to perks.hueyventures.org. `vercel.json` sets `no-cache` headers on `index.html`, `sw.js`, and all JS/CSS files.
+Cache-bust: increment version in `index.html` CSS/JS query strings (`?v=...`) and bump `CACHE_NAME` in `sw.js` (currently `benefits-tracker-v35`).
 
 ---
 
 ## Changelog
 
-### v2.4 (current, ~May 2026)
+### v2.5 (current, ~May 2026)
+- **Achievements / Badges** (`js/badges.js`, `renderBadgesView()` in `main.js`) — 100+ badges across 5 tiers: Bronze, Silver, Gold, Platinum, Legendary. Categories: streaks, portfolio size, total value captured, single-card value, fee mastery (profit milestone + simultaneous profit count), card-specific mastery, claim volume, completionist (grand slam, all-in, perfect rate), category specialists (Uber, dining, travel loyalty), and brand/bank loyalty badges. Flip-card UI with locked/unlocked visuals. `checkBadges()` runs on sign-in and every toggle; `backfill2025Badges()` retroactively awards 2025 badges on first sign-in. Badges persisted to `user_profiles` (JSON column). Toast notification on unlock.
+- **Benefit Digest** (`renderDigest()` in `views.js`, nav `digest`) — merged Use It Now + per-deadline buckets. "Act now" urgency-ranked list with dismiss (×) and Restore. Collapsed "By Deadline" buckets (monthly / quarterly / semi-annual / annual). Collapsed "Dismissed" section with per-item Restore + "Restore all". Hero total of at-risk value.
+- **Portfolio Value** (`renderNetValue()` in `views.js`, nav `net-value`) — portfolio-level hero: net captured now vs projected, layered progress bar (projected behind captured). Per-card breakdown sorted by capture %, each row with captured/projected/fee bar.
+- **Fee Optimizer** (`renderFeeOptimizer()` in `views.js`, nav `fee-optimizer`) — cancel-impact per card (fee − projected), sorted highest-impact first. Verdict: "Cancel and save $X", "Borderline", or "Keep". Portfolio net + coverage bar.
+- **Card flip** (`buildCardBack()` in `views.js`) — tap card image to flip to back side showing points multipliers per category and current capture progress.
+- **Email Digest** — opt-in weekly email via Supabase Edge Function `send-weekly-digest` (uses Resend with verified domain). Toggle in Settings → Notifications → "Weekly digest email". `buildDigestCache()` + `saveDigestCache()` in `main.js` keeps `digest_cache` in `user_profiles` fresh. Requires `RESEND_API_KEY` secret on the function.
+- **Landscape side-rail nav** — on landscape orientation, bottom tab bar becomes a vertical side rail.
+- SW cache bumped to v35.
+
+### v2.4 (~May 2026)
 - **Export Report** (`renderExport()` in `views.js`, nav `export-report`) — per-card year-end report (Captured / Missed / Net vs Fee / Capture % / ROI grade), reuses `calcStats` + `getYTDPeriods` + `getROIGrade` with the recap pattern of `selectedYear` save/restore. `window.downloadBenefitsCSV` builds a CSV blob and downloads `perks-ledger-{year}.csv`. Print/PDF via `window.print()` + `@media print` rules that hide everything except `.export-report`.
 - **Fee Tracker** integrated into Renewal Calendar — `feeHistory(ck)` derives the timeline from `historicalFees` + `card.fee`, `feeSparkline()` renders a compact bar chart; top alert lists cards that raised fees this year; each calendar row gets a `▲` (`.rc-up`) indicator with prior fee in the title.
 - **Web Push** (background, app-closed) — opt-in toggle in Settings → Notifications. SW handles `push` (showNotification) + `notificationclick` (focus/open). Subscribe flow in `enablePush()`/`disablePush()` writes to `push_subscriptions` and flips `user_profiles.push_enabled`. Edge Function `send-push` reuses each user's `digest_cache` (no second cache column needed) to send via `npm:web-push`, pruning 404/410 subs. Cron runs daily at 16:00 UTC. **Requires manual setup** — see "Web Push setup" below.
@@ -130,11 +141,29 @@ Cache-bust: increment version in `index.html` CSS/JS query strings (`?v=...`) an
 | Table | Purpose |
 |---|---|
 | `tracker_data` | One row per user — all benefit usage + extras in a single JSON column |
-| `user_profiles` | `user_id`, `cards[]`, `digest_*`, `push_enabled` — card selection + digest + push opt-in |
+| `user_profiles` | `user_id`, `cards[]`, `digest_enabled`, `digest_cache` (JSON), `push_enabled`, `badges` (JSON array of earned badge IDs + timestamps) — card selection, digest, push opt-in, achievements |
 | `benefit_log` | Append-only toggle history (used by History Log view) |
 | `perks_push_subscriptions` | One row per device — VAPID push subscription JSON, RLS-scoped to user (named with prefix to avoid collision with the Monitor app's `push_subscriptions` table in the same project) |
 
 RLS: users can only access their own rows. Anon/publishable key is safe to expose in frontend.
+
+---
+
+## Email Digest setup
+
+The weekly digest Edge Function (`send-weekly-digest`) uses [Resend](https://resend.com) to email unclaimed benefits per user.
+
+1. **Verify a sending domain** in the Resend dashboard and note the FROM address.
+2. **Set the function secret** (Supabase Dashboard → Edge Functions → `send-weekly-digest` → Secrets):
+   - `RESEND_API_KEY`
+3. **Run the migration** `supabase/digest_migration.sql` to add `digest_enabled` + `digest_cache` to `user_profiles`.
+4. **Deploy the function:**
+   ```bash
+   supabase functions deploy send-weekly-digest --project-ref rsbvddlhismetljqoqre
+   ```
+5. **Schedule the cron** by running `supabase/cron_schedule.sql` in the SQL editor (weekly, Monday 09:00 UTC by default).
+
+Users opt in from Settings → Notifications → "Weekly digest email". The frontend saves a `digest_cache` JSON snapshot to `user_profiles` on toggle and after each benefit change, so the function doesn't need to re-fetch live data.
 
 ---
 
