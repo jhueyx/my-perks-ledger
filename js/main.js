@@ -150,7 +150,10 @@ function buildDigestCache(){
 }
 
 async function saveDigestCache(){
-  if(!state.currentUser||!state._digestEnabled) return;
+  if(!state.currentUser) return;
+  // Cache feeds both Email Digest and Web Push, so refresh if either is enabled.
+  const pushOn=localStorage.getItem('push-enabled')==='1';
+  if(!state._digestEnabled&&!pushOn) return;
   const cache=buildDigestCache();
   if(!cache) return;
   await sb.from('user_profiles').upsert({user_id:state.currentUser.id,digest_cache:cache,updated_at:new Date().toISOString()},{onConflict:'user_id'});
@@ -991,7 +994,12 @@ async function enablePush(){
     await sb.from('push_subscriptions').delete().eq('user_id',uid).eq('endpoint',sub.endpoint);
     const {error}=await sb.from('push_subscriptions').insert({user_id:uid,subscription:sub.toJSON()});
     if(error){ console.error('[push subscribe]',error.message); alert('Could not save push subscription.'); return false; }
-    await sb.from('user_profiles').update({push_enabled:true}).eq('user_id',uid);
+    // The send-push function reads digest_cache to build payloads, so prime it here
+    // (otherwise the user would only get pushes if Email Digest is also enabled).
+    const cache=buildDigestCache();
+    const update={push_enabled:true};
+    if(cache) update.digest_cache=cache;
+    await sb.from('user_profiles').update(update).eq('user_id',uid);
   }
   localStorage.setItem('push-enabled','1');
   return true;
