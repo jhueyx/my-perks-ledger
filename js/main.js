@@ -19,7 +19,7 @@ import { calcStats, getCardYearPeriods, isPCurrent, getFee, getBAmount, getCurre
 // send-push function's VAPID_PUBLIC_KEY secret). Generate with:
 //   npx web-push generate-vapid-keys
 // Leaving this blank disables the background-push toggle.
-const VAPID_PUBLIC_KEY = '';
+const VAPID_PUBLIC_KEY = 'BOcIiFWlNWs5xYccaoAweAIuJq56bG7hIuAijXvJl-i08ez5S8ZAj18KfDWdn51v2YwAdoJHZeIOQoNwFuaTn8w';
 
 // ── Splash: show login only if no cached session ──────────────────────────
 try {

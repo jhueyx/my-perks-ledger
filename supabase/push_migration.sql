@@ -14,6 +14,12 @@ create table if not exists push_subscriptions (
 alter table push_subscriptions enable row level security;
 
 -- Each user can only see/manage their own subscriptions.
+-- Drop-then-create keeps the migration idempotent (no `create policy if not exists` in Postgres).
+drop policy if exists "push_subscriptions own select" on push_subscriptions;
+drop policy if exists "push_subscriptions own insert" on push_subscriptions;
+drop policy if exists "push_subscriptions own update" on push_subscriptions;
+drop policy if exists "push_subscriptions own delete" on push_subscriptions;
+
 create policy "push_subscriptions own select" on push_subscriptions
   for select using (auth.uid() = user_id);
 create policy "push_subscriptions own insert" on push_subscriptions
