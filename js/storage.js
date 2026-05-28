@@ -191,7 +191,13 @@ export function isMonthSnoozed(cardKey,benefitId,calY,calM0){
 export function setSnoozedBenefit(cardKey,benefitId,fromYYYYMM,untilYYYYMM){
   const d=loadSnoozed();
   const k=`${cardKey}__${benefitId}`;
-  if(untilYYYYMM==null) delete d[k]; else d[k]={from:fromYYYYMM,until:untilYYYYMM};
+  if(untilYYYYMM==null){ delete d[k]; }
+  else {
+    // YYYY-MM strings sort lexically; swap a reversed range so it isn't a silent no-op.
+    let from=fromYYYYMM||untilYYYYMM, until=untilYYYYMM;
+    if(from>until) [from,until]=[until,from];
+    d[k]={from,until};
+  }
   saveSnoozed(d);
   scheduleSave();
 }

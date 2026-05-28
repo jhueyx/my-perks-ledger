@@ -1016,13 +1016,11 @@ export function renderTrends(){
         const fm=getCardFeeMonth(cardKey);
         periods.push({pk:`cy-${y}-${fm}-h1`,m:fm,calY:y,calM:fm,endM:(fm+5)%12,endY:fm+5>=12?y+1:y});
         periods.push({pk:`cy-${y}-${fm}-h2`,m:(fm+6)%12,calY:y,calM:(fm+6)%12,endM:(fm+11)%12,endY:fm+11>=12?y+1:y});
-        if(fm>0){const pEndY=fm+11>=12?y:y-1;if(pEndY===y)periods.push({pk:`cy-${y-1}-${fm}-h2`,m:(fm+6)%12,calY:y-1,calM:(fm+6)%12,endM:(fm+11)%12,endY:pEndY});}
       } else if(s.cadence==='annual'){
         const fm=getCardFeeMonth(cardKey);
         periods.push({pk:`cy-${y}-${fm}-annual`,m:fm,calY:y,calM:fm});
       } else if(s.cadence==='feb-annual'){
         periods.push({pk:`feb-${y}`,m:1,calY:y,calM:1,endM:0,endY:y+1});
-        periods.push({pk:`feb-${y-1}`,m:1,calY:y-1,calM:1,endM:0,endY:y});
       }
       s.benefits.forEach(b=>{
         if(isBNotAvailable(b,y)) return;

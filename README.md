@@ -21,6 +21,7 @@ A personal credit card perks and benefits tracker. Track monthly credits, annual
 - **Annual Recap** — total captured, biggest miss, card streaks
 - **Keep / Cancel** — data-driven renewal recommendation per card
 - **Priority Queue** — unclaimed benefits ranked by urgency × value; taps directly to that card; dismiss individual items with ×; shake phone or tap Undo to restore the last dismissal; "Show N dismissed" button resets all at once
+- **Card Simulator** — "what if I added this card?" Projects annual value for any unowned card using *your* actual category capture rates (derived from existing card history), not a naive 100%. Shows grade A–D, net projected vs fee, a layered max-vs-projected progress bar, per-category behavior profile, and a per-benefit breakdown with claim-rate annotations
 - **Compare Cards** — side-by-side captured / projected / missed metrics
 - **Streaks** — consecutive months claimed for each monthly benefit
 - **Heatmap** — benefit claim density view by month

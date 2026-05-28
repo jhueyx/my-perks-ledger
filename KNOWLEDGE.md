@@ -48,7 +48,10 @@ Cache-bust: increment version in `index.html` CSS/JS query strings (`?v=...`) an
 
 ## Changelog
 
-### v2.1 (current, ~May 2026)
+### v2.2 (current, ~May 2026)
+- **Card Simulator** (`renderCardSimulator()` in `views.js`, nav `card-simulator`) — projects annual value for any unowned card using the user's real per-category capture rates derived from existing card history (e.g. dining at 80% applies 80%, not 100%). Renders grade A–D, net projected vs fee, layered max-vs-projected bar, per-category behavior profile, and per-benefit breakdown with claim-rate annotation. `window.setSimCard(k)` switches the simulated card. Added to desktop drawer + mobile bottom sheet nav. SW cache bumped to v27.
+
+### v2.1 (~May 2026)
 - PWA lock to portrait orientation
 - More page as pill grid
 - Collapsible Security section in Settings
@@ -155,7 +158,9 @@ RLS: users can only access their own rows. Anon/publishable key is safe to expos
 ---
 
 ## Known Limitations
-- **Snooze from/until not validated** — if "from" > "until", snooze silently has no effect
 - **Partial input on mobile** — number inputs can be awkward; a slider or stepper might be better UX
 - **Benefit categories** — `BENEFIT_CATEGORIES` in `cards.js` is a manual map; adding new benefits requires updating it
-- **Semi-annual trends** — `capturedForYear()` in `renderTrends` adds extra periods for semi-annual cadences that can double-count in edge cases near card anniversary months
+
+## Fixed (2026-05-27)
+- **Snooze from/until reversed range** — `setSnoozedBenefit()` now swaps `from`/`until` when reversed (YYYY-MM strings sort lexically) so a backwards range is no longer a silent no-op
+- **Semi-annual & feb-annual trends double-count** — removed the prior-year spillover pushes (`cy-${y-1}-${fm}-h2` and `feb-${y-1}`) in `capturedForYear()`; each card-year period now counts only toward its card-year-start calendar year
