@@ -48,7 +48,13 @@ Cache-bust: increment version in `index.html` CSS/JS query strings (`?v=...`) an
 
 ## Changelog
 
-### v2.3 (current, ~May 2026)
+### v2.4 (current, ~May 2026)
+- **Export Report** (`renderExport()` in `views.js`, nav `export-report`) — per-card year-end report (Captured / Missed / Net vs Fee / Capture % / ROI grade), reuses `calcStats` + `getYTDPeriods` + `getROIGrade` with the recap pattern of `selectedYear` save/restore. `window.downloadBenefitsCSV` builds a CSV blob and downloads `perks-ledger-{year}.csv`. Print/PDF via `window.print()` + `@media print` rules that hide everything except `.export-report`.
+- **Fee Tracker** integrated into Renewal Calendar — `feeHistory(ck)` derives the timeline from `historicalFees` + `card.fee`, `feeSparkline()` renders a compact bar chart; top alert lists cards that raised fees this year; each calendar row gets a `▲` (`.rc-up`) indicator with prior fee in the title.
+- **Web Push** (background, app-closed) — opt-in toggle in Settings → Notifications. SW handles `push` (showNotification) + `notificationclick` (focus/open). Subscribe flow in `enablePush()`/`disablePush()` writes to `push_subscriptions` and flips `user_profiles.push_enabled`. Edge Function `send-push` reuses each user's `digest_cache` (no second cache column needed) to send via `npm:web-push`, pruning 404/410 subs. Cron runs daily at 16:00 UTC. **Requires manual setup** — see "Web Push setup" below.
+- SW cache bumped to v32.
+
+### v2.3 (~May 2026)
 - **Renewal Calendar** (`renderRenewalCalendar()` in `views.js`, nav `renewal-calendar`) — 12-month timeline of every visible card's fee/anniversary date (via `getCardFeeMonth/Day` + `daysUntilFee`-style calc), grouped by month from the current month forward, sorted by days-until; shows fee + urgency color (≤30d / ≤60d). Rows tap through to that card (`goToCardPeriod`). Wired into `render()` dispatch, `_analyticsViews`, `setActiveView`, More grid, `_DRAWER_ICONS`. CSS: `.rc-*` classes.
 - **Per-benefit reminders** (`firePerBenefitReminders()` in `main.js`) — opt-in (`notif-perbenefit`, default off). For each unclaimed, non-snoozed, non-skipped, available benefit whose current period is within its cadence's expiry window (monthly 3d / quarterly 7d / semi 14d / annual 30d), fires one local notification, capped at 6, deduped per `notifb-{card}-{benefit}-{pk}`. Fires on load, on enable, and when the toggle is switched on.
 - SW cache bumped to v31.
@@ -124,21 +130,54 @@ Cache-bust: increment version in `index.html` CSS/JS query strings (`?v=...`) an
 | Table | Purpose |
 |---|---|
 | `tracker_data` | One row per user — all benefit usage + extras in a single JSON column |
-| `user_profiles` | `user_id`, `cards[]` — card selection |
+| `user_profiles` | `user_id`, `cards[]`, `digest_*`, `push_enabled` — card selection + digest + push opt-in |
 | `benefit_log` | Append-only toggle history (used by History Log view) |
+| `push_subscriptions` | One row per device — VAPID push subscription JSON, RLS-scoped to user |
 
 RLS: users can only access their own rows. Anon/publishable key is safe to expose in frontend.
+
+---
+
+## Web Push setup
+
+The Web Push code is shipped but inactive until you complete these steps:
+
+1. **Generate VAPID keys** (one time):
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+   Note the `Public Key` and `Private Key` (base64url strings).
+
+2. **Frontend:** paste the public key into `VAPID_PUBLIC_KEY` at the top of `js/main.js`, then bump the `?v=` query string and SW cache.
+
+3. **Run the SQL migration** in the Supabase SQL editor:
+   ```
+   supabase/push_migration.sql
+   ```
+
+4. **Set the function secrets** (Supabase Dashboard → Edge Functions → `send-push` → Secrets):
+   - `VAPID_PUBLIC_KEY` — same value as the frontend constant
+   - `VAPID_PRIVATE_KEY`
+   - `VAPID_SUBJECT` — e.g. `mailto:jason.huey1@gmail.com`
+
+5. **Deploy the function:**
+   ```bash
+   supabase functions deploy send-push --project-ref rsbvddlhismetljqoqre
+   ```
+
+6. **Schedule the cron** by running `supabase/push_cron.sql` in the SQL editor (daily at 16:00 UTC by default).
+
+7. **Test on a device:** Settings → Notifications → enable notifications → toggle "Background push". Then fire the function manually from the SQL editor (see the test snippet in `push_cron.sql`).
+
+iOS PWAs require the app installed to the Home Screen and iOS ≥16.4 for Web Push.
 
 ---
 
 ## Feature Roadmap Ideas
 
 ### High Value
-- **Export to CSV/PDF** — share a year-end benefits report; useful for budgeting and tax context
-- **True background Web Push** — per-benefit reminders already exist as *local* notifications (fire only while app is open); a backend (VAPID + push-subscription table + Edge Function on cron + SW push handler) would deliver them when the app is closed
 - **Auto-detection via Plaid/bank feed** — detect when a statement credit posts and auto-mark it used
 - **"Best card for this purchase" widget** — enter a merchant/category and see which card earns most
-- **Annual fee tracker** — alert when a fee is increasing (CSR went $550→$795); historical fee chart
 
 ### Medium Value
 - **Google / Apple Sign-In** — reduce signup friction; still uses Supabase Auth under the hood

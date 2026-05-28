@@ -1,4 +1,4 @@
-const CACHE_NAME = 'benefits-tracker-v31';
+const CACHE_NAME = 'benefits-tracker-v32';
 const ASSETS = [
   '/',
   '/index.html',
@@ -25,6 +25,33 @@ self.addEventListener('activate', e => {
     )
   );
   self.clients.claim();
+});
+
+// Push: show a notification from the payload sent by the send-push function
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch (_) { data = { body: e.data && e.data.text() }; }
+  const title = data.title || 'Perks Ledger';
+  const options = {
+    body: data.body || 'You have benefits expiring soon.',
+    icon: 'apple-touch-icon.png',
+    badge: 'apple-touch-icon.png',
+    tag: data.tag || 'perks-reminder',
+    data: { url: data.url || '/' },
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Notification click: focus an existing tab or open the app
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) { if ('focus' in c) { c.navigate(url); return c.focus(); } }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
+  );
 });
 
 // Fetch: network first, fall back to cache

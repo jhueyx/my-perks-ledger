@@ -22,7 +22,8 @@ A personal credit card perks and benefits tracker. Track monthly credits, annual
 - **Keep / Cancel** — data-driven renewal recommendation per card
 - **Priority Queue** — unclaimed benefits ranked by urgency × value; taps directly to that card; dismiss individual items with ×; shake phone or tap Undo to restore the last dismissal; "Show N dismissed" button resets all at once
 - **Card Simulator** — "what if I added this card?" Projects annual value for any unowned card using *your* actual category capture rates (derived from existing card history), not a naive 100%. Shows grade A–D, net projected vs fee, a layered max-vs-projected progress bar, per-category behavior profile, and a per-benefit breakdown with claim-rate annotations
-- **Renewal Calendar** — unified 12-month timeline of every card's annual-fee/anniversary date, grouped by month and sorted by what's next, with the fee amount and days-until each renewal
+- **Renewal Calendar + Fee Tracker** — unified 12-month timeline of every card's annual-fee/anniversary date, grouped by month with days-until + a ▲ marker when a card raised its fee this year, plus a top alert ("⚠ N cards raised fees…") and a per-card mini fee-history sparkline
+- **Export Report** — year-end benefits report with per-card Captured/Missed/Net vs Fee/Capture %/ROI grade, plus a one-click CSV download and a print stylesheet for "Save as PDF"
 - **Compare Cards** — side-by-side captured / projected / missed metrics
 - **Streaks** — consecutive months claimed for each monthly benefit
 - **Heatmap** — benefit claim density view by month
@@ -43,6 +44,7 @@ A personal credit card perks and benefits tracker. Track monthly credits, annual
 - **Fee date overrides** — set a custom anniversary month + day per card via the ✎ button
 - **Settings screen** — profile name, password change, card selection
 - **Notifications** — reminders before benefits expire: aggregate by cadence (monthly/quarterly/semi-annual) plus an opt-in **per-benefit** mode (e.g. "$10 Peloton Credit — 3 days left"). Local notifications, fire while the app is open; deduped per benefit/period
+- **Background push** (optional) — opt-in toggle delivers reminders even when the app is closed, via a Supabase Edge Function on cron (requires VAPID keys + migration — see `KNOWLEDGE.md`)
 - **Installable PWA** — add to home screen on iOS / Android
 
 ---

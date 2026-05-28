@@ -1521,7 +1521,20 @@ export function renderCardSimulator(){
 
 window.setSimCard=function(k){state._simCard=k;renderCardSimulator();};
 
-// ── Render: renewal calendar ───────────────────────────────────────────────
+// ── Render: renewal calendar + fee tracker ─────────────────────────────────
+function feeHistory(ck){
+  const card=CARDS[ck];
+  const years=new Set(Object.keys(card.historicalFees||{}).map(Number));
+  years.add(CY);
+  return [...years].sort((a,b)=>a-b).map(y=>({year:y,fee:getFee(ck,y)}));
+}
+function feeSparkline(hist){
+  const max=Math.max(...hist.map(h=>h.fee),1);
+  return `<div class="fee-spark">`+hist.map((h,i)=>{
+    const pct=Math.round(h.fee/max*100), last=i===hist.length-1;
+    return `<div class="fee-spark-col"><div class="fee-spark-bar${last?' fee-spark-last':''}" style="height:${Math.max(8,pct)}%"></div><div class="fee-spark-lbl">'${String(h.year).slice(2)}</div></div>`;
+  }).join('')+`</div>`;
+}
 export function renderRenewalCalendar(){
   const keys=getVisibleCardKeys();
   const now=new Date(), startToday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
@@ -1530,12 +1543,30 @@ export function renderRenewalCalendar(){
     let feeDate=new Date(startToday.getFullYear(),fm,fd);
     if(feeDate<startToday) feeDate=new Date(startToday.getFullYear()+1,fm,fd);
     const days=Math.round((feeDate-startToday)/86400000);
-    return {ck,fm,fd,feeDate,days,fee:getFee(ck,feeDate.getFullYear())};
+    const hist=feeHistory(ck);
+    const cur=hist[hist.length-1].fee, prev=hist.length>1?hist[hist.length-2].fee:cur;
+    return {ck,fm,fd,feeDate,days,fee:getFee(ck,feeDate.getFullYear()),hist,raised:cur>prev,prevFee:prev};
   }).sort((a,b)=>a.days-b.days);
   const totalFees=rows.reduce((t,r)=>t+(r.fee||0),0);
   const next=rows[0];
   let html=`<div class="banner"><strong>Renewal Calendar</strong> — ${rows.length} card${rows.length===1?'':'s'} · $${totalFees.toLocaleString()} in annual fees</div>`;
   if(next) html+=`<p style="font-size:12px;color:var(--text-tertiary);margin:0 0 12px">Next up: <strong style="color:var(--text)">${CARD_LABELS[next.ck]}</strong> in ${next.days} day${next.days===1?'':'s'} · $${next.fee}</p>`;
+
+  // Fee-increase alert
+  const raised=rows.filter(r=>r.raised);
+  if(raised.length){
+    html+=`<div class="rc-alert">⚠ ${raised.length} card${raised.length===1?'':'s'} raised fees this year: `+
+      raised.map(r=>`<strong>${CARD_LABELS[r.ck]}</strong> $${r.prevFee}→$${r.fee}`).join(' · ')+`</div>`;
+  }
+  // Fee history charts (cards with more than one distinct fee)
+  const withHist=rows.filter(r=>new Set(r.hist.map(h=>h.fee)).size>1);
+  if(withHist.length){
+    html+=`<div class="rc-month">Fee history</div>`;
+    withHist.forEach(r=>{
+      html+=`<div class="fee-hist-row"><div class="fee-hist-name">${CARD_LABELS[r.ck]}</div>${feeSparkline(r.hist)}</div>`;
+    });
+  }
+
   let any=false;
   for(let i=0;i<12;i++){
     const mo=(CM+i)%12;
@@ -1550,7 +1581,7 @@ export function renderRenewalCalendar(){
         <div class="rc-date">${MONTHS[r.fm]} ${r.fd}</div>
         <div class="rc-card">${CARD_LABELS[r.ck]}</div>
         <div class="rc-days ${cls}">in ${r.days}d</div>
-        <div class="rc-fee">$${r.fee}</div>
+        <div class="rc-fee">$${r.fee}${r.raised?`<span class="rc-up" title="up from $${r.prevFee}">▲</span>`:''}</div>
       </div>`;
     });
   }
@@ -1558,9 +1589,55 @@ export function renderRenewalCalendar(){
   set(html);
 }
 
+// ── Render: year-end export report ─────────────────────────────────────────
+function csvCell(v){ const s=String(v); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }
+export function renderExport(){
+  const keys=getVisibleCardKeys();
+  const year=CY;
+  const saved=state.selectedYear; state.selectedYear=year;
+  const rows=keys.map(ck=>{
+    const fee=getFee(ck,year);
+    const {captured,missed,total}=calcStats(ck,c=>getYTDPeriods(c),isYTDCurrent);
+    return {ck,label:CARD_LABELS[ck],fee,captured,missed,total,net:captured-fee,grade:getROIGrade(fee,ck)};
+  });
+  state.selectedYear=saved;
+  const tot=rows.reduce((a,r)=>({fee:a.fee+r.fee,captured:a.captured+r.captured,missed:a.missed+r.missed,total:a.total+r.total,net:a.net+r.net}),{fee:0,captured:0,missed:0,total:0,net:0});
+  state._exportRows=rows; state._exportYear=year;
+  const cell=(r)=>{ const pct=r.total>0?Math.round(r.captured/r.total*100):0;
+    return `<td>${r.label}</td><td>$${r.fee.toLocaleString()}</td><td>$${r.captured.toFixed(0)}</td><td>$${r.missed.toFixed(0)}</td><td class="${r.net>=0?'pos':'neg'}">${r.net>=0?'+':'−'}$${Math.abs(r.net).toFixed(0)}</td><td>${pct}%</td><td>${r.grade}</td>`; };
+  const totPct=tot.total>0?Math.round(tot.captured/tot.total*100):0;
+  let html=`<div class="export-actions">
+    <button class="settings-btn settings-btn-primary" onclick="downloadBenefitsCSV()">Download CSV</button>
+    <button class="settings-btn" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+  <div class="export-report">
+    <div class="export-head"><h2>Benefits Report — ${year}</h2><p>Perks Ledger · generated ${new Date().toLocaleDateString()}</p></div>
+    <table class="export-table">
+      <thead><tr><th>Card</th><th>Annual Fee</th><th>Captured</th><th>Missed</th><th>Net vs Fee</th><th>Capture</th><th>ROI</th></tr></thead>
+      <tbody>
+        ${rows.map(r=>`<tr>${cell(r)}</tr>`).join('')}
+        <tr class="export-total"><td>Total</td><td>$${tot.fee.toLocaleString()}</td><td>$${tot.captured.toFixed(0)}</td><td>$${tot.missed.toFixed(0)}</td><td class="${tot.net>=0?'pos':'neg'}">${tot.net>=0?'+':'−'}$${Math.abs(tot.net).toFixed(0)}</td><td>${totPct}%</td><td></td></tr>
+      </tbody>
+    </table>
+    <p class="export-foot">Captured and Missed reflect calendar-year-to-date. Net vs Fee = captured − annual fee. ROI grade is the projected full-card-year capture vs fee.</p>
+  </div>`;
+  set(html);
+}
+window.downloadBenefitsCSV=function(){
+  const rows=state._exportRows||[], year=state._exportYear||CY;
+  const lines=[['Card','Annual Fee','Captured','Missed','Net vs Fee','Capture %','ROI Grade'].join(',')];
+  rows.forEach(r=>{ const pct=r.total>0?Math.round(r.captured/r.total*100):0;
+    lines.push([csvCell(r.label),r.fee,r.captured.toFixed(0),r.missed.toFixed(0),(r.captured-r.fee).toFixed(0),pct,r.grade].join(',')); });
+  const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=`perks-ledger-${year}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','history-log','recap','heatmap','roi','trends','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar'];
+  const _analyticsViews=['compare','history-log','recap','heatmap','roi','trends','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar','export-report'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -1595,5 +1672,6 @@ export function render(){
   else if(state.activeView==='fee-optimizer') renderFeeOptimizer();
   else if(state.activeView==='card-simulator') renderCardSimulator();
   else if(state.activeView==='renewal-calendar') renderRenewalCalendar();
+  else if(state.activeView==='export-report') renderExport();
   setTimeout(()=>{ updateTabBadge(); updateCardBadges(); },200);
 }

@@ -15,6 +15,12 @@ import { render, getVisibleCardKeys, renderCurrent, renderRecap, haptic, checkAl
 import { checkBadges, getEarnedBadges, getEarnedAt, getUnseenBadges, markAllSeen, BADGE_DEFS, getApplicableBadgeDefs, TIER_COLORS, backfill2025Badges, unlockReviewedBadges } from './badges.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee, getBAmount, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
 
+// Web Push: paste the base64url VAPID PUBLIC key here (same one set as the
+// send-push function's VAPID_PUBLIC_KEY secret). Generate with:
+//   npx web-push generate-vapid-keys
+// Leaving this blank disables the background-push toggle.
+const VAPID_PUBLIC_KEY = '';
+
 // ── Splash: show login only if no cached session ──────────────────────────
 try {
   const hasSession=Object.keys(localStorage).some(k=>k.startsWith('sb-')&&k.endsWith('-auth-token'));
@@ -352,6 +358,16 @@ function buildNotifSettingsHTML(){
       <button class="notif-toggle ${isOn?'on':''}" onclick="toggleNotifType('${r.key}',this)"></button>
     </div>`;
   });
+  if(pushSupported()){
+    const pon=localStorage.getItem('push-enabled')==='1';
+    html+=`<div class="notif-setting-row" style="border-top:1px solid var(--border);margin-top:8px;padding-top:12px">
+      <div>
+        <div class="notif-setting-label">Background push</div>
+        <div class="notif-setting-sub">Reminders even when the app is closed${VAPID_PUBLIC_KEY?'':' — not configured yet'}</div>
+      </div>
+      <button class="notif-toggle ${pon?'on':''}" onclick="togglePush(this)"></button>
+    </div>`;
+  }
   html+=`<button class="settings-btn" style="margin-top:12px;font-size:12px;color:var(--text-tertiary)" onclick="disableNotifications()">Turn off all notifications</button>`;
   return html;
 }
@@ -709,6 +725,7 @@ function setActiveView(primary){
   else if(primary==='fee-optimizer') state.activeView='fee-optimizer';
   else if(primary==='card-simulator') state.activeView='card-simulator';
   else if(primary==='renewal-calendar') state.activeView='renewal-calendar';
+  else if(primary==='export-report') state.activeView='export-report';
   else if(primary==='settings') state.activeView='settings';
   else if(primary==='more') state.activeView='more';
   else if(primary==='my-cards'){ openMyCards(); return; }
@@ -949,6 +966,59 @@ function firePerBenefitReminders(){
   }
 }
 if(localStorage.getItem('perks-notif')==='1'){ scheduleMonthlyReminder(); firePerBenefitReminders(); }
+
+// ── Web Push (background, app-closed) ──────────────────────────────────────
+function pushSupported(){ return 'serviceWorker' in navigator && 'PushManager' in window; }
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);
+  const arr=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+async function enablePush(){
+  if(!pushSupported()){ alert('Background push is not supported in this browser.'); return false; }
+  if(!VAPID_PUBLIC_KEY){ alert('Background push is not configured yet.'); return false; }
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted') return false;
+  const reg=await navigator.serviceWorker.ready;
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+  const uid=state.currentUser&&state.currentUser.id;
+  if(uid&&uid!=='demo'){
+    // delete+insert keeps the (user_id, endpoint) row unique without relying on upsert against a generated column
+    await sb.from('push_subscriptions').delete().eq('user_id',uid).eq('endpoint',sub.endpoint);
+    const {error}=await sb.from('push_subscriptions').insert({user_id:uid,subscription:sub.toJSON()});
+    if(error){ console.error('[push subscribe]',error.message); alert('Could not save push subscription.'); return false; }
+    await sb.from('user_profiles').update({push_enabled:true}).eq('user_id',uid);
+  }
+  localStorage.setItem('push-enabled','1');
+  return true;
+}
+async function disablePush(){
+  const uid=state.currentUser&&state.currentUser.id;
+  if(pushSupported()){
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub){
+      const endpoint=sub.endpoint;
+      await sub.unsubscribe();
+      if(uid&&uid!=='demo') await sb.from('push_subscriptions').delete().eq('user_id',uid).eq('endpoint',endpoint);
+    }
+  }
+  if(uid&&uid!=='demo') await sb.from('user_profiles').update({push_enabled:false}).eq('user_id',uid);
+  localStorage.setItem('push-enabled','0');
+}
+async function togglePush(btn){
+  const turningOn=!btn.classList.contains('on');
+  btn.disabled=true;
+  try{
+    if(turningOn){ if(await enablePush()) btn.classList.add('on'); }
+    else { await disablePush(); btn.classList.remove('on'); }
+  }catch(e){ console.error('togglePush',e); alert('Could not update background push.'); }
+  btn.disabled=false;
+}
 
 // ── Undo ──────────────────────────────────────────────────────────────────
 function showUndo(cardKey,id,pk,action){
@@ -1330,6 +1400,7 @@ const _DRAWER_ICONS={
   'fee-optimizer':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M5.5 11.5C6.3 12.4 7 13 8 13s2-.5 2-1.5-1-1.5-2-1.5-2-.5-2-1.5S6 7 8 7s1.5.5 2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
   'card-simulator':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="4.5" width="13" height="8.5" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="7" x2="8" y2="10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="6.25" y1="8.75" x2="9.75" y2="8.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 4.5V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   'renewal-calendar':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="2" y1="6.5" x2="14" y2="6.5" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="1.5" x2="5" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="1.5" x2="11" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  'export-report':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 1.5h5l3 3V14a.5.5 0 0 1-.5.5h-7A.5.5 0 0 1 4 14V2a.5.5 0 0 1 .5-.5z" stroke="currentColor" stroke-width="1.4"/><path d="M9 1.5V4.5h3" stroke="currentColor" stroke-width="1.4"/><line x1="6" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="6" y1="10.5" x2="10" y2="10.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
   'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
 };
 
@@ -1762,6 +1833,7 @@ function renderMore(){
     {view:'fee-optimizer',label:'Fee Optimizer'},
     {view:'card-simulator',label:'Card Simulator'},
     {view:'renewal-calendar',label:'Renewal Calendar'},
+    {view:'export-report',label:'Export Report'},
     {view:'compare',label:'Compare Cards'},
     {view:'roi',label:'ROI Scores'},
     {view:'trends',label:'Trends'},
@@ -2000,6 +2072,7 @@ window.filterSettingsCards=filterSettingsCards;
 window.scheduleMonthlyReminder=scheduleMonthlyReminder;
 window.disableNotifications=disableNotifications;
 window.toggleNotifType=toggleNotifType;
+window.togglePush=togglePush;
 window.toggleDigestEmail=toggleDigestEmail;
 window.isSkipped=isSkipped;
 window.renderRecap=renderRecap;
