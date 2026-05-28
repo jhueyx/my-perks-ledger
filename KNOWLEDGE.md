@@ -132,7 +132,7 @@ Cache-bust: increment version in `index.html` CSS/JS query strings (`?v=...`) an
 | `tracker_data` | One row per user — all benefit usage + extras in a single JSON column |
 | `user_profiles` | `user_id`, `cards[]`, `digest_*`, `push_enabled` — card selection + digest + push opt-in |
 | `benefit_log` | Append-only toggle history (used by History Log view) |
-| `push_subscriptions` | One row per device — VAPID push subscription JSON, RLS-scoped to user |
+| `perks_push_subscriptions` | One row per device — VAPID push subscription JSON, RLS-scoped to user (named with prefix to avoid collision with the Monitor app's `push_subscriptions` table in the same project) |
 
 RLS: users can only access their own rows. Anon/publishable key is safe to expose in frontend.
 

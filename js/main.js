@@ -991,8 +991,8 @@ async function enablePush(){
   const uid=state.currentUser&&state.currentUser.id;
   if(uid&&uid!=='demo'){
     // delete+insert keeps the (user_id, endpoint) row unique without relying on upsert against a generated column
-    await sb.from('push_subscriptions').delete().eq('user_id',uid).eq('endpoint',sub.endpoint);
-    const {error}=await sb.from('push_subscriptions').insert({user_id:uid,subscription:sub.toJSON()});
+    await sb.from('perks_push_subscriptions').delete().eq('user_id',uid).eq('endpoint',sub.endpoint);
+    const {error}=await sb.from('perks_push_subscriptions').insert({user_id:uid,subscription:sub.toJSON()});
     if(error){ console.error('[push subscribe]',error.message); alert('Could not save push subscription.'); return false; }
     // The send-push function reads digest_cache to build payloads, so prime it here
     // (otherwise the user would only get pushes if Email Digest is also enabled).
@@ -1012,7 +1012,7 @@ async function disablePush(){
     if(sub){
       const endpoint=sub.endpoint;
       await sub.unsubscribe();
-      if(uid&&uid!=='demo') await sb.from('push_subscriptions').delete().eq('user_id',uid).eq('endpoint',endpoint);
+      if(uid&&uid!=='demo') await sb.from('perks_push_subscriptions').delete().eq('user_id',uid).eq('endpoint',endpoint);
     }
   }
   if(uid&&uid!=='demo') await sb.from('user_profiles').update({push_enabled:false}).eq('user_id',uid);

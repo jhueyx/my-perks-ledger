@@ -74,7 +74,7 @@ Deno.serve(async () => {
     if (!payload) { skipped++; continue; }
 
     const { data: subs } = await supabase
-      .from('push_subscriptions')
+      .from('perks_push_subscriptions')
       .select('id, subscription')
       .eq('user_id', profile.user_id);
 
@@ -86,7 +86,7 @@ Deno.serve(async () => {
         const status = (e as { statusCode?: number }).statusCode;
         // 404/410 mean the subscription is dead — remove it.
         if (status === 404 || status === 410) {
-          await supabase.from('push_subscriptions').delete().eq('id', row.id);
+          await supabase.from('perks_push_subscriptions').delete().eq('id', row.id);
           pruned++;
         } else {
           console.error('push failed', profile.user_id, status, e);
