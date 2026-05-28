@@ -339,10 +339,11 @@ function buildNotifSettingsHTML(){
     {key:'notif-monthly',label:'Monthly reminders',sub:'Last 3 days of the month'},
     {key:'notif-quarterly',label:'Quarterly reminders',sub:'Last 5 days of each quarter'},
     {key:'notif-semiannual',label:'Semi-annual reminders',sub:'Last 2 weeks of each half-year'},
+    {key:'notif-perbenefit',label:'Per-benefit reminders',sub:'Each unclaimed benefit before it expires',defaultOff:true},
   ];
   let html=`<div class="settings-sub" style="margin-bottom:10px">Notifications enabled. Toggle individual reminder types below.</div>`;
   rows.forEach(r=>{
-    const isOn=localStorage.getItem(r.key)!=='0';
+    const isOn=r.defaultOff?localStorage.getItem(r.key)==='1':localStorage.getItem(r.key)!=='0';
     html+=`<div class="notif-setting-row">
       <div>
         <div class="notif-setting-label">${r.label}</div>
@@ -707,6 +708,7 @@ function setActiveView(primary){
   else if(primary==='badges') state.activeView='badges';
   else if(primary==='fee-optimizer') state.activeView='fee-optimizer';
   else if(primary==='card-simulator') state.activeView='card-simulator';
+  else if(primary==='renewal-calendar') state.activeView='renewal-calendar';
   else if(primary==='settings') state.activeView='settings';
   else if(primary==='more') state.activeView='more';
   else if(primary==='my-cards'){ openMyCards(); return; }
@@ -851,6 +853,7 @@ async function requestNotifications(){
   if(perm==='granted'){
     localStorage.setItem('perks-notif','1');
     scheduleMonthlyReminder();
+    firePerBenefitReminders();
     new Notification('Perks Ledger',{body:'Notifications enabled! You\'ll be reminded before monthly, quarterly, and semi-annual benefits expire.',icon:'apple-touch-icon.png'});
     if(state.activeView==='settings') renderSettings();
     else setActiveView('settings');
@@ -863,6 +866,7 @@ function disableNotifications(){
 function toggleNotifType(key,btn){
   const isOn=btn.classList.toggle('on');
   localStorage.setItem(key,isOn?'1':'0');
+  if(key==='notif-perbenefit'&&isOn) firePerBenefitReminders();
 }
 
 function scheduleMonthlyReminder(){
@@ -903,7 +907,48 @@ function scheduleMonthlyReminder(){
     if(t>0) fire(`notif-h-${CY}-${h}`,`$${t.toFixed(0)} in semi-annual benefits expiring soon!`);
   }
 }
-if(localStorage.getItem('perks-notif')==='1') scheduleMonthlyReminder();
+
+// Per-benefit reminders (opt-in): one notification per unclaimed benefit whose
+// current period is within its cadence's expiry window. Deduped per benefit+period.
+function firePerBenefitReminders(){
+  if(localStorage.getItem('perks-notif')!=='1') return;
+  if(localStorage.getItem('notif-perbenefit')!=='1') return;
+  if(!('Notification' in window)||Notification.permission!=='granted') return;
+  const now=new Date();
+  const THRESH={monthly:3,quarterly:7,'cal-semi-annual':14,'semi-annual':14,annual:30,'feb-annual':30};
+  const cands=[];
+  getVisibleCardKeys().forEach(ck=>{
+    CARDS[ck].sections.forEach(s=>{
+      const thr=THRESH[s.cadence]; if(thr===undefined) return;
+      const ps=getCardYearPeriods(ck,s.cadence);
+      const cur=ps.find(p=>isPCurrent(s.cadence,p));
+      if(!cur) return;
+      const eM=cur.endM!==undefined?cur.endM:cur.calM;
+      const eY=cur.endY!==undefined?cur.endY:cur.calY;
+      const endDate=new Date(eY,eM+1,0);
+      const daysLeft=Math.round((endDate-now)/86400000);
+      if(daysLeft<0||daysLeft>thr) return;
+      s.benefits.forEach(b=>{
+        if(isBNotAvailable(b,CY,cur)||isBExpired(b,cur)) return;
+        if(isGloballySnoozed(ck,b.id)||isSkipped(ck,b.id,cur.pk)) return;
+        if(isUsed(ck,b.id,cur.pk)) return;
+        cands.push({ck,b,pk:cur.pk,daysLeft});
+      });
+    });
+  });
+  cands.sort((a,b)=>a.daysLeft-b.daysLeft);
+  let fired=0;
+  for(const {ck,b,pk,daysLeft} of cands){
+    if(fired>=6) break;
+    const dkey=`notifb-${ck}-${b.id}-${pk}`;
+    if(localStorage.getItem(dkey)) continue;
+    const when=daysLeft<=0?'expires today':`${daysLeft} day${daysLeft===1?'':'s'} left`;
+    new Notification('Perks Ledger',{body:`$${b.amount||0} ${b.name} (${CARD_LABELS[ck]}) — ${when}`,icon:'apple-touch-icon.png'});
+    localStorage.setItem(dkey,'1');
+    fired++;
+  }
+}
+if(localStorage.getItem('perks-notif')==='1'){ scheduleMonthlyReminder(); firePerBenefitReminders(); }
 
 // ── Undo ──────────────────────────────────────────────────────────────────
 function showUndo(cardKey,id,pk,action){
@@ -1284,6 +1329,7 @@ const _DRAWER_ICONS={
   'badges':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3 3.5.5-2.5 2.4.6 3.6L8 10l-3.1 1.5.6-3.6L3 5.5l3.5-.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   'fee-optimizer':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M5.5 11.5C6.3 12.4 7 13 8 13s2-.5 2-1.5-1-1.5-2-1.5-2-.5-2-1.5S6 7 8 7s1.5.5 2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
   'card-simulator':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="4.5" width="13" height="8.5" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="7" x2="8" y2="10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="6.25" y1="8.75" x2="9.75" y2="8.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 4.5V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  'renewal-calendar':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="2" y1="6.5" x2="14" y2="6.5" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="1.5" x2="5" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="1.5" x2="11" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
 };
 
@@ -1715,6 +1761,7 @@ function renderMore(){
     {view:'badges',label:'Achievements'},
     {view:'fee-optimizer',label:'Fee Optimizer'},
     {view:'card-simulator',label:'Card Simulator'},
+    {view:'renewal-calendar',label:'Renewal Calendar'},
     {view:'compare',label:'Compare Cards'},
     {view:'roi',label:'ROI Scores'},
     {view:'trends',label:'Trends'},

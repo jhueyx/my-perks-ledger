@@ -48,7 +48,12 @@ Cache-bust: increment version in `index.html` CSS/JS query strings (`?v=...`) an
 
 ## Changelog
 
-### v2.2 (current, ~May 2026)
+### v2.3 (current, ~May 2026)
+- **Renewal Calendar** (`renderRenewalCalendar()` in `views.js`, nav `renewal-calendar`) — 12-month timeline of every visible card's fee/anniversary date (via `getCardFeeMonth/Day` + `daysUntilFee`-style calc), grouped by month from the current month forward, sorted by days-until; shows fee + urgency color (≤30d / ≤60d). Rows tap through to that card (`goToCardPeriod`). Wired into `render()` dispatch, `_analyticsViews`, `setActiveView`, More grid, `_DRAWER_ICONS`. CSS: `.rc-*` classes.
+- **Per-benefit reminders** (`firePerBenefitReminders()` in `main.js`) — opt-in (`notif-perbenefit`, default off). For each unclaimed, non-snoozed, non-skipped, available benefit whose current period is within its cadence's expiry window (monthly 3d / quarterly 7d / semi 14d / annual 30d), fires one local notification, capped at 6, deduped per `notifb-{card}-{benefit}-{pk}`. Fires on load, on enable, and when the toggle is switched on.
+- SW cache bumped to v31.
+
+### v2.2 (~May 2026)
 - **Card Simulator** (`renderCardSimulator()` in `views.js`, nav `card-simulator`) — projects annual value for any unowned card using the user's real per-category capture rates derived from existing card history (e.g. dining at 80% applies 80%, not 100%). Renders grade A–D, net projected vs fee, layered max-vs-projected bar, per-category behavior profile, and per-benefit breakdown with claim-rate annotation. `window.setSimCard(k)` switches the simulated card. Added to desktop drawer + mobile bottom sheet nav. SW cache bumped to v27.
 
 ### v2.1 (~May 2026)
@@ -130,11 +135,10 @@ RLS: users can only access their own rows. Anon/publishable key is safe to expos
 
 ### High Value
 - **Export to CSV/PDF** — share a year-end benefits report; useful for budgeting and tax context
-- **Benefit-specific push notifications** — not just end-of-month, but per-benefit: "Your Peloton credit resets in 3 days"
+- **True background Web Push** — per-benefit reminders already exist as *local* notifications (fire only while app is open); a backend (VAPID + push-subscription table + Edge Function on cron + SW push handler) would deliver them when the app is closed
 - **Auto-detection via Plaid/bank feed** — detect when a statement credit posts and auto-mark it used
 - **"Best card for this purchase" widget** — enter a merchant/category and see which card earns most
 - **Annual fee tracker** — alert when a fee is increasing (CSR went $550→$795); historical fee chart
-- **Renewal calendar** — a unified view of all card fee dates across the year
 
 ### Medium Value
 - **Google / Apple Sign-In** — reduce signup friction; still uses Supabase Auth under the hood

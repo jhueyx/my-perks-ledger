@@ -1521,9 +1521,46 @@ export function renderCardSimulator(){
 
 window.setSimCard=function(k){state._simCard=k;renderCardSimulator();};
 
+// ── Render: renewal calendar ───────────────────────────────────────────────
+export function renderRenewalCalendar(){
+  const keys=getVisibleCardKeys();
+  const now=new Date(), startToday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const rows=keys.map(ck=>{
+    const fm=getCardFeeMonth(ck), fd=getCardFeeDay(ck);
+    let feeDate=new Date(startToday.getFullYear(),fm,fd);
+    if(feeDate<startToday) feeDate=new Date(startToday.getFullYear()+1,fm,fd);
+    const days=Math.round((feeDate-startToday)/86400000);
+    return {ck,fm,fd,feeDate,days,fee:getFee(ck,feeDate.getFullYear())};
+  }).sort((a,b)=>a.days-b.days);
+  const totalFees=rows.reduce((t,r)=>t+(r.fee||0),0);
+  const next=rows[0];
+  let html=`<div class="banner"><strong>Renewal Calendar</strong> — ${rows.length} card${rows.length===1?'':'s'} · $${totalFees.toLocaleString()} in annual fees</div>`;
+  if(next) html+=`<p style="font-size:12px;color:var(--text-tertiary);margin:0 0 12px">Next up: <strong style="color:var(--text)">${CARD_LABELS[next.ck]}</strong> in ${next.days} day${next.days===1?'':'s'} · $${next.fee}</p>`;
+  let any=false;
+  for(let i=0;i<12;i++){
+    const mo=(CM+i)%12;
+    const inMonth=rows.filter(r=>r.fm===mo).sort((a,b)=>a.fd-b.fd);
+    if(!inMonth.length) continue;
+    any=true;
+    html+=`<div class="rc-month">${MONTHS_FULL[mo]}</div>`;
+    inMonth.forEach(r=>{
+      const urgent=r.days<=30, soon=r.days<=60;
+      const cls=urgent?'rc-urgent':soon?'rc-soon':'';
+      html+=`<div class="rc-row" onclick="goToCardPeriod('${r.ck}')">
+        <div class="rc-date">${MONTHS[r.fm]} ${r.fd}</div>
+        <div class="rc-card">${CARD_LABELS[r.ck]}</div>
+        <div class="rc-days ${cls}">in ${r.days}d</div>
+        <div class="rc-fee">$${r.fee}</div>
+      </div>`;
+    });
+  }
+  if(!any) html+=`<p style="color:var(--text-tertiary);font-size:13px">No cards selected.</p>`;
+  set(html);
+}
+
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','history-log','recap','heatmap','roi','trends','digest','net-value','badges','fee-optimizer','card-simulator'];
+  const _analyticsViews=['compare','history-log','recap','heatmap','roi','trends','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -1557,5 +1594,6 @@ export function render(){
   else if(state.activeView==='net-value') renderNetValue();
   else if(state.activeView==='fee-optimizer') renderFeeOptimizer();
   else if(state.activeView==='card-simulator') renderCardSimulator();
+  else if(state.activeView==='renewal-calendar') renderRenewalCalendar();
   setTimeout(()=>{ updateTabBadge(); updateCardBadges(); },200);
 }
