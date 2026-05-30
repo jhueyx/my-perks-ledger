@@ -1994,15 +1994,44 @@ export function buildAdvisorContext(){
     lines.push('');
   }
 
-  // Performance
-  lines.push('Card year performance:');
+  // Current year performance
+  const monthsElapsedMap={};
+  lines.push(`Current card year performance (${MONTHS[CM]} ${CY}):`);
   keys.forEach(k=>{
     const {captured,total}=calcStats(k,c=>getCardYearPeriods(k,c),isPCurrent);
     const proj=getProjectedCapture(k);
     const fee=getFee(k,CY);
     const rate=total>0?Math.round(captured/total*100):0;
-    lines.push(`- ${CARD_LABELS[k]}: ${rate}% captured ($${captured.toFixed(0)}/$${total.toFixed(0)} avail, $${fee}/yr fee, $${proj.toFixed(0)} projected)`);
+    const mo=getCardYearMonthsElapsed(k);
+    monthsElapsedMap[k]=mo;
+    const net=proj-fee;
+    lines.push(`- ${CARD_LABELS[k]}: ${rate}% captured so far ($${captured.toFixed(0)}/$${total.toFixed(0)} avail), projected $${proj.toFixed(0)}, fee $${fee}, projected net ${net>=0?'+':''}$${net.toFixed(0)}, ${mo}/12 months into card year`);
   });
+  lines.push('');
+
+  // Previous year performance
+  const savedYear=state.selectedYear;
+  state.selectedYear=CY-1;
+  try{
+    const lastYearLines=[];
+    keys.forEach(k=>{
+      const {captured:lc,total:lt}=calcStats(k,c=>getYTDPeriods(c),()=>false);
+      if(lt>0){
+        const lf=getFee(k,CY-1);
+        const lr=Math.round(lc/lt*100);
+        const ln=lc-lf;
+        lastYearLines.push(`- ${CARD_LABELS[k]}: ${lr}% captured ($${lc.toFixed(0)}/$${lt.toFixed(0)}), fee $${lf}, net ${ln>=0?'+':''}$${ln.toFixed(0)}`);
+      }
+    });
+    if(lastYearLines.length){
+      lines.push(`Previous year (${CY-1}) actual performance:`);
+      lastYearLines.forEach(l=>lines.push(l));
+      lines.push('');
+    }
+  }finally{
+    state.selectedYear=savedYear;
+  }
+
   return lines.join('\n');
 }
 
@@ -2010,12 +2039,13 @@ export function renderAIAdvisor(){
   const history=state._advisorHistory||[];
   const loading=state._advisorLoading||false;
 
-  const quickBtns=[
+  const quickQs=[
     'What should I use this month?',
     'Which benefits expire soon?',
     'Am I getting enough value?',
     'What should I prioritize?',
-  ].map(q=>`<button class="adv-quick" data-q="${escapeHtml(q)}" onclick="window.askAdvisor(this.dataset.q)">${q}</button>`).join('');
+  ];
+  const quickBtns=quickQs.map(q=>`<button class="adv-quick" data-q="${escapeHtml(q)}">${q}</button>`).join('');
 
   let responseHtml='';
   if(loading){
@@ -2032,14 +2062,22 @@ export function renderAIAdvisor(){
   set(`<div class="banner"><strong>AI Advisor</strong> — powered by Claude</div>
     <div class="adv-quick-row">${quickBtns}</div>
     <div class="adv-input-row">
-      <input type="text" id="adv-input" class="adv-input" placeholder="Ask about your benefits…" onkeydown="if(event.key==='Enter')window.sendAdvisor()">
-      <button class="adv-send" onclick="window.sendAdvisor()">→</button>
+      <input type="text" id="adv-input" class="adv-input" placeholder="Ask about your benefits…">
+      <button class="adv-send" id="adv-send-btn">→</button>
     </div>
     <div class="adv-response" id="adv-response">${responseHtml}</div>
     <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:8px;padding-bottom:8px">Claude has access to your card data and capture rates · answers are estimates</div>
   `, ()=>{
+    document.querySelectorAll('.adv-quick').forEach(btn=>{
+      btn.addEventListener('click',()=>window.askAdvisor(btn.dataset.q));
+    });
+    const sendBtn=document.getElementById('adv-send-btn');
+    if(sendBtn) sendBtn.addEventListener('click',()=>window.sendAdvisor());
     const inp=document.getElementById('adv-input');
-    if(inp) inp.focus();
+    if(inp){
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter') window.sendAdvisor(); });
+      inp.focus();
+    }
   });
 }
 
