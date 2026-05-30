@@ -1959,6 +1959,188 @@ window.downloadBenefitsCSV=function(){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 
+// ── Report Card (Annual Wrap) ──────────────────────────────────────────────
+export function renderWrap(){
+  const keys=getVisibleCardKeys();
+  let totalCaptured=0,totalFees=0,totalClaims=0;
+  let bestCard=null,bestCapRate=-1;
+  let biggestWin={name:'',card:'',amt:0};
+  const monthTotals={};
+  const savedYear=state.selectedYear;
+  state.selectedYear=CY;
+  try{
+    keys.forEach(k=>{
+      totalFees+=getFee(k,CY);
+      const{captured,total}=calcStats(k,c=>getYTDPeriods(c),isYTDCurrent);
+      totalCaptured+=captured;
+      const rate=total>0?captured/total:0;
+      if(rate>bestCapRate){bestCapRate=rate;bestCard=k;}
+      CARDS[k].sections.forEach(s=>{
+        if(s.cadence==='monthly'){
+          s.benefits.forEach(b=>{
+            for(let m=0;m<=CM;m++){
+              const pk=`${CY}-m${m}`;
+              if(isUsed(k,b.id,pk)){
+                const amt=(b.decAmount&&m===11)?b.decAmount:b.amount;
+                monthTotals[m]=(monthTotals[m]||0)+amt;
+                totalClaims++;
+                if(amt>biggestWin.amt) biggestWin={name:b.name,card:CARD_LABELS[k],amt};
+              }
+            }
+          });
+        } else {
+          getYTDPeriods(s.cadence).forEach(p=>{
+            if(isPFuture(p)) return;
+            s.benefits.forEach(b=>{
+              if(isBExpired(b,p)||isBNotAvailable(b,CY,p)) return;
+              if(isUsed(k,b.id,p.pk)){
+                totalClaims++;
+                const amt=getBAmount(b,p);
+                if(amt>biggestWin.amt) biggestWin={name:b.name,card:CARD_LABELS[k],amt};
+              }
+            });
+          });
+        }
+      });
+    });
+  }finally{state.selectedYear=savedYear;}
+
+  const netValue=totalCaptured-totalFees;
+  const inProfit=netValue>=0;
+  const grade=netValue>=0?'A':netValue>=-500?'B':netValue>=-1000?'C':'D';
+  const gradeColor=grade==='A'?'#4ade80':grade==='B'?'var(--blue)':grade==='C'?'var(--gold)':'#f87171';
+  const capPct=totalFees>0?Math.round(totalCaptured/totalFees*100):0;
+  const bestMonthEntry=Object.entries(monthTotals).sort((a,b)=>b[1]-a[1])[0];
+  const bestMonthName=bestMonthEntry?MONTHS[parseInt(bestMonthEntry[0])]:'—';
+  const bestMonthAmt=bestMonthEntry?bestMonthEntry[1]:0;
+
+  set(`<div class="banner"><strong>Report Card</strong> — ${CY} · through ${MONTHS[CM]}</div>
+  <div class="wrap-card">
+    <div class="wrap-header">
+      <div class="wrap-title">PERKS LEDGER</div>
+      <div class="wrap-year">${CY} Annual Report Card · through ${MONTHS[CM]}</div>
+    </div>
+    <div class="wrap-hero">
+      <div class="wrap-hero-label">Total Value Captured</div>
+      <div class="wrap-hero-val">$${totalCaptured.toFixed(0)}</div>
+      <div class="wrap-hero-sub">${capPct}% of $${totalFees} in annual fees</div>
+    </div>
+    <div class="wrap-grid">
+      <div class="wrap-stat">
+        <div class="wrap-stat-val" style="color:${inProfit?'#4ade80':'#f87171'}">${inProfit?'+':''}$${netValue.toFixed(0)}</div>
+        <div class="wrap-stat-lbl">Net Value</div>
+      </div>
+      <div class="wrap-stat">
+        <div class="wrap-stat-val" style="color:${gradeColor}">${grade}</div>
+        <div class="wrap-stat-lbl">Portfolio Grade</div>
+      </div>
+      <div class="wrap-stat">
+        <div class="wrap-stat-val">${bestCard?CARD_SHORT_LABELS[bestCard]:'—'}</div>
+        <div class="wrap-stat-lbl">Top Card · ${Math.round(bestCapRate*100)}%</div>
+      </div>
+      <div class="wrap-stat">
+        <div class="wrap-stat-val">${bestMonthName}</div>
+        <div class="wrap-stat-lbl">Best Month · $${bestMonthAmt}</div>
+      </div>
+    </div>
+    ${biggestWin.amt>0?`<div class="wrap-win">
+      <div class="wrap-win-label">✦ Biggest Win</div>
+      <div class="wrap-win-name">${biggestWin.name}</div>
+      <div class="wrap-win-card">${biggestWin.card} · $${biggestWin.amt}</div>
+    </div>`:''}
+    <div class="wrap-footer">
+      <span>${totalClaims} claims · ${keys.length} card${keys.length!==1?'s':''}</span>
+      <span>perks.hueyventures.org</span>
+    </div>
+  </div>
+  <div class="wrap-actions">
+    <button class="wrap-share-btn" id="wrap-share-btn">Share</button>
+    <button class="wrap-print-btn" onclick="window.print()">Save PDF</button>
+  </div>
+  <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:8px;padding-bottom:8px">Calendar year ${CY} · YTD through ${MONTHS[CM]}</div>`,
+  ()=>{
+    const btn=document.getElementById('wrap-share-btn');
+    if(!btn) return;
+    btn.addEventListener('click',()=>{
+      const text=`My ${CY} Credit Card Report Card 🏆\n\n`+
+        `💰 Captured: $${totalCaptured.toFixed(0)}\n`+
+        `📊 Net: ${inProfit?'+':''}$${netValue.toFixed(0)}\n`+
+        `🏅 Grade: ${grade}\n`+
+        `⭐ Top Card: ${bestCard?CARD_LABELS[bestCard]:'—'}\n`+
+        `🎯 ${totalClaims} claims made\n\n`+
+        `Tracked with Perks Ledger`;
+      if(navigator.share) navigator.share({title:`${CY} Card Report Card`,text});
+      else navigator.clipboard?.writeText(text).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Share',2000);});
+    });
+  });
+}
+
+// ── Benefit Alerts ─────────────────────────────────────────────────────────
+export function computeAlerts(userKeySet){
+  const alerts=[];
+  [...userKeySet].forEach(k=>{
+    const card=CARDS[k];
+    if(!card.historicalFees) return;
+    const years=Object.keys(card.historicalFees).map(Number).sort();
+    for(let i=1;i<years.length;i++){
+      const from=card.historicalFees[years[i-1]],to=card.historicalFees[years[i]];
+      if(from!==to) alerts.push({id:`fc_${k}_${years[i]}`,type:'fee_change',card:k,year:years[i],from,to,delta:to-from});
+    }
+    const ly=Math.max(...years);
+    if(card.historicalFees[ly]!==card.fee) alerts.push({id:`fc_${k}_now`,type:'fee_change',card:k,year:CY,from:card.historicalFees[ly],to:card.fee,delta:card.fee-card.historicalFees[ly]});
+  });
+  [...userKeySet].forEach(k=>{
+    CARDS[k].sections.forEach(s=>{
+      s.benefits.forEach(b=>{
+        if(b.startsFrom&&b.startsFrom>=CY-1) alerts.push({id:`nb_${b.id}`,type:'new_benefit',card:k,benefit:b.name,amount:b.amount,since:b.startsFrom,cadence:s.cadence});
+      });
+    });
+  });
+  [...userKeySet].forEach(k=>{
+    CARDS[k].sections.forEach(s=>{
+      s.benefits.forEach(b=>{
+        if(!b.expiresAfter) return;
+        const{y,h}=b.expiresAfter;
+        if(y*12+(h===0?5:11)>=CY*12+CM) alerts.push({id:`ex_${b.id}`,type:'expiring',card:k,benefit:b.name,amount:b.amount,expiryStr:`${h===0?'Jun':'Dec'} ${y}`});
+      });
+    });
+  });
+  return alerts;
+}
+
+export function renderBenefitAlerts(){
+  const keySet=new Set(getVisibleCardKeys());
+  const alerts=computeAlerts(keySet);
+  const feeChanges=alerts.filter(a=>a.type==='fee_change').sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta));
+  const newBens=alerts.filter(a=>a.type==='new_benefit').sort((a,b)=>b.since-a.since||b.amount-a.amount);
+  const expiring=alerts.filter(a=>a.type==='expiring');
+
+  let html=`<div class="banner"><strong>Benefit Alerts</strong> — changes & upcoming</div>`;
+  if(!alerts.length){set(html+`<div style="text-align:center;padding:40px 16px;color:var(--text-tertiary);font-size:13px">No recent changes detected for your cards.</div>`);return;}
+
+  if(feeChanges.length){
+    html+=`<div class="section-header"><span class="section-title">Fee changes</span></div>`;
+    feeChanges.forEach(({card,year,from,to,delta})=>{
+      const col=delta>0?'var(--red)':'var(--green)';
+      html+=`<div class="alert-row"><div class="alert-row-hdr"><span class="alert-card-name">${CARD_LABELS[card]}</span><span style="font-family:var(--mono);font-size:13px;font-weight:600;color:${col}">${delta>0?'+':''}$${delta}</span></div><div class="alert-detail">$${from} → $${to}${year!==CY?` · ${year}`:''}</div></div>`;
+    });
+  }
+  if(newBens.length){
+    html+=`<div class="section-header" style="margin-top:8px"><span class="section-title">New benefits (${CY-1}–${CY})</span></div>`;
+    newBens.forEach(({card,benefit,amount,since,cadence})=>{
+      const sfx=cadence==='monthly'?'/mo':cadence==='quarterly'?'/qtr':cadence.includes('semi')?'/half':'/yr';
+      html+=`<div class="alert-row"><div class="alert-row-hdr"><span class="alert-card-name">${CARD_LABELS[card]}</span><span class="green" style="font-family:var(--mono);font-size:11px;font-weight:600">NEW ${since}</span></div><div class="alert-detail">${benefit} · $${amount}${sfx}</div></div>`;
+    });
+  }
+  if(expiring.length){
+    html+=`<div class="section-header" style="margin-top:8px"><span class="section-title">Expiring soon</span></div>`;
+    expiring.forEach(({card,benefit,amount,expiryStr})=>{
+      html+=`<div class="alert-row"><div class="alert-row-hdr"><span class="alert-card-name">${CARD_LABELS[card]}</span><span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--gold)">ENDS ${expiryStr}</span></div><div class="alert-detail">${benefit} · $${amount}</div></div>`;
+    });
+  }
+  set(html);
+}
+
 // ── AI Advisor ─────────────────────────────────────────────────────────────
 export function buildAdvisorContext(){
   const keys=getVisibleCardKeys();
@@ -2102,7 +2284,7 @@ export function formatAdvisorMarkdown(text){
 
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','history-log','recap','heatmap','performance','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar','upgrade-advisor','ai-advisor'];
+  const _analyticsViews=['compare','history-log','recap','heatmap','performance','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar','upgrade-advisor','ai-advisor','wrap','benefit-alerts'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -2137,5 +2319,7 @@ export function render(){
   else if(state.activeView==='renewal-calendar') renderRenewalCalendar();
   else if(state.activeView==='upgrade-advisor') renderUpgradeAdvisor();
   else if(state.activeView==='ai-advisor') renderAIAdvisor();
+  else if(state.activeView==='wrap') renderWrap();
+  else if(state.activeView==='benefit-alerts') renderBenefitAlerts();
   setTimeout(()=>{ updateTabBadge(); updateCardBadges(); },200);
 }

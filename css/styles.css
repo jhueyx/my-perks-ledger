@@ -2635,6 +2635,46 @@
   .adv-list { margin: 4px 0; padding-left: 18px; }
   .adv-list li { margin-bottom: 4px; }
 
+  /* Report Card */
+  .wrap-card {
+    background: linear-gradient(145deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+    border-radius: 16px; padding: 20px; color: #fff; position: relative; overflow: hidden;
+  }
+  .wrap-card::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle,rgba(200,146,42,0.18) 0%,transparent 65%);
+    pointer-events: none;
+  }
+  .wrap-header { margin-bottom: 18px; }
+  .wrap-title { font-size: 9px; font-family: var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+  .wrap-year { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .wrap-hero { text-align: center; margin: 4px 0 18px; }
+  .wrap-hero-label { font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.08em; }
+  .wrap-hero-val { font-size: 52px; font-weight: 800; font-family: var(--mono); color: #C8922A; line-height: 1.1; margin: 4px 0 2px; }
+  .wrap-hero-sub { font-size: 11px; color: rgba(255,255,255,0.4); font-family: var(--mono); }
+  .wrap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .wrap-stat { background: rgba(255,255,255,0.07); border-radius: 10px; padding: 11px 12px; }
+  .wrap-stat-val { font-size: 18px; font-weight: 700; font-family: var(--mono); color: #fff; }
+  .wrap-stat-lbl { font-size: 9px; font-family: var(--mono); color: rgba(255,255,255,0.4); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wrap-win { background: rgba(200,146,42,0.1); border: 1px solid rgba(200,146,42,0.25); border-radius: 10px; padding: 11px 13px; margin-bottom: 14px; }
+  .wrap-win-label { font-size: 9px; font-family: var(--mono); color: #C8922A; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .wrap-win-name { font-size: 14px; font-weight: 600; color: #fff; }
+  .wrap-win-card { font-size: 10px; color: rgba(255,255,255,0.45); font-family: var(--mono); margin-top: 1px; }
+  .wrap-footer { display: flex; justify-content: space-between; font-size: 9px; font-family: var(--mono); color: rgba(255,255,255,0.25); border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; }
+  .wrap-actions { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
+  .wrap-share-btn { background: var(--gold); color: #000; border: none; border-radius: 10px; padding: 10px 24px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .wrap-print-btn { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer; }
+
+  /* Benefit Alerts */
+  .alert-row { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .alert-row-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+  .alert-card-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .alert-detail { font-size: 11px; font-family: var(--mono); color: var(--text-secondary); }
+
+  /* Alert badge dot on Menu tab */
+  .tab-alert-dot { position: absolute; top: 5px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: none; border: 1.5px solid var(--bg); }
+
   /* Upgrade Advisor */
   .ua-card {
     background: var(--surface); border: 1.5px solid var(--border);
@@ -2669,4 +2709,7 @@
     .export-report, .export-report * { visibility: visible; }
     .export-report { position: absolute; left: 0; top: 0; width: 100%; border: none; padding: 0; }
     .export-actions { display: none !important; }
+    .wrap-card, .wrap-card * { visibility: visible !important; }
+    .wrap-card { position: absolute; left: 0; top: 0; width: 100% !important; border-radius: 0; }
+    .wrap-actions { display: none !important; }
   }
