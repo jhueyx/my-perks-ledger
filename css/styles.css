@@ -2561,6 +2561,80 @@
   .export-total td { font-weight: 700; border-top: 2px solid var(--border); border-bottom: none; }
   .export-foot { margin: 12px 0 0; font-size: 10px; color: var(--text-tertiary); line-height: 1.5; }
 
+  /* Points Balances */
+  .pts-combined {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; text-align: center;
+  }
+  .pts-combined-label { font-size: 10px; font-family: var(--mono); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.07em; }
+  .pts-combined-val { font-size: 24px; font-weight: 700; font-family: var(--mono); color: var(--green); margin: 2px 0; }
+  .pts-combined-sub { font-size: 11px; color: var(--text-secondary); }
+  .pts-row {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .pts-info { flex: 1; min-width: 0; }
+  .pts-name { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pts-cards { font-size: 10px; font-family: var(--mono); color: var(--text-tertiary); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pts-inputs { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .pts-balance-input {
+    width: 72px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 6px; font-size: 11px; font-family: var(--mono);
+    color: var(--text); text-align: right;
+  }
+  .pts-val-input {
+    width: 40px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 6px; font-size: 11px; font-family: var(--mono);
+    color: var(--text); text-align: right;
+  }
+  .pts-sep, .pts-cpp { font-size: 11px; color: var(--text-tertiary); }
+  .pts-est { font-size: 13px; font-family: var(--mono); font-weight: 600; flex-shrink: 0; min-width: 36px; text-align: right; }
+
+  /* AI Advisor */
+  .adv-quick-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .adv-quick {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 6px 12px; font-size: 11px; font-family: var(--mono); color: var(--text-secondary);
+    cursor: pointer; transition: border-color 0.15s, color 0.15s;
+  }
+  .adv-quick:hover { border-color: var(--gold); color: var(--text); }
+  .adv-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .adv-input {
+    flex: 1; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--text);
+    font-family: var(--body);
+  }
+  .adv-input:focus { outline: none; border-color: var(--gold); }
+  .adv-send {
+    background: var(--gold); color: #000; border: none; border-radius: 10px;
+    padding: 10px 16px; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .adv-response { min-height: 80px; }
+  .adv-placeholder { font-size: 13px; color: var(--text-tertiary); text-align: center; padding: 24px 0; }
+  .adv-loading { display: flex; gap: 6px; justify-content: center; padding: 24px 0; }
+  .adv-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--gold);
+    animation: adv-bounce 1.2s infinite ease-in-out;
+  }
+  .adv-dot:nth-child(2) { animation-delay: 0.2s; }
+  .adv-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes adv-bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+  .adv-q {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 12px; font-size: 13px; font-weight: 500; color: var(--text);
+    margin-bottom: 8px;
+  }
+  .adv-a {
+    background: var(--bg); border-left: 3px solid var(--gold);
+    padding: 10px 14px; border-radius: 0 10px 10px 0; margin-bottom: 16px;
+    font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+  }
+  .adv-a .adv-p { margin: 0 0 6px; }
+  .adv-a .adv-p:last-child { margin-bottom: 0; }
+  .adv-list { margin: 4px 0; padding-left: 18px; }
+  .adv-list li { margin-bottom: 4px; }
+
   /* Upgrade Advisor */
   .ua-card {
     background: var(--surface); border: 1.5px solid var(--border);

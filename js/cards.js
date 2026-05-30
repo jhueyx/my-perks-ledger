@@ -230,6 +230,18 @@ export const BENEFIT_CATEGORIES={
   abizg_chatgpt:'entertainment', abizp_chatgpt:'entertainment',
 };
 
+export const POINTS_PROGRAMS={
+  membership_rewards:{name:'Amex Membership Rewards',centsPerPt:2.0,cards:['gold','platinum','amex_green','amex_biz_gold','amex_biz_plat']},
+  chase_ur:{name:'Chase Ultimate Rewards',centsPerPt:2.0,cards:['csr','chase_sapphire_pref']},
+  venture_miles:{name:'Capital One Venture Miles',centsPerPt:1.85,cards:['cap1_venture_x']},
+  hyatt_points:{name:'World of Hyatt Points',centsPerPt:1.7,cards:['chase_world_of_hyatt']},
+  united_miles:{name:'United MileagePlus',centsPerPt:1.4,cards:['chase_united_quest','chase_united_club']},
+  thankyou_points:{name:'Citi ThankYou Points',centsPerPt:1.8,cards:['citi_strata_prem']},
+  hilton_honors:{name:'Hilton Honors Points',centsPerPt:0.6,cards:['amex_hilton_honors']},
+  marriott_bonvoy:{name:'Marriott Bonvoy Points',centsPerPt:0.9,cards:['amex_marriott_brill']},
+  wf_rewards:{name:'Wells Fargo Rewards',centsPerPt:1.0,cards:['wf_premier_autograph']},
+};
+
 export const POINTS_MULTIPLIERS={
   gold:[
     {cat:'Dining (US & worldwide restaurants, up to $50K/yr)',pts:'4x'},

@@ -1,4 +1,4 @@
-import { CARDS, MONTHS, MONTHS_FULL, CARD_LABELS, CARD_SHORT_LABELS, CARD_CLS, BENEFIT_CATEGORIES, POINTS_MULTIPLIERS } from './cards.js';
+import { CARDS, MONTHS, MONTHS_FULL, CARD_LABELS, CARD_SHORT_LABELS, CARD_CLS, BENEFIT_CATEGORIES, POINTS_MULTIPLIERS, POINTS_PROGRAMS } from './cards.js';
 import { state, CY, CM, escapeHtml } from './state.js';
 import { isUsed, isCredited, toggleCredited, getEffectiveAmount, getNote, getPartialUsed, loadNotes, saveNotes, getNoteKey, isSkipped, isGloballySnoozed, isMonthSnoozed, getSnoozedUntil, getCardFeeMonth, getCardFeeDay, countSkipped, clearAllSkipped, loadSkipped } from './storage.js';
 import {
@@ -526,6 +526,46 @@ export function renderNetValue(){
       </div>
     </div>`;
   });
+
+  // Points balances section
+  const ptsBalances=JSON.parse(localStorage.getItem('perks-points-balances')||'{}');
+  const ptsVals=JSON.parse(localStorage.getItem('perks-points-valuations')||'{}');
+  const cardKeySet=new Set(CARD_KEYS);
+  const activeProgs=Object.entries(POINTS_PROGRAMS).filter(([,p])=>p.cards.some(c=>cardKeySet.has(c)));
+  if(activeProgs.length){
+    let totalPtsVal=0;
+    let progRows='';
+    activeProgs.forEach(([pid,prog])=>{
+      const bal=parseFloat(ptsBalances[pid])||0;
+      const cpp=ptsVals[pid]??prog.centsPerPt;
+      const est=bal*cpp/100;
+      totalPtsVal+=est;
+      const cardNames=prog.cards.filter(c=>cardKeySet.has(c)).map(c=>CARD_LABELS[c]).join(', ');
+      progRows+=`<div class="pts-row">
+        <div class="pts-info"><div class="pts-name">${prog.name}</div><div class="pts-cards">${cardNames}</div></div>
+        <div class="pts-inputs">
+          <input type="number" class="pts-balance-input" value="${bal||''}" placeholder="0"
+            oninput="window.savePointsBalance('${pid}',this.value)">
+          <span class="pts-sep">×</span>
+          <input type="number" class="pts-val-input" step="0.05" min="0.1" max="10" value="${cpp}"
+            oninput="window.savePointsValuation('${pid}',this.value)">
+          <span class="pts-cpp">¢</span>
+        </div>
+        <div class="pts-est" style="color:${est>0?'var(--green)':'var(--text-tertiary)'}">${est>0?'$'+est.toFixed(0):'—'}</div>
+      </div>`;
+    });
+    html+=`<div class="section-header" style="margin-top:4px"><span class="section-title">Points balances</span><span class="section-period">${totalPtsVal>0?'≈ $'+totalPtsVal.toFixed(0)+' est.':''}</span></div>`;
+    if(totalPtsVal>0){
+      const combined=totalCaptured+totalPtsVal;
+      html+=`<div class="pts-combined">
+        <div class="pts-combined-label">Credits + points total value</div>
+        <div class="pts-combined-val">$${combined.toFixed(0)}</div>
+        <div class="pts-combined-sub">$${totalCaptured.toFixed(0)} credits + $${totalPtsVal.toFixed(0)} points</div>
+      </div>`;
+    }
+    html+=progRows;
+    html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:8px;padding-bottom:8px">Point values are estimates · edit ¢/pt to use your own valuation</div>`;
+  }
   set(html);
 }
 
@@ -1919,9 +1959,112 @@ window.downloadBenefitsCSV=function(){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 
+// ── AI Advisor ─────────────────────────────────────────────────────────────
+export function buildAdvisorContext(){
+  const keys=getVisibleCardKeys();
+  const lines=[];
+  lines.push(`Today: ${MONTHS[CM]} ${new Date().getDate()}, ${CY}`);
+  lines.push(`Cards: ${keys.map(k=>CARD_LABELS[k]).join(', ')}`);
+  lines.push('');
+
+  // Unclaimed benefits by cadence bucket
+  const monthly=[], other=[];
+  keys.forEach(ck=>{
+    CARDS[ck].sections.forEach(s=>{
+      const pk=getCurrentPK(ck,s.cadence);
+      const p={calY:CY,calM:CM,m:CM,endM:CM,endY:CY};
+      s.benefits.forEach(b=>{
+        if(isBExpired(b,p)||isBNotAvailable(b,CY,p)||isGloballySnoozed(ck,b.id)) return;
+        if(isUsed(ck,b.id,pk)) return;
+        const amt=getBAmount(b,{m:CM});
+        const item=`${CARD_LABELS[ck]}: ${b.name} ($${amt})`;
+        if(s.cadence==='monthly') monthly.push(item);
+        else other.push(item);
+      });
+    });
+  });
+  if(monthly.length){
+    lines.push(`Unclaimed this month (expires ${MONTHS[CM]} 30):`);
+    monthly.forEach(i=>lines.push(`- ${i}`));
+    lines.push('');
+  }
+  if(other.length){
+    lines.push('Other unclaimed benefits:');
+    other.slice(0,8).forEach(i=>lines.push(`- ${i}`));
+    lines.push('');
+  }
+
+  // Performance
+  lines.push('Card year performance:');
+  keys.forEach(k=>{
+    const {captured,total}=calcStats(k,c=>getCardYearPeriods(k,c),isPCurrent);
+    const proj=getProjectedCapture(k);
+    const fee=getFee(k,CY);
+    const rate=total>0?Math.round(captured/total*100):0;
+    lines.push(`- ${CARD_LABELS[k]}: ${rate}% captured ($${captured.toFixed(0)}/$${total.toFixed(0)} avail, $${fee}/yr fee, $${proj.toFixed(0)} projected)`);
+  });
+  return lines.join('\n');
+}
+
+export function renderAIAdvisor(){
+  const history=state._advisorHistory||[];
+  const loading=state._advisorLoading||false;
+
+  const quickBtns=[
+    'What should I use this month?',
+    'Which benefits expire soon?',
+    'Am I getting enough value?',
+    'What should I prioritize?',
+  ].map(q=>`<button class="adv-quick" onclick="window.askAdvisor(${JSON.stringify(q)})">${q}</button>`).join('');
+
+  let responseHtml='';
+  if(loading){
+    responseHtml=`<div class="adv-loading"><span class="adv-dot"></span><span class="adv-dot"></span><span class="adv-dot"></span></div>`;
+  } else if(history.length){
+    responseHtml=history.map(({q,a})=>`
+      <div class="adv-q">${escapeHtml(q)}</div>
+      <div class="adv-a">${formatAdvisorMarkdown(a)}</div>
+    `).join('');
+  } else {
+    responseHtml=`<div class="adv-placeholder">Ask anything about your benefits — or tap a quick question above.</div>`;
+  }
+
+  set(`<div class="banner"><strong>AI Advisor</strong> — powered by Claude</div>
+    <div class="adv-quick-row">${quickBtns}</div>
+    <div class="adv-input-row">
+      <input type="text" id="adv-input" class="adv-input" placeholder="Ask about your benefits…" onkeydown="if(event.key==='Enter')window.sendAdvisor()">
+      <button class="adv-send" onclick="window.sendAdvisor()">→</button>
+    </div>
+    <div class="adv-response" id="adv-response">${responseHtml}</div>
+    <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:8px;padding-bottom:8px">Claude has access to your card data and capture rates · answers are estimates</div>
+  `, ()=>{
+    const inp=document.getElementById('adv-input');
+    if(inp) inp.focus();
+  });
+}
+
+export function formatAdvisorMarkdown(text){
+  const escaped=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let formatted=escaped.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  const lines=formatted.split('\n');
+  let inList=false;
+  const out=[];
+  for(const line of lines){
+    if(/^[-•]\s/.test(line)){
+      if(!inList){out.push('<ul class="adv-list">');inList=true;}
+      out.push(`<li>${line.replace(/^[-•]\s/,'')}</li>`);
+    } else {
+      if(inList){out.push('</ul>');inList=false;}
+      if(line.trim()) out.push(`<p class="adv-p">${line}</p>`);
+    }
+  }
+  if(inList) out.push('</ul>');
+  return out.join('');
+}
+
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','history-log','recap','heatmap','performance','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar','upgrade-advisor'];
+  const _analyticsViews=['compare','history-log','recap','heatmap','performance','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar','upgrade-advisor','ai-advisor'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -1955,5 +2098,6 @@ export function render(){
   else if(state.activeView==='card-simulator') renderCardSimulator();
   else if(state.activeView==='renewal-calendar') renderRenewalCalendar();
   else if(state.activeView==='upgrade-advisor') renderUpgradeAdvisor();
+  else if(state.activeView==='ai-advisor') renderAIAdvisor();
   setTimeout(()=>{ updateTabBadge(); updateCardBadges(); },200);
 }

@@ -11,7 +11,7 @@ import {
   setSnoozedBenefit, isGloballySnoozed, isUsed,
   loadCardMeta, setCardOpenedDate
 } from './storage.js';
-import { render, getVisibleCardKeys, renderCurrent, renderRecap, haptic, checkAllClaimed, animateCounters, renderFeeOptimizer } from './views.js';
+import { render, getVisibleCardKeys, renderCurrent, renderRecap, haptic, checkAllClaimed, animateCounters, renderFeeOptimizer, buildAdvisorContext, formatAdvisorMarkdown } from './views.js';
 import { checkBadges, getEarnedBadges, getEarnedAt, getUnseenBadges, markAllSeen, BADGE_DEFS, getApplicableBadgeDefs, TIER_COLORS, backfill2025Badges, unlockReviewedBadges } from './badges.js';
 import { calcStats, getCardYearPeriods, isPCurrent, getFee, getBAmount, getCurrentPK, isBExpired, isBNotAvailable } from './periods.js';
 
@@ -720,6 +720,7 @@ function setActiveView(primary){
   else if(primary==='card-simulator') state.activeView='card-simulator';
   else if(primary==='renewal-calendar') state.activeView='renewal-calendar';
   else if(primary==='upgrade-advisor') state.activeView='upgrade-advisor';
+  else if(primary==='ai-advisor') state.activeView='ai-advisor';
   else if(primary==='settings') state.activeView='settings';
   else if(primary==='more') state.activeView='more';
   else if(primary==='my-cards'){ openMyCards(); return; }
@@ -1381,6 +1382,7 @@ const _DRAWER_ICONS={
   'fee-optimizer':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M5.5 11.5C6.3 12.4 7 13 8 13s2-.5 2-1.5-1-1.5-2-1.5-2-.5-2-1.5S6 7 8 7s1.5.5 2 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
   'card-simulator':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="4.5" width="13" height="8.5" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="7" x2="8" y2="10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="6.25" y1="8.75" x2="9.75" y2="8.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 4.5V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   'upgrade-advisor':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="7.5" width="9" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4" opacity="0.55"/><rect x="4" y="4.5" width="9" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M12 1.5V4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10.5 3L12 1.5 13.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  'ai-advisor':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 6.5C5.5 5.1 6.6 4 8 4s2.5 1.1 2.5 2.5c0 1-0.6 1.9-1.5 2.3V10H7V8.8C6.1 8.4 5.5 7.5 5.5 6.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="7" y1="11.5" x2="9" y2="11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="7.5" y1="13" x2="8.5" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   'renewal-calendar':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="2" y1="6.5" x2="14" y2="6.5" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="1.5" x2="5" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="1.5" x2="11" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   'settings':`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13 9.5l.6-1-1-1a3.5 3.5 0 0 0-.3-.7l.4-1.3-1.2-1.2-1.3.4a3.5 3.5 0 0 0-.7-.3L9 3H7l-.5 1.4a3.5 3.5 0 0 0-.7.3L4.5 4.3 3.3 5.5l.4 1.3a3.5 3.5 0 0 0-.3.7L2 8v1l1.4.5c.1.2.2.5.3.7l-.4 1.3 1.2 1.2 1.3-.4c.2.1.5.2.7.3L7 14h2l.5-1.4c.2-.1.5-.2.7-.3l1.3.4 1.2-1.2-.4-1.3c.1-.2.2-.5.3-.7L14 9.5z" stroke="currentColor" stroke-width="1.4"/></svg>`,
 };
@@ -1811,6 +1813,7 @@ function renderMore(){
     {view:'net-value',label:'Portfolio Value'},
     {view:'card-simulator',label:'Card Simulator'},
     {view:'upgrade-advisor',label:'Upgrade Advisor'},
+    {view:'ai-advisor',label:'AI Advisor'},
     {view:'renewal-calendar',label:'Renewal Calendar'},
     {view:'compare',label:'Compare Cards'},
     {view:'performance',label:'Performance'},
@@ -2067,3 +2070,60 @@ function updateMonthTabLabel(){
   if(nextBtn) nextBtn.style.visibility=offset<0?'visible':'hidden';
 }
 window.setPeriodOffset=(offset)=>{ state._periodOffset=offset; updateMonthTabLabel(); renderCurrent(); };
+
+// ── Points balance helpers ─────────────────────────────────────────────────
+window.savePointsBalance=function(progId,value){
+  const data=JSON.parse(localStorage.getItem('perks-points-balances')||'{}');
+  const v=parseFloat(value)||0;
+  if(v>0) data[progId]=v; else delete data[progId];
+  localStorage.setItem('perks-points-balances',JSON.stringify(data));
+  scheduleSave();
+};
+window.savePointsValuation=function(progId,value){
+  const data=JSON.parse(localStorage.getItem('perks-points-valuations')||'{}');
+  const v=parseFloat(value);
+  if(v>0) data[progId]=v; else delete data[progId];
+  localStorage.setItem('perks-points-valuations',JSON.stringify(data));
+};
+
+// ── AI Advisor helpers ─────────────────────────────────────────────────────
+window.askAdvisor=async function(question){
+  if(state._advisorLoading) return;
+  if(!question?.trim()) return;
+  state._advisorLoading=true;
+  if(!state._advisorHistory) state._advisorHistory=[];
+
+  const responseEl=document.getElementById('adv-response');
+  if(responseEl) responseEl.innerHTML='<div class="adv-loading"><span class="adv-dot"></span><span class="adv-dot"></span><span class="adv-dot"></span></div>';
+
+  try{
+    const context=buildAdvisorContext();
+    const {data,error}=await state.sb.functions.invoke('ask-perks-advisor',{body:{question,context}});
+    if(error) throw error;
+    const answer=data?.answer||'No response received.';
+    state._advisorHistory.push({q:question,a:answer});
+  }catch(e){
+    state._advisorHistory.push({q:question,a:`Error: ${e.message||'Could not reach AI advisor.'}`});
+  }finally{
+    state._advisorLoading=false;
+  }
+
+  if(state.activeView==='ai-advisor'){
+    const el=document.getElementById('adv-response');
+    if(el){
+      el.innerHTML=state._advisorHistory.map(({q,a})=>`
+        <div class="adv-q">${escapeHtml(q)}</div>
+        <div class="adv-a">${formatAdvisorMarkdown(a)}</div>
+      `).join('');
+      el.scrollTop=el.scrollHeight;
+    }
+  }
+};
+
+window.sendAdvisor=function(){
+  const inp=document.getElementById('adv-input');
+  if(!inp||!inp.value.trim()) return;
+  const q=inp.value.trim();
+  inp.value='';
+  window.askAdvisor(q);
+};
