@@ -1647,6 +1647,164 @@ export function renderCardSimulator(){
 
 window.setSimCard=function(k){state._simCard=k;renderCardSimulator();};
 
+// ── Render: card upgrade advisor ───────────────────────────────────────────
+export function renderUpgradeAdvisor(){
+  const userKeys=new Set(getVisibleCardKeys());
+
+  const UPGRADE_PATHS=[
+    {from:'chase_sapphire_pref',to:'csr'},
+    {from:'amex_green',to:'gold'},
+    {from:'gold',to:'platinum'},
+    {from:'amex_biz_gold',to:'amex_biz_plat'},
+    {from:'chase_united_quest',to:'chase_united_club'},
+  ];
+
+  // Build category + cadence rates from all owned cards (same approach as card simulator)
+  const catD={},cadD={};
+  userKeys.forEach(ck=>{
+    CARDS[ck].sections.forEach(s=>{
+      getCardYearPeriods(ck,s.cadence).forEach(p=>{
+        if(isPFuture(p)) return;
+        s.benefits.forEach(b=>{
+          if(isBExpired(b,p)||isBNotAvailable(b,CY,p)||isGloballySnoozed(ck,b.id)) return;
+          const cat=BENEFIT_CATEGORIES[b.id]||'other';
+          const amt=getBAmount(b,p);
+          const used=isUsed(ck,b.id,p.pk);
+          if(!catD[cat]) catD[cat]={c:0,t:0};
+          catD[cat].t+=amt; if(used) catD[cat].c+=amt;
+          if(!cadD[s.cadence]) cadD[s.cadence]={c:0,t:0};
+          cadD[s.cadence].t+=amt; if(used) cadD[s.cadence].c+=amt;
+        });
+      });
+    });
+  });
+  const catRate=cat=>{const d=catD[cat];return(d&&d.t>0)?d.c/d.t:null;};
+  const cadRate=cad=>{const d=cadD[cad];return(d&&d.t>0)?d.c/d.t:null;};
+  const DEFAULT_RATE=0.55;
+  function annMax(b,cadence){
+    if(cadence==='monthly') return b.amount*11+(b.decAmount||b.amount);
+    if(cadence==='quarterly') return b.amount*4;
+    if(cadence==='cal-semi-annual'||cadence==='semi-annual') return b.amount*2;
+    return b.amount;
+  }
+  function projCard(cardKey){
+    let total=0;
+    CARDS[cardKey].sections.forEach(s=>{
+      s.benefits.filter(b=>!isBNotAvailable(b,CY)).forEach(b=>{
+        const cat=BENEFIT_CATEGORIES[b.id]||'other';
+        const max=annMax(b,s.cadence);
+        const cr=catRate(cat),cadr=cadRate(s.cadence);
+        const rate=cr!==null?cr:(cadr!==null?cadr:DEFAULT_RATE);
+        total+=max*rate;
+      });
+    });
+    return total;
+  }
+  function benCadence(cardKey,benefitId){
+    for(const s of CARDS[cardKey].sections){
+      if(s.benefits.find(b=>b.id===benefitId)) return s.cadence;
+    }
+    return 'annual';
+  }
+
+  // Only paths where user owns "from" but not "to"
+  const paths=UPGRADE_PATHS.filter(p=>userKeys.has(p.from)&&CARDS[p.to]&&!userKeys.has(p.to));
+
+  if(!paths.length){
+    let rows='';
+    [...userKeys].forEach(k=>{
+      const proj=getProjectedCapture(k);
+      const fee=getFee(k,CY);
+      const net=proj-fee;
+      const netColor=net>=0?'var(--green)':net>=-250?'var(--gold)':'var(--red)';
+      rows+=`<div class="optimizer-card">
+        <div class="optimizer-card-header">
+          <span class="optimizer-card-name">${CARD_LABELS[k]}</span>
+          <span class="optimizer-impact" style="color:${netColor}">${net>=0?'+':''}$${net.toFixed(0)}</span>
+        </div>
+        <div class="optimizer-verdict" style="color:${netColor}">${net>=0?'Positive ROI — well-optimized':'Room to improve capture rate'}</div>
+        <div class="optimizer-card-sub"><span>$${fee}/yr fee</span><span>·</span><span style="color:var(--green)">$${proj.toFixed(0)} projected</span></div>
+      </div>`;
+    });
+    set(`<div class="banner"><strong>Card Upgrade Advisor</strong></div>
+      <div style="text-align:center;padding:28px 16px 8px">
+        <div style="font-size:28px;margin-bottom:8px;color:var(--green)">✓</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text)">You're already at the top tier</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">No upgrade paths available for your current cards.</div>
+      </div>
+      <div class="section-header" style="margin-top:8px"><span class="section-title">Your portfolio</span></div>
+      ${rows}
+      <div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:12px;padding-bottom:8px">Defined paths: Sapphire Preferred→Reserve · Green→Gold · Gold→Platinum · Biz Gold→Biz Plat · United Quest→Club</div>`);
+    return;
+  }
+
+  const scored=paths.map(p=>{
+    const fromFee=getFee(p.from,CY);
+    const toFee=CARDS[p.to].fee;
+    const feeDelta=toFee-fromFee;
+    const fromProj=getProjectedCapture(p.from);
+    const fromNet=fromProj-fromFee;
+    const toProj=projCard(p.to);
+    const toNet=toProj-toFee;
+    const gain=toNet-fromNet;
+    const {captured,total}=calcStats(p.from,c=>getCardYearPeriods(p.from,c),isPCurrent);
+    const captureRate=total>0?captured/total:0;
+    return{...p,fromFee,toFee,feeDelta,fromNet,toProj,toNet,gain,captureRate};
+  }).sort((a,b)=>b.gain-a.gain);
+
+  let html=`<div class="banner"><strong>Card Upgrade Advisor</strong> — should you level up?</div>`;
+
+  scored.forEach(({from,to,fromFee,toFee,feeDelta,fromNet,toProj,toNet,gain,captureRate})=>{
+    const fromCard=CARDS[from],toCard=CARDS[to];
+    const gainColor=gain>=0?'var(--green)':gain>=-150?'var(--gold)':'var(--red)';
+    let verdict,verdictColor;
+    if(gain>=100){verdict='Worth upgrading at your current pace';verdictColor='var(--green)';}
+    else if(gain>=0){verdict='Likely worth it — modest net gain';verdictColor='var(--green)';}
+    else if(gain>=-150){verdict='Marginal — close to break-even';verdictColor='var(--gold)';}
+    else{verdict='Not recommended — fee jump exceeds projected gains';verdictColor='var(--red)';}
+
+    const capPct=Math.round(captureRate*100);
+    const capColor=capPct>=80?'var(--green)':capPct>=60?'var(--blue)':'var(--gold)';
+
+    const fromBenIds=new Set(CARDS[from].sections.flatMap(s=>s.benefits.map(b=>b.id)));
+    const newBens=CARDS[to].sections
+      .flatMap(s=>s.benefits.filter(b=>!fromBenIds.has(b.id)&&!isBNotAvailable(b,CY)))
+      .sort((a,b)=>annMax(b,benCadence(to,b.id))-annMax(a,benCadence(to,a.id)))
+      .slice(0,5);
+
+    const newBensHtml=newBens.length?`
+      <div class="ua-new-bens-hdr">New benefits gained</div>
+      ${newBens.map(b=>`<div class="ua-new-ben"><span>${b.name}</span><span class="ua-new-ben-amt">$${annMax(b,benCadence(to,b.id))}/yr max</span></div>`).join('')}
+    `:'';
+
+    html+=`<div class="ua-card">
+      <div class="ua-path">
+        <div class="ua-side">
+          <div class="ua-side-name">${fromCard.name}</div>
+          <div class="ua-side-sub">$${fromFee}/yr · <span style="color:${capColor}">${capPct}% captured</span></div>
+          <div class="ua-side-net" style="color:${fromNet>=0?'var(--green)':'var(--red)'}">${fromNet>=0?'+':''}$${fromNet.toFixed(0)} net/yr</div>
+        </div>
+        <div class="ua-arrow">→</div>
+        <div class="ua-side ua-side-right">
+          <div class="ua-side-name">${toCard.name}</div>
+          <div class="ua-side-sub">$${toFee}/yr</div>
+          <div class="ua-side-net green">${toNet>=0?'+':''}$${toNet.toFixed(0)} projected</div>
+        </div>
+      </div>
+      <div class="ua-verdict" style="color:${verdictColor}">${verdict}</div>
+      <div class="sim-metrics" style="margin-top:8px">
+        <div class="sim-m"><div class="sim-m-val" style="color:${gainColor}">${gain>=0?'+':''}$${gain.toFixed(0)}</div><div class="sim-m-lbl">net change</div></div>
+        <div class="sim-m"><div class="sim-m-val" style="color:var(--red)">+$${feeDelta}</div><div class="sim-m-lbl">fee increase</div></div>
+        <div class="sim-m"><div class="sim-m-val green">$${toProj.toFixed(0)}</div><div class="sim-m-lbl">you'd capture</div></div>
+      </div>
+      ${newBensHtml}
+    </div>`;
+  });
+
+  html+=`<div style="font-size:10px;font-family:var(--mono);color:var(--text-tertiary);text-align:center;margin-top:16px;padding-bottom:8px">Projected value uses your historical claim rate per category · assumes product change replaces current card</div>`;
+  set(html);
+}
+
 // ── Render: renewal calendar + fee tracker ─────────────────────────────────
 function feeHistory(ck){
   const card=CARDS[ck];
@@ -1763,7 +1921,7 @@ window.downloadBenefitsCSV=function(){
 
 // ── Main render dispatcher ─────────────────────────────────────────────────
 export function render(){
-  const _analyticsViews=['compare','history-log','recap','heatmap','performance','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar'];
+  const _analyticsViews=['compare','history-log','recap','heatmap','performance','digest','net-value','badges','fee-optimizer','card-simulator','renewal-calendar','upgrade-advisor'];
   const _isAnalytics=_analyticsViews.includes(state.activeView);
   ['cardSelector','navPrimary','navSecondary','yearSelector','ptrIndicator'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=_isAnalytics?'none':''; });
   document.querySelectorAll('.drag-hint,.ptr-indicator').forEach(el=>{ el.style.display=_isAnalytics?'none':''; });
@@ -1796,5 +1954,6 @@ export function render(){
   else if(state.activeView==='fee-optimizer') renderFeeOptimizer();
   else if(state.activeView==='card-simulator') renderCardSimulator();
   else if(state.activeView==='renewal-calendar') renderRenewalCalendar();
+  else if(state.activeView==='upgrade-advisor') renderUpgradeAdvisor();
   setTimeout(()=>{ updateTabBadge(); updateCardBadges(); },200);
 }
