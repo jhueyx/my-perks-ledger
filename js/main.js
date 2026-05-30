@@ -1,5 +1,5 @@
 import { CARDS, CARD_LABELS, PREMIUM_CARD_CATALOG, POINTS_MULTIPLIERS, TRANSFER_PARTNERS } from './cards.js';
-import { state, CY, CM, MONTHS, MONTHS_FULL, sb, freshDATA, STORAGE_KEY, escapeHtml } from './state.js';
+import { state, CY, CM, MONTHS, MONTHS_FULL, sb, freshDATA, STORAGE_KEY, escapeHtml, SUPABASE_URL, SUPABASE_KEY } from './state.js';
 import {
   toggle, scheduleSave, setSave, syncFromSupabase,
   loadCustomAmounts, saveCustomAmounts, setCustomAmount,
@@ -2098,9 +2098,21 @@ window.askAdvisor=async function(question){
 
   try{
     const context=buildAdvisorContext();
-    const {data,error}=await sb.functions.invoke('ask-perks-advisor',{body:{question,context}});
-    if(error) throw error;
-    const answer=data?.answer||'No response received.';
+    const {data:sessionData}=await sb.auth.getSession();
+    const token=sessionData?.session?.access_token;
+    const resp=await fetch(`${SUPABASE_URL}/functions/v1/ask-perks-advisor`,{
+      method:'POST',
+      headers:{
+        'Authorization':`Bearer ${token}`,
+        'Content-Type':'application/json',
+        'apikey':SUPABASE_KEY,
+      },
+      body:JSON.stringify({question,context}),
+    });
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const result=await resp.json();
+    if(result.error) throw new Error(result.error);
+    const answer=result.answer||'No response received.';
     state._advisorHistory.push({q:question,a:answer});
   }catch(e){
     state._advisorHistory.push({q:question,a:`Error: ${e.message||'Could not reach AI advisor.'}`});
