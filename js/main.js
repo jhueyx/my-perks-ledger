@@ -2098,7 +2098,7 @@ window.askAdvisor=async function(question){
 
   try{
     const context=buildAdvisorContext();
-    const {data,error}=await state.sb.functions.invoke('ask-perks-advisor',{body:{question,context}});
+    const {data,error}=await sb.functions.invoke('ask-perks-advisor',{body:{question,context}});
     if(error) throw error;
     const answer=data?.answer||'No response received.';
     state._advisorHistory.push({q:question,a:answer});

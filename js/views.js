@@ -2015,7 +2015,7 @@ export function renderAIAdvisor(){
     'Which benefits expire soon?',
     'Am I getting enough value?',
     'What should I prioritize?',
-  ].map(q=>`<button class="adv-quick" onclick="window.askAdvisor(${JSON.stringify(q)})">${q}</button>`).join('');
+  ].map(q=>`<button class="adv-quick" data-q="${escapeHtml(q)}" onclick="window.askAdvisor(this.dataset.q)">${q}</button>`).join('');
 
   let responseHtml='';
   if(loading){
